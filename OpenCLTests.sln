@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "PyOpenCLFirstTest", "PyOpenCLFirstTest\PyOpenCLFirstTest.pyproj", "{1B1FC7EB-EA61-423B-AF73-962B86DF448A}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "PyOpenCLSecondTest1DArray", "PyOpenCLSecondTest\PyOpenCLSecondTest1DArray.pyproj", "{8879CCAC-90EC-4E20-ACA3-3AA1D4BA454D}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "PyOpenCLThirdTestSimpleRayTracing", "PyOpenCLThirdTest\PyOpenCLThirdTestSimpleRayTracing.pyproj", "{9C915001-7D48-4A73-B21F-205C567B3F6F}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "PyOpenCLStructTest", "PyOpenCLStructTest\PyOpenCLStructTest.pyproj", "{06702CA1-98F3-41C6-9062-8F3D001C7419}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "SimpleRayTracingOpenCL", "SimpleRayTracingOpenCL\SimpleRayTracingOpenCL.pyproj", "{CE5EB73D-1566-4F43-B1C6-ABA4C12EEE21}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1B1FC7EB-EA61-423B-AF73-962B86DF448A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B1FC7EB-EA61-423B-AF73-962B86DF448A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8879CCAC-90EC-4E20-ACA3-3AA1D4BA454D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8879CCAC-90EC-4E20-ACA3-3AA1D4BA454D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C915001-7D48-4A73-B21F-205C567B3F6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C915001-7D48-4A73-B21F-205C567B3F6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06702CA1-98F3-41C6-9062-8F3D001C7419}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06702CA1-98F3-41C6-9062-8F3D001C7419}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE5EB73D-1566-4F43-B1C6-ABA4C12EEE21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE5EB73D-1566-4F43-B1C6-ABA4C12EEE21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

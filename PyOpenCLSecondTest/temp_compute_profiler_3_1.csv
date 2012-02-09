@@ -1,0 +1,6 @@
+# OPENCL_PROFILE_LOG_VERSION 2.0
+# OPENCL_DEVICE 1 Quadro FX 1800
+# OPENCL_CONTEXT 2
+# OPENCL_PROFILE_CSV 1
+# TIMESTAMPFACTOR 126c6ad8d100ff0f
+method,gputime,cputime,ndrangesizeX,ndrangesizeY,ndrangesizeZ,workgroupsizeX,workgroupsizeY,workgroupsizeZ,stapmemperworkgroup,regperworkitem,occupancy,streamid,localworkgroupsize,gst_coherent,local_load,local_store,memtransfersize,memtransferhostmemtype

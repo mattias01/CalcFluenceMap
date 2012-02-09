@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<ProfilingTarget xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ProjectTarget>
+    <TargetProject>9c915001-7d48-4a73-b21f-205c567b3f6f</TargetProject>
+    <FriendlyName>PyOpenCLThirdTestSimpleRayTracing</FriendlyName>
+  </ProjectTarget>
+  <Reports>
+    <Report>
+      <Filename>C:\Users\Mattias\AppData\Local\Temp\PyOpenCLThirdTestSimpleRayTracing2012130.vsp</Filename>
+    </Report>
+    <Report>
+      <Filename>C:\Users\Mattias\AppData\Local\Temp\PyOpenCLThirdTestSimpleRayTracing2012130(1).vsp</Filename>
+    </Report>
+  </Reports>
+</ProfilingTarget>

@@ -1,0 +1,17 @@
+<!DOCTYPE cvp>
+<cvp version="4.0" >
+ <session>
+  <name>Session1</name>
+  <progpath>"C:/Python27/python.exe"</progpath>
+  <cmdlineargs>"C:\Users\Mattias\Documents\Visual Studio 2010\Projects\OpenCLTests\PyOpenCLSecondTest\program.py"</cmdlineargs>
+  <workdirpath>C:/Users/Mattias/Documents/Visual Studio 2010/Projects/OpenCLTests/PyOpenCLSecondTest</workdirpath>
+  <datetime>26 jan 2012 09:56:24</datetime>
+  <normalizedcounter>false</normalizedcounter>
+  <device multProcessorCount="14" label="Device_0" id="0" computeCapability="2.0" maxGridDim="65535 65535" GpuOverlap="1" maxPitchMem="2147483647" totalConstMem="65536" name="GeForce GTX 470" clockFreq="1215000" L2CacheSize="655360" maxRegPerBlock="32768" chip="192" maxThreadPerSM="1536" maxShareMemPerBlock="49152" maxBlockDim="1024 1024 64" MemClockRate="1674000" asyncEngineCount="1" warpSize="32" maxThreadPerBlock="1024" MemBandwidth="1071360000" textureAlignment="512" >
+   <context totalcountercount="0" invalidcountercount="0" id="0" label="Context_0" truncatedcountercount="0" trace="0" >
+    <run number="4" >local_load,local_store</run>
+   </context>
+  </device>
+ </session>
+</cvp>
+

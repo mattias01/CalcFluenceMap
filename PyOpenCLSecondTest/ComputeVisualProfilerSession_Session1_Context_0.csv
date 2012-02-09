@@ -1,0 +1,9 @@
+# OPENCL_PROFILE_LOG_VERSION 2.0
+# CUDA_PROFILE_CSV 1
+# TIMESTAMPFACTOR 126c6ad97424690a
+# CUDA_DEVICE 0 GeForce GTX 470
+gpustarttimestamp,method,gputime,cputime,occupancy,ndrangesizeX,ndrangesizeY,ndrangesizeZ,workgroupsizeX,workgroupsizeY,workgroupsizeZ,stapmemperworkgroup,regperworkitem,streamID,localworkgroupsize,memTransferSize,memtransferhostmemtype,local_load,local_store
+126c6f0a5f6ae4c0,memcpyDtoHasync,143203,134583,,,,,,,,,,1,0,80000000,0
+126c6f0a6813c860,memcpyDtoHasync,144012,135317,,,,,,,,,,1,0,80000000,0
+126c6f0a70b19260,calculate,3258.62,15.398,0.667,20000,1,1,1000,1,1,0,7,6,0,,0,0,0
+126c6f0a70eecfc0,memcpyHtoDasync,128899,129724,,,,,,,,,,6,0,80000000,0
