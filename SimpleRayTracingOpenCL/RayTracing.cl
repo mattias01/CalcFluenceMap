@@ -41,14 +41,14 @@ typedef struct SimpleCollimator {
 	Square rightSquare;
 } __attribute__((packed)) SimpleCollimator;
 
-typedef struct FluencySquare {
+typedef struct FluenceMap {
 	Square square;
-} __attribute__((packed)) FluencySquare;
+} __attribute__((packed)) FluenceMap;
 
 typedef struct Scene {
 	SimpleRaySourceDisc raySource;
 	SimpleCollimator collimator;
-	FluencySquare fluencySquare;
+	FluenceMap fluenceMap;
 } __attribute((packed)) Scene;
 
 typedef struct Render {
@@ -222,26 +222,26 @@ void traceRay(__constant const Scene *s, const Line *r, float *i) {
 	}
 }
 
-void calculateFluenceElementLightStraightUp(__constant const Scene *scene, __constant const Render *render, __global float *fluency_data, __global Debug *debug){
+void calculateFluenceElementLightStraightUp(__constant const Scene *scene, __constant const Render *render, __global float *fluence_data, __global Debug *debug){
 	unsigned int i = get_global_id(0);
     unsigned int j = get_global_id(1);
 
 	Line ray = {
-		.origin = (float4) ((scene->fluencySquare.square.p0.x + i*render->xstep + render->xoffset), (scene->fluencySquare.square.p0.y + j*render->ystep + render->yoffset), 0, 0), 
+		.origin = (float4) ((scene->fluenceMap.square.p0.x + i*render->xstep + render->xoffset), (scene->fluenceMap.square.p0.y + j*render->ystep + render->yoffset), 0, 0), 
 		.direction = (float4) (0,0,1,0)};
 	
 	float intensity;
 	traceRay(scene, &ray, &intensity);
-	fluency_data[i*render->flx+j] = intensity;
+	fluence_data[i*render->flx+j] = intensity;
 }
 
-void calcFluenceElementLightAllAngles(__constant const Scene *scene, __constant const Render *render, __global float *fluency_data, __global Debug *debug){
+void calcFluenceElementLightAllAngles(__constant const Scene *scene, __constant const Render *render, __global float *fluence_data, __global Debug *debug){
 	unsigned int i = get_global_id(0);
     unsigned int j = get_global_id(1);
 
-	float4 rayOrigin = (float4) (scene->fluencySquare.square.p0.x + i*render->xstep + render->xoffset, 
-								 scene->fluencySquare.square.p0.y + j*render->ystep + render->yoffset, 
-								 scene->fluencySquare.square.p0.z, 0);
+	float4 rayOrigin = (float4) (scene->fluenceMap.square.p0.x + i*render->xstep + render->xoffset, 
+								 scene->fluenceMap.square.p0.y + j*render->ystep + render->yoffset, 
+								 scene->fluenceMap.square.p0.z, 0);
 
 	float4 v0 = (float4) (scene->raySource.disc.origin.x - scene->raySource.disc.radius, 
 						  scene->raySource.disc.origin.y - scene->raySource.disc.radius, 
@@ -273,21 +273,21 @@ void calcFluenceElementLightAllAngles(__constant const Scene *scene, __constant 
 		}
 	}
 
-	fluency_data[i*render->flx+j] = fluenceSum;
+	fluence_data[i*render->flx+j] = fluenceSum;
 }
 
-__kernel void drawScene(__constant const Scene *scene, __constant const Render *render, __global float *fluency_data, __global Debug *debug)
+__kernel void drawScene(__constant const Scene *scene, __constant const Render *render, __global float *fluence_data, __global Debug *debug)
 {
 	//unsigned int i = get_global_id(0);
     //unsigned int j = get_global_id(1);
 
-	calculateFluenceElementLightStraightUp(scene, render, fluency_data, debug);
+	calculateFluenceElementLightStraightUp(scene, render, fluence_data, debug);
 }
 
-__kernel void drawScene2(__constant const Scene *scene, __constant const Render *render, __global float *fluency_data, __global Debug *debug)
+__kernel void drawScene2(__constant const Scene *scene, __constant const Render *render, __global float *fluence_data, __global Debug *debug)
 {
 	//unsigned int i = get_global_id(0);
     //unsigned int j = get_global_id(1);
 
-	calcFluenceElementLightAllAngles(scene, render, fluency_data, debug);
+	calcFluenceElementLightAllAngles(scene, render, fluence_data, debug);
 }

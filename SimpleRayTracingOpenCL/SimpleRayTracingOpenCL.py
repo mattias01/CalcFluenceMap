@@ -46,15 +46,15 @@ cls2 = Square(float4(-3.5,-3.5,-6,0), float4(-0.5,-3.5,-6,0), float4(-0.5,3.5,-6
 crs2 = Square(float4(0.5,-3.5,-6,0), float4(3.5,-3.5,-6,0), float4(3.5,3.5,-6,0), float4(0.5,3.5,-6,0))
 col2 = SimpleCollimator(cls2, crs2)
 collimators = [col]
-fs = FluencySquare(Square(float4(-3.5,-3.5,-10,0), float4(3.5,-3.5,-10,0), float4(3.5,3.5,-10,0), float4(-3.5,3.5,-10,0)))
-scene = Scene(rs,col,fs)
-scene2 = Scene2(rs,len(collimators),fs)
+fm = FluenceMap(Square(float4(-3.5,-3.5,-10,0), float4(3.5,-3.5,-10,0), float4(3.5,3.5,-10,0), float4(-3.5,3.5,-10,0)))
+scene = Scene(rs,col,fm)
+scene2 = Scene2(rs,len(collimators),fm)
 
 # Settings
 flx = 16
 fly = 16
-xstep = (0.0 + length(scene.fluencySquare.square.p1 - scene.fluencySquare.square.p0))/flx # Length in x / x resolution
-ystep = (0.0 + length(scene.fluencySquare.square.p3 - scene.fluencySquare.square.p0))/fly # Length in y / y resolution
+xstep = (0.0 + length(scene.fluenceMap.square.p1 - scene.fluenceMap.square.p0))/flx # Length in x / x resolution
+ystep = (0.0 + length(scene.fluenceMap.square.p3 - scene.fluenceMap.square.p0))/fly # Length in y / y resolution
 xoffset = xstep/2.0
 yoffset = ystep/2.0
 lsamples = 10
@@ -113,10 +113,10 @@ rspatch = patches.Circle((scene.raySource.disc.origin.y, scene.raySource.disc.or
 # Python
 if python:
     print fluency_dataPython
-    plt.imshow(fluency_dataPython, interpolation='none', cmap=cm.gray, extent=[scene.fluencySquare.square.p0.y,
-                                                                               scene.fluencySquare.square.p3.y,
-                                                                               -scene.fluencySquare.square.p0.x,
-                                                                               -scene.fluencySquare.square.p1.x])
+    plt.imshow(fluency_dataPython, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.square.p0.y,
+                                                                               scene.fluenceMap.square.p3.y,
+                                                                               -scene.fluenceMap.square.p0.x,
+                                                                               -scene.fluenceMap.square.p1.x])
 
     plt.gca().add_patch(colpatch1)
     plt.gca().add_patch(colpatch2)
@@ -128,10 +128,10 @@ if python:
 # OpenCL
 if openCL:
     print fluency_dataOpenCL
-    plt.imshow(fluency_dataOpenCL, interpolation='none', cmap=cm.gray, extent=[scene.fluencySquare.square.p0.y,
-                                                                               scene.fluencySquare.square.p3.y,
-                                                                               -scene.fluencySquare.square.p0.x,
-                                                                               -scene.fluencySquare.square.p1.x])
+    plt.imshow(fluency_dataOpenCL, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.square.p0.y,
+                                                                               scene.fluenceMap.square.p3.y,
+                                                                               -scene.fluenceMap.square.p0.x,
+                                                                               -scene.fluenceMap.square.p1.x])
     plt.gca().add_patch(colpatch1)
     plt.gca().add_patch(colpatch2)
     plt.gca().add_patch(rspatch)

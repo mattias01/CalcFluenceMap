@@ -47,18 +47,18 @@ class SimpleCollimator(Structure):
     _fields_ = [("leftSquare", Square),
                 ("rightSquare", Square)]
 
-class FluencySquare(Structure):
+class FluenceMap(Structure):
     _fields_ = [("square", Square)]
 
 class Scene(Structure):
     _fields_ = [("raySource", SimpleRaySourceDisc),
                 ("collimator", SimpleCollimator),
-                ("fluencySquare", FluencySquare)]
+                ("fluenceMap", FluenceMap)]
 
 class Scene2(Structure):
     _fields_ = [("raySource", SimpleRaySourceDisc),
                 ("collimators", c_int),
-                ("fluencySquare", FluencySquare)]
+                ("fluenceMap", FluenceMap)]
 
 class Render(Structure):
     _fields_ = [("flx", c_int),
@@ -212,17 +212,17 @@ def traceRay(scene, ray):
 def calcFluenceLightStraightUp(scene, render, fluency_data, debug):
     for i in range(render.flx):
         for j in range(render.fly):
-            ray = Line(float4((scene.fluencySquare.square.p0.x + i*render.xstep + render.xoffset), 
-                              (scene.fluencySquare.square.p0.y + j*render.ystep + render.yoffset), 0,0), float4(0,0,1,0))
+            ray = Line(float4((scene.fluenceMap.square.p0.x + i*render.xstep + render.xoffset), 
+                              (scene.fluenceMap.square.p0.y + j*render.ystep + render.yoffset), 0,0), float4(0,0,1,0))
             fluency_data[i][j] = traceRay(scene, ray)
 
 def calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug):
     for fi in range(render.flx):
         print fi
         for fj in range(render.fly):
-            rayOrigin = float4(scene.fluencySquare.square.p0.x + fi*render.xstep + render.xoffset, 
-                               scene.fluencySquare.square.p0.y + fj*render.ystep + render.yoffset,
-                               scene.fluencySquare.square.p0.z, 0)
+            rayOrigin = float4(scene.fluenceMap.square.p0.x + fi*render.xstep + render.xoffset, 
+                               scene.fluenceMap.square.p0.y + fj*render.ystep + render.yoffset,
+                               scene.fluenceMap.square.p0.z, 0)
 
             v0 = float4(scene.raySource.disc.origin.x - scene.raySource.disc.radius, 
                         scene.raySource.disc.origin.y - scene.raySource.disc.radius, 
