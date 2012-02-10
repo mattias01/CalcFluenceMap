@@ -61,15 +61,15 @@ lsamples = 10
 lstep = scene.raySource.disc.radius*2/(lsamples-1)
 render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep)
 if python:
-    fluency_dataPython = numpy.zeros(shape=(flx,fly), dtype=numpy.float32)
+    fluence_dataPython = numpy.zeros(shape=(flx,fly), dtype=numpy.float32)
 if openCL:
-    fluency_dataOpenCL = numpy.zeros(shape=(flx,fly), dtype=numpy.float32)
+    fluence_dataOpenCL = numpy.zeros(shape=(flx,fly), dtype=numpy.float32)
 
 # Run in Python
 if python:
     time1 = time()
     debugPython = Debug()
-    drawScene2(scene2, render, collimators, fluency_dataPython, debugPython)
+    drawScene2(scene2, render, collimators, fluence_dataPython, debugPython)
     timePython = time()-time1
 
     samplesPerSecondPython = flx*fly*lsamples*lsamples/timePython
@@ -85,11 +85,11 @@ if openCL:
     render_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=render)
     flx_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=numpy.array([flx]))
     fly_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=numpy.array([fly]))
-    fluency_dataOpenCL_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=fluency_dataOpenCL)
+    fluence_dataOpenCL_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=fluence_dataOpenCL)
     debugOpenCL_buf = cl.Buffer(ctx, mf.WRITE_ONLY, sizeof(debugOpenCL))
     
-    program.drawScene2(queue, fluency_dataOpenCL.shape, None, scene_buf, render_buf, fluency_dataOpenCL_buf, debugOpenCL_buf)
-    cl.enqueue_read_buffer(queue, fluency_dataOpenCL_buf, fluency_dataOpenCL)
+    program.drawScene2(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, debugOpenCL_buf)
+    cl.enqueue_read_buffer(queue, fluence_dataOpenCL_buf, fluence_dataOpenCL)
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
     timeOpenCL = time()-time1
 
@@ -112,8 +112,8 @@ rspatch = patches.Circle((scene.raySource.disc.origin.y, scene.raySource.disc.or
 
 # Python
 if python:
-    print fluency_dataPython
-    plt.imshow(fluency_dataPython, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.square.p0.y,
+    print fluence_dataPython
+    plt.imshow(fluence_dataPython, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.square.p0.y,
                                                                                scene.fluenceMap.square.p3.y,
                                                                                -scene.fluenceMap.square.p0.x,
                                                                                -scene.fluenceMap.square.p1.x])
@@ -127,8 +127,8 @@ if python:
 
 # OpenCL
 if openCL:
-    print fluency_dataOpenCL
-    plt.imshow(fluency_dataOpenCL, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.square.p0.y,
+    print fluence_dataOpenCL
+    plt.imshow(fluence_dataOpenCL, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.square.p0.y,
                                                                                scene.fluenceMap.square.p3.y,
                                                                                -scene.fluenceMap.square.p0.x,
                                                                                -scene.fluenceMap.square.p1.x])
