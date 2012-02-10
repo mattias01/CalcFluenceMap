@@ -51,6 +51,12 @@ typedef struct Scene {
 	FluenceMap fluenceMap;
 } __attribute((packed)) Scene;
 
+typedef struct Scene2 {
+	SimpleRaySourceDisc raySource;
+	int collimators;
+	FluenceMap fluenceMap;
+} __attribute((packed)) Scene2;
+
 typedef struct Render {
 	int flx, fly;
 	float xstep, ystep, xoffset, yoffset;
@@ -66,19 +72,20 @@ typedef struct Debug {
 
 // Intersections
 
-void intersectLinePlane(const Line *l, const Plane *p, bool *intersect, float4 *ip)
+void intersectLinePlane(const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip)
 {
-	if (dot(l->direction, p->normal) == 0.0f) {
-		*intersect = false; // Parallel -> does not intersect.
-	}
-	else {
-		float t = (dot(p->normal, (p->origin - l->origin))) / (dot(p->normal, l->direction));
-		*ip = l->origin + l->direction*t;
+	// Init to not intersect
+	*intersect = false;
+	*distance = NAN;
+	*ip = (NAN, NAN, NAN, NAN);
+	if (dot(l->direction, p->normal) != 0.0f) { // Not parallel -> intersect.
 		*intersect = true;
+		*distance = (dot(p->normal, (p->origin - l->origin))) / (dot(p->normal, l->direction));;
+		*ip = l->origin + l->direction*(*distance);
 	}
 }
 
-void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, float4 *ip)
+void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
 	float4 u = t->p1 - t->p0;
     float4 v = t->p2 - t->p0;
@@ -86,16 +93,13 @@ void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, fl
 	Plane p = {
 		.origin = t->p0,
 		.normal = triangleNorm};
-	bool intersection;
-    float4 intersectionPoint;
-	intersectLinePlane(l, &p, &intersection, &intersectionPoint);
-
-	if (intersection) {
+	intersectLinePlane(l, &p, intersect, distance, ip);
+	if (*intersect) {
 		// Point in triangle plan. Check if in triangle
         float uu = dot(u,u);
         float uv = dot(u,v);
         float vv = dot(v,v);
-        float4 w = intersectionPoint - t->p0;
+        float4 w = *ip - t->p0;
         float wu = dot(w,u);
         float wv = dot(w,v);
         float D = uv * uv - uu * vv;
@@ -103,23 +107,21 @@ void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, fl
         float s = (uv * wv - vv * wu) / D;
         if (s < 0.0f || s > 1.0f) { // IntersectionPoint is outside triangle
             *intersect = false;
-			return;
+			*distance = NAN;
+			*ip = (NAN, NAN, NAN, NAN);
 		}
-        float t = (uv * wu - uu * wv) / D;
-        if (t < 0.0 || (s + t) > 1.0) { // IntersectionPoint is outside triangle
-            *intersect = false;
-			return;
+		else {
+			float t = (uv * wu - uu * wv) / D;
+			if (t < 0.0 || (s + t) > 1.0) { // IntersectionPoint is outside triangle
+				*intersect = false;
+				*distance = NAN;
+				*ip = (NAN, NAN, NAN, NAN);
+			}
 		}
-		// IntersectionPoint is in triangle
-		*intersect = true;
-        *ip = intersectionPoint; 
-	}
-	else {
-		*intersect = false;
 	}
 }
 
-void intersectLineSquare(const Line *l, const Square *s, bool *intersect, float4 *ip)
+void intersectLineSquare(const Line *l, const Square *s, bool *intersect, float *distance, float4 *ip)
 {
 	Triangle t1 = {
 		.p0 = s->p0,
@@ -130,89 +132,67 @@ void intersectLineSquare(const Line *l, const Square *s, bool *intersect, float4
 		.p1 = s->p3,
 		.p2 = s->p0};
 
-	float4 intersectionPoint;
-	bool intersection;
-	intersectLineTriangle(l,&t1,&intersection,&intersectionPoint);
+	intersectLineTriangle(l, &t1, intersect, distance, ip);
 
-	if (!intersection) { // Try to find intersection in second triangle
-		intersectLineTriangle(l,&t2,&intersection,&intersectionPoint);
+	if (!(*intersect)) { // Try to find intersection in second triangle
+		intersectLineTriangle(l, &t2, intersect, distance, ip);
 	}
-	*ip = intersectionPoint;
-	*intersect = intersection;
 }
 
-void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float4 *ip)
+void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float *distance, float4 *ip)
 {
 	Plane p = {
 		.origin = d->origin,
 		.normal = d->normal};
-	float4 intersectionPoint;
-	bool intersection;
-	intersectLinePlane(l,&p,&intersection,&intersectionPoint);
 
-	if (intersection){
-		float4 D = d->origin - intersectionPoint;
-		if (dot(D,D) <= d->radius*d->radius) {
-			*intersect = true;
-			*ip = intersectionPoint;
-		}
-		else {
+	intersectLinePlane(l, &p, intersect, distance, ip);
+
+	if (*intersect){
+		float4 D = d->origin - *ip;
+		if (dot(D,D) > d->radius*d->radius) {
 			*intersect = false;
+			*distance = NAN;
+			*ip = (NAN, NAN, NAN, NAN);
 		}
 	}
-	else {
-		*intersect = false;
-	}
 }
 
-void intersectSimpleCollimator(const Line *l, __constant const SimpleCollimator *c, bool *intersect, float4 *ip)
+void intersectSimpleCollimator(const Line *l, __constant const SimpleCollimator *c, bool *intersect, float *distance, float4 *ip)
 {
-	float4 intersectionPoint;
-	bool intersection;
 	Square ls = c->leftSquare; // Copy from constant memory to private
-	intersectLineSquare(l,&ls,&intersection,&intersectionPoint);
+	intersectLineSquare(l, &ls, intersect, distance, ip);
 
-	if (!intersection) {
+	if (!(*intersect)) { // Check the other square of the SimpleCollimator
 		Square rs = c->rightSquare; // Copy from constant memory to private
-		intersectLineSquare(l,&rs,&intersection,&intersectionPoint);
+		intersectLineSquare(l, &rs, intersect, distance, ip);
 	}
-	*ip = intersectionPoint;
-	*intersect = intersection;
 }
 
-void intersectSimpleRaySourceSquare(const Line *l, __constant const SimpleRaySourceSquare *rs, bool *intersect, float4 *ip) {
-	float4 intersectionPoint;
-	bool intersection;
+void intersectSimpleRaySourceSquare(const Line *l, __constant const SimpleRaySourceSquare *rs, bool *intersect, float *distance, float4 *ip) {
 	Square s = rs->square; // Copy from constant memory to private
-	intersectLineSquare(l,&s,&intersection,&intersectionPoint);
-
-	*ip = intersectionPoint;
-	*intersect = intersection;
+	intersectLineSquare(l, &s, intersect, distance, ip);
 }
 
-void intersectSimpleRaySourceDisc(const Line *l, __constant const SimpleRaySourceDisc *rs, bool *intersect, float4 *ip) {
-	float4 intersectionPoint;
-	bool intersection;
+void intersectSimpleRaySourceDisc(const Line *l, __constant const SimpleRaySourceDisc *rs, bool *intersect, float *distance, float4 *ip) {
 	Disc d = rs->disc; // Copy from constant memory to private
-	intersectLineDisc(l,&d,&intersection,&intersectionPoint);
-
-	*ip = intersectionPoint;
-	*intersect = intersection;
+	intersectLineDisc(l, &d, intersect, distance, ip);
 }
 
 // Ray tracing
 
 void traceRay(__constant const Scene *s, const Line *r, float *i) {
-	float4 intersectionPointCollimator;
 	bool intersectCollimator;
-	intersectSimpleCollimator(r,&(s->collimator),&intersectCollimator,&intersectionPointCollimator);
+	float intersectionDistanceCollimator;
+	float4 intersectionPointCollimator;
+	intersectSimpleCollimator(r, &(s->collimator), &intersectCollimator, &intersectionDistanceCollimator, &intersectionPointCollimator);
 	if (intersectCollimator) {
 		*i = 0;
 	}
 	else {
-		float4 intersectionPointRaySource;
 		bool intersectRaySource;
-		intersectSimpleRaySourceDisc(r,&(s->raySource),&intersectRaySource,&intersectionPointRaySource);
+		float intersectionDistanceRaySource;
+		float4 intersectionPointRaySource;
+		intersectSimpleRaySourceDisc(r, &(s->raySource), &intersectRaySource, &intersectionDistanceRaySource, &intersectionPointRaySource);
 		if (intersectRaySource) {
 			*i = 1;
 		}

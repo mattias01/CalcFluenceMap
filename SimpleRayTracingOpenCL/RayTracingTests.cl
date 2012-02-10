@@ -11,9 +11,11 @@ void testIntersectLinePlane(int *passed)
 		.origin = (float4) (0.0f,0.0f,0.0f,0.0f),
 		.normal = (float4) (0.0f,0.0f,1.0f,0.0f)};
 
-	float4 p0;
 	bool intersection;
-	intersectLinePlane(&l,&p,&intersection,&p0);
+	float distance;
+	float4 p0;
+	
+	intersectLinePlane(&l,&p,&intersection,&distance,&p0);
 
 	if (all(p0 == ((float4) (1.0f,1.0f,0.0f,0.0f)))) {
 		*passed = 1;
@@ -36,12 +38,14 @@ void testIntersectLineTriangle(int *passed, __global Debug *debug)
 		.p1 = (float4) (3.0f,0.0f,0.0f,0.0f),
 		.p2 = (float4) (0.0f,3.0f,0.0f,0.0f)};
 
-	float4 p0;
-	float4 p1;
 	bool intersection1;
 	bool intersection2;
-	intersectLineTriangle(&l1,&t,&intersection1,&p0);
-	intersectLineTriangle(&l2,&t,&intersection2,&p1);
+	float distance1;
+	float distance2;
+	float4 p0;
+	float4 p1;
+	intersectLineTriangle(&l1,&t,&intersection1,&distance1,&p0);
+	intersectLineTriangle(&l2,&t,&intersection2,&distance2,&p1);
 
 	debug->f0 = intersection1;
 	debug->f1 = intersection2;
@@ -77,15 +81,19 @@ void testIntersectLineSquare(int *passed, __global Debug *debug)
 		.p2 = (float4) (3.0f,3.0f,0.0f,0.0f),
 		.p3 = (float4) (0.0f,3.0f,0.0f,0.0f)};
 
-	float4 p0;
-	float4 p1;
-	float4 p2;
 	bool intersection1;
 	bool intersection2;
 	bool intersection3;
-	intersectLineSquare(&l1,&s,&intersection1,&p0);
-	intersectLineSquare(&l2,&s,&intersection2,&p1);
-	intersectLineSquare(&l3,&s,&intersection3,&p2);
+	float distance1;
+	float distance2;
+	float distance3;
+	float4 p0;
+	float4 p1;
+	float4 p2;
+	
+	intersectLineSquare(&l1,&s,&intersection1,&distance1,&p0);
+	intersectLineSquare(&l2,&s,&intersection2,&distance2,&p1);
+	intersectLineSquare(&l3,&s,&intersection3,&distance3,&p2);
 
 	debug->f0 = intersection1;
 	debug->f1 = intersection2;
@@ -122,12 +130,14 @@ void testIntersectLineDisc(int *passed, __global Debug *debug)
 		.normal = (float4) (0.0f,0.0f,1.0f,0.0f),
 		.radius = 2.0f};
 
-	float4 p0;
-	float4 p1;
 	bool intersection1;
 	bool intersection2;
-	intersectLineDisc(&l1,&d,&intersection1,&p0);
-	intersectLineDisc(&l2,&d,&intersection2,&p1);
+	float distance1;
+	float distance2;
+	float4 p0;
+	float4 p1;
+	intersectLineDisc(&l1,&d,&intersection1,&distance1,&p0);
+	intersectLineDisc(&l2,&d,&intersection2,&distance2,&p1);
 
 	debug->f0 = intersection1;
 	debug->f1 = intersection2;
