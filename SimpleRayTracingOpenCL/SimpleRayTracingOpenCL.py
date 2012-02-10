@@ -38,12 +38,17 @@ if openCL:
 
 # Build scene objects
 #rs = SimpleRaySourceSquare(Square(float4(0,3,6,0), float4(7,3,6,0), float4(7,5,6,0), float4(0,5,6,0)))
-rs = SimpleRaySourceDisc(Disc(float4(2.5,0.5,0,0), float4(0,0,1,0), 0.5))
+rs = SimpleRaySourceDisc(Disc(float4(0,0,0,0), float4(0,0,1,0), 0.5))
 cls = Square(float4(-3.5,-3.5,-5,0), float4(3.5,-3.5,-5,0), float4(3.5,-0.5,-5,0), float4(-3.5,-0.5,-5,0))
 crs = Square(float4(-3.5,0.5,-5,0), float4(2.5,0.5,-5,0), float4(3.5,3.5,-5,0), float4(-3.5,3.5,-5,0))
 col = SimpleCollimator(cls, crs)
+cls2 = Square(float4(-3.5,-3.5,-6,0), float4(-0.5,-3.5,-6,0), float4(-0.5,3.5,-6,0), float4(-3.5,3.5,-6,0))
+crs2 = Square(float4(0.5,-3.5,-6,0), float4(3.5,-3.5,-6,0), float4(3.5,3.5,-6,0), float4(0.5,3.5,-6,0))
+col2 = SimpleCollimator(cls2, crs2)
+collimators = [col]
 fs = FluencySquare(Square(float4(-3.5,-3.5,-10,0), float4(3.5,-3.5,-10,0), float4(3.5,3.5,-10,0), float4(-3.5,3.5,-10,0)))
 scene = Scene(rs,col,fs)
+scene2 = Scene2(rs,len(collimators),fs)
 
 # Settings
 flx = 16
@@ -64,7 +69,7 @@ if openCL:
 if python:
     time1 = time()
     debugPython = Debug()
-    drawScene(scene, render, fluency_dataPython, debugPython)
+    drawScene2(scene2, render, collimators, fluency_dataPython, debugPython)
     timePython = time()-time1
 
     samplesPerSecondPython = flx*fly*lsamples*lsamples/timePython
@@ -98,8 +103,8 @@ codes = [Path.MOVETO,
          Path.LINETO,
          Path.LINETO,
          Path.CLOSEPOLY]
-colpath1 = Path(Square2dVertexArray(scene.collimator.leftSquare), codes)
-colpath2 = Path(Square2dVertexArray(scene.collimator.rightSquare), codes)
+colpath1 = Path(Square2dVertexArray(col.leftSquare), codes)
+colpath2 = Path(Square2dVertexArray(col.rightSquare), codes)
 colpatch1 = patches.PathPatch(colpath1, facecolor='none', edgecolor='blue', linewidth=4, alpha=0.5)
 colpatch2 = patches.PathPatch(colpath2, facecolor='none', edgecolor='blue', linewidth=4, alpha=0.5)
 rspatch = patches.Circle((scene.raySource.disc.origin.y, scene.raySource.disc.origin.x), 

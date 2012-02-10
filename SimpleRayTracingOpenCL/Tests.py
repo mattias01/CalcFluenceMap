@@ -7,8 +7,8 @@ from RayTracing import *
 def testIntersectLineTriangle():
     l = Line(float4(1,1,0,0), float4(0,0,1,0))
     t = Triangle(float4(0,0,0,0), float4(3,0,0,0), float4(0,3,0,0))
-    i = intersectLineTriangle(l,t)
-    if i == float4(1.0,1.0,0.0,0.0):
+    [intersect, intersectionDistance, intersectionPoint] = intersectLineTriangle(l,t)
+    if intersect and intersectionPoint == float4(1.0,1.0,0.0,0.0):
         return True
     else:
         print "intersectLineTriangle FAILED"
@@ -18,9 +18,9 @@ def testIntersectLineSquare():
     l1 = Line(float4(1,1,0,0), float4(0,0,1,0))
     l2 = Line(float4(2,2,0,0), float4(0,0,1,0))
     s = Square(float4(0,0,0,0), float4(3,0,0,0), float4(0,3,0,0), float4(3,3,0,0))
-    i1 = intersectLineSquare(l1,s)
-    i2 = intersectLineSquare(l2,s)
-    if (i1 == float4(1,1,0,0)) and (i2 == float4(2,2,0,0)):
+    [intersect1, intersectionDistance1, intersectionPoint1] = intersectLineSquare(l1,s)
+    [intersect2, intersectionDistance2, intersectionPoint2] = intersectLineSquare(l2,s)
+    if intersect1 and (intersectionPoint1 == float4(1,1,0,0)) and intersect2 and (intersectionPoint2 == float4(2,2,0,0)):
         return True
     else:
         print "intersectLineSquare FAILED"
@@ -30,12 +30,12 @@ def testIntersectLineDisc():
     l1 = Line(float4(1,1,0,0), float4(0,0,1,0))
     l2 = Line(float4(3,3,0,0), float4(0,0,1,0))
     d = Disc(float4(0,0,0,0), float4(0,0,1,0), 2)
-    i1 = intersectLineDisc(l1,d)
-    i2 = intersectLineDisc(l2,d)
-    if (i1 == float4(1,1,0,0) and i2 == None):
+    [intersect1, intersectionDistance1, intersectionPoint1] = intersectLineDisc(l1,d)
+    [intersect2, intersectionDistance2, intersectionPoint2] = intersectLineDisc(l2,d)
+    if intersect1 and (intersectionPoint1 == float4(1,1,0,0) and not intersect2 and intersectionPoint2 == None):
         return True
     else:
-        print "intersectLineSquare FAILED"
+        print "intersectLineDisc FAILED"
         return False
 
 def testPython():

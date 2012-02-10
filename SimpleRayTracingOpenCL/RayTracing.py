@@ -1,4 +1,5 @@
 import numpy
+import sys
 from ctypes import Structure
 from OpenCLTypes import *
 from math import acos, pi
@@ -54,6 +55,11 @@ class Scene(Structure):
                 ("collimator", SimpleCollimator),
                 ("fluencySquare", FluencySquare)]
 
+class Scene2(Structure):
+    _fields_ = [("raySource", SimpleRaySourceDisc),
+                ("collimators", c_int),
+                ("fluencySquare", FluencySquare)]
+
 class Render(Structure):
     _fields_ = [("flx", c_int),
                 ("fly", c_int),
@@ -86,21 +92,25 @@ class Debug(Structure):
 
 ###################### Intersection calculations ######################
 def intersectLinePlane(line, plane):
-    if dot(line.direction, plane.normal) == 0:
-        # Parallel. Does not intersect
-        return None
-    else:
-        # Does intersect. Return intersection point
-        t = (dot(plane.normal, (plane.origin - line.origin))) / (dot(plane.normal, line.direction))
-        return line.origin + line.direction*t
+    # Init to not intersect.
+    intersect = False
+    intersectionDistance = None
+    intersectionPoint = None
+    if dot(line.direction, plane.normal) != 0:
+        # Does intersect.
+        intersect = True
+        intersectionDistance = (dot(plane.normal, (plane.origin - line.origin))) / (dot(plane.normal, line.direction))
+        intersectionPoint = line.origin + line.direction*intersectionDistance
+
+    return [intersect, intersectionDistance, intersectionPoint]
 
 def intersectLineTriangle(line, triangle):
     u = triangle.p1 - triangle.p0
     v = triangle.p2 - triangle.p0
     triangleNorm = cross(u, v)
-    intersectionPoint = intersectLinePlane(line, Plane(triangle.p0, triangleNorm))
-    if intersectionPoint != None:
-        #Point in triangle plan. Check if in triangle
+    [intersect, intersectionDistance, intersectionPoint] = intersectLinePlane(line, Plane(triangle.p0, triangleNorm))
+    if intersect == True:
+        #Point in triangle plane. Check if in triangle.
         uu = dot(u,u)
         uv = dot(u,v)
         vv = dot(v,v)
@@ -111,40 +121,45 @@ def intersectLineTriangle(line, triangle):
         # get and test parametric coords
         s = (uv * wv - vv * wu) / D
         if (s < 0.0 or s > 1.0):        # intersectionPoint is outside triangle
-            return None
-        t = (uv * wu - uu * wv) / D
-        if (t < 0.0 or (s + t) > 1.0):  # intersectionPoint is outside triangle
-            return None
-        return intersectionPoint # intersectionPoint is in triangle
-    else:
-        return None
+            intersect = False
+            intersectionDistance = None
+            intersectionPoint = None
+        else:
+            t = (uv * wu - uu * wv) / D
+            if (t < 0.0 or (s + t) > 1.0):  # intersectionPoint is outside triangle
+                intersect = False
+                intersectionDistance = None
+                intersectionPoint = None
+
+    return [intersect, intersectionDistance, intersectionPoint]
 
 def intersectLineSquare(line, square):
+    # Split square into two triangles and test them individually.
     t1 = Triangle(square.p0, square.p1, square.p2)
     t2 = Triangle(square.p2, square.p3, square.p0)
-    intersection = intersectLineTriangle(line, t1)
-    if intersection != None:
-        return intersection
-    else:
-        return intersectLineTriangle(line, t2)
+    [intersect, intersectionDistance, intersectionPoint] = intersectLineTriangle(line, t1) # Test the first triangle
+    if intersect == False:
+        [intersect, intersectionDistance, intersectionPoint] = intersectLineTriangle(line, t2) # Test the other triangle
+    
+    return [intersect, intersectionDistance, intersectionPoint]
 
 def intersectLineDisc(line, disc):
-    p0 = intersectLinePlane(line, Plane(disc.origin, disc.normal))
-    if p0 != None:
-        D = disc.origin - p0
-        if dot(D,D) <= disc.radius*disc.radius:
-            return p0
-        else:
-            return None
-    else:
-        return None
+    [intersect, intersectionDistance, intersectionPoint] = intersectLinePlane(line, Plane(disc.origin, disc.normal))
+    if intersect == True:
+        D = disc.origin - intersectionPoint
+        if dot(D,D) > disc.radius*disc.radius:
+            intersect = False
+            intersectionDistance = None
+            intersectionPoint = None
+
+    return [intersect, intersectionDistance, intersectionPoint]
 
 def intersectLineSimpleCollimator(line, collimator):
-    intersection = intersectLineSquare(line, collimator.leftSquare)
-    if intersection != None:
-        return intersection
-    else:
-        return intersectLineSquare(line, collimator.rightSquare)
+    [intersect, intersectionDistance, intersectionPoint] = intersectLineSquare(line, collimator.leftSquare)
+    if intersect == False:
+        [intersect, intersectionDistance, intersectionPoint] = intersectLineSquare(line, collimator.rightSquare)
+
+    return [intersect, intersectionDistance, intersectionPoint]
 
 def intersectLineSimpleRaySourceSquare(line, raySource):
     return intersectLineSquare(line, raySource.square)
@@ -154,16 +169,54 @@ def intersectLineSimpleRaySourceDisc(line, raySource):
 
 ###################### Ray tracing ######################
 
+def firstHitCollimator(scene, ray, collimators):
+    intersect = False
+    minDistance = float("inf")
+    intersectionPoint = None
+    attenuation = 1
+    for i in range(scene.collimators):
+        [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineSimpleCollimator(ray, collimators[i])
+        if intersectTmp == True and intersectionDistanceTmp < minDistance:
+            minDistance = intersectionDistanceTmp
+            intersect = True
+            intersectionPoint = intersectionPointTmp
+            attenuation = 0.2
+
+    return [intersect, minDistance, intersectionPoint, attenuation]
+
+def traceRayFirstHit(scene, ray, collimators):
+    intensity = 1;
+    [intersectCollimator, distanceCollimator, intersectionPointCollimator, attenuation] = firstHitCollimator(scene, ray, collimators)
+    while intersectCollimator: # Enable several layers of collimators
+        intensity *= attenuation
+        newRay = Line(intersectionPointCollimator+ray.direction*(sys.float_info.min*2)) # Cast a new ray just after the collimator.
+        [intersectCollimator, distanceCollimator, intersectionPointCollimator, attenuation] = firstHitCollimator(scene, newRay, collimators)
+    
+    [intersectRS, intersectionDistanceRS, intersectionPointRS] = intersectLineSimpleRaySourceDisc(ray, scene.raySource)
+    if intersectRS != None:
+        return intensity
+    else:
+        return 0
+
 def traceRay(scene, ray):
-    if intersectLineSimpleCollimator(ray, scene.collimator) != None:
+    [intersectCol, intersectionDistanceCol, intersectionPointCol] = intersectLineSimpleCollimator(ray, scene.collimator)
+    if intersectCol == True:
         return 0
     else:
-        if intersectLineSimpleRaySourceDisc(ray, scene.raySource) != None:
+        [intersectRS, intersectionDistanceRS, intersectionPointRS] = intersectLineSimpleRaySourceDisc(ray, scene.raySource)
+        if intersectRS == True:
             return 1
         else:
             return 0 # To infinity
 
-def calcFluenceLightAllAngles(scene, render, fluency_data, debug):
+def calcFluenceLightStraightUp(scene, render, fluency_data, debug):
+    for i in range(render.flx):
+        for j in range(render.fly):
+            ray = Line(float4((scene.fluencySquare.square.p0.x + i*render.xstep + render.xoffset), 
+                              (scene.fluencySquare.square.p0.y + j*render.ystep + render.yoffset), 0,0), float4(0,0,1,0))
+            fluency_data[i][j] = traceRay(scene, ray)
+
+def calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug):
     for fi in range(render.flx):
         print fi
         for fj in range(render.fly):
@@ -200,7 +253,11 @@ def calcFluenceLightAllAngles(scene, render, fluency_data, debug):
                         debug.v1 = ray.origin
                         debug.v2 = ray.direction
 
-                    fluency_data[fi][fj] += traceRay(scene, ray)*ratio
+                    #fluency_data[fi][fj] += traceRay(scene, ray)*ratio
+                    fluency_data[fi][fj] += traceRayFirstHit(scene, ray, collimators)*ratio
 
 def drawScene(scene, render, fluency_data, debug):
-    calcFluenceLightAllAngles(scene, render, fluency_data, debug)
+    calcFluenceLightStraightUp(scene, render, fluency_data, debug)
+
+def drawScene2(scene, render, collimators, fluency_data, debug):
+    calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug)
