@@ -8,7 +8,7 @@ void testIntersectLinePlane(int *passed)
 		.origin = (float4) (1.0f,1.0f,0.0f,0.0f),
 		.direction = (float4) (0.0f,0.0f,1.0f,0.0f)};
 	Plane p = {
-		.origin = (float4) (0.0f,0.0f,0.0f,0.0f),
+		.origin = (float4) (0.0f,0.0f,1.0f,0.0f),
 		.normal = (float4) (0.0f,0.0f,1.0f,0.0f)};
 
 	bool intersection;
@@ -17,7 +17,7 @@ void testIntersectLinePlane(int *passed)
 	
 	intersectLinePlane(&l,&p,&intersection,&distance,&p0);
 
-	if (all(p0 == ((float4) (1.0f,1.0f,0.0f,0.0f)))) {
+	if (all(p0 == ((float4) (1.0f,1.0f,1.0f,0.0f)))) {
 		*passed = 1;
 	}
 	else {
@@ -34,9 +34,9 @@ void testIntersectLineTriangle(int *passed, __global Debug *debug)
 		.origin = (float4) (-1.0f,-1.0f,0.0f,0.0f),
 		.direction = (float4) (0.0f,0.0f,1.0f,0.0f)};
 	Triangle t = {
-		.p0 = (float4) (0.0f,0.0f,0.0f,0.0f),
-		.p1 = (float4) (3.0f,0.0f,0.0f,0.0f),
-		.p2 = (float4) (0.0f,3.0f,0.0f,0.0f)};
+		.p0 = (float4) (0.0f,0.0f,1.0f,0.0f),
+		.p1 = (float4) (3.0f,0.0f,1.0f,0.0f),
+		.p2 = (float4) (0.0f,3.0f,1.0f,0.0f)};
 
 	bool intersection1;
 	bool intersection2;
@@ -49,11 +49,11 @@ void testIntersectLineTriangle(int *passed, __global Debug *debug)
 
 	debug->f0 = intersection1;
 	debug->f1 = intersection2;
-	debug->f2 = all(p0 == ((float4) (1.0f,1.0f,0.0f,0.0f)));
+	debug->f2 = all(p0 == ((float4) (1.0f,1.0f,1.0f,0.0f)));
 	debug->v0 = p0;
 	debug->v1 = p1;
 
-	if (all(p0 == ((float4) (1.0f,1.0f,0.0f,0.0f))) &&
+	if (all(p0 == ((float4) (1.0f,1.0f,1.0f,0.0f))) &&
 		intersection1 == true && 
 		intersection2 == false)
 	{
@@ -76,10 +76,10 @@ void testIntersectLineSquare(int *passed, __global Debug *debug)
 		.origin = (float4) (-2.0f,-2.0f,0.0f,0.0f),
 		.direction = (float4) (0.0f,0.0f,1.0f,0.0f)};
 	Square s = {
-		.p0 = (float4) (0.0f,0.0f,0.0f,0.0f),
-		.p1 = (float4) (3.0f,0.0f,0.0f,0.0f),
-		.p2 = (float4) (3.0f,3.0f,0.0f,0.0f),
-		.p3 = (float4) (0.0f,3.0f,0.0f,0.0f)};
+		.p0 = (float4) (0.0f,0.0f,1.0f,0.0f),
+		.p1 = (float4) (3.0f,0.0f,1.0f,0.0f),
+		.p2 = (float4) (3.0f,3.0f,1.0f,0.0f),
+		.p3 = (float4) (0.0f,3.0f,1.0f,0.0f)};
 
 	bool intersection1;
 	bool intersection2;
@@ -98,14 +98,14 @@ void testIntersectLineSquare(int *passed, __global Debug *debug)
 	debug->f0 = intersection1;
 	debug->f1 = intersection2;
 	debug->f2 = intersection3;
-	debug->f3 = all(p0 == ((float4) (1.0f,1.0f,0.0f,0.0f)));
-	debug->f4 = all(p1 == ((float4) (2.0f,2.0f,0.0f,0.0f)));
+	debug->f3 = all(p0 == ((float4) (1.0f,1.0f,1.0f,0.0f)));
+	debug->f4 = all(p1 == ((float4) (2.0f,2.0f,1.0f,0.0f)));
 	debug->v0 = p0;
 	debug->v1 = p1;
 	debug->v2 = p2;
 
-	if (all(p0 == ((float4) (1.0f,1.0f,0.0f,0.0f))) &&
-		all(p1 == ((float4) (2.0f,2.0f,0.0f,0.0f))) && 
+	if (all(p0 == ((float4) (1.0f,1.0f,1.0f,0.0f))) &&
+		all(p1 == ((float4) (2.0f,2.0f,1.0f,0.0f))) && 
 		intersection1 == true &&
 		intersection2 == true &&
 		intersection3 == false )
@@ -125,29 +125,38 @@ void testIntersectLineDisc(int *passed, __global Debug *debug)
 	Line l2 = { // Does not intersect
 		.origin = (float4) (3.0f,3.0f,0.0f,0.0f),
 		.direction = (float4) (0.0f,0.0f,1.0f,0.0f)};
+	Line l3 = { // Intersects disc from top
+		.origin = (float4) (1.0f,1.0f,2.0f,0.0f),
+		.direction = (float4) (0.0f,0.0f,-1.0f,0.0f)};
 	Disc d = {
-		.origin = (float4) (0.0f,0.0f,0.0f,0.0f),
+		.origin = (float4) (0.0f,0.0f,1.0f,0.0f),
 		.normal = (float4) (0.0f,0.0f,1.0f,0.0f),
 		.radius = 2.0f};
 
 	bool intersection1;
 	bool intersection2;
+	bool intersection3;
 	float distance1;
 	float distance2;
+	float distance3;
 	float4 p0;
 	float4 p1;
+	float4 p2;
 	intersectLineDisc(&l1,&d,&intersection1,&distance1,&p0);
 	intersectLineDisc(&l2,&d,&intersection2,&distance2,&p1);
+	intersectLineDisc(&l3,&d,&intersection3,&distance3,&p2);
 
 	debug->f0 = intersection1;
 	debug->f1 = intersection2;
-	debug->f2 = all(p0 == ((float4) (1.0f,1.0f,0.0f,0.0f)));
+	debug->f2 = all(p0 == ((float4) (1.0f,1.0f,1.0f,0.0f)));
 	debug->v0 = p0;
 	debug->v1 = p1;
 
-	if (all(p0 == ((float4) (1.0f,1.0f,0.0f,0.0f))) &&
+	if (all(p0 == ((float4) (1.0f,1.0f,1.0f,0.0f))) &&
+		all(p2 == ((float4) (1.0f,1.0f,1.0f,0.0f))) &&
 		intersection1 == true &&
-		intersection2 == false) {
+		intersection2 == false &&
+		intersection3 == true) {
 		*passed = 1;
 	}
 	else {

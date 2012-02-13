@@ -39,25 +39,25 @@ if openCL:
 # Build scene objects
 #rs = SimpleRaySourceSquare(Square(float4(0,3,6,0), float4(7,3,6,0), float4(7,5,6,0), float4(0,5,6,0)))
 rs = SimpleRaySourceDisc(Disc(float4(0,0,0,0), float4(0,0,1,0), 0.5))
-cls = Square(float4(-3.5,-3.5,-5,0), float4(3.5,-3.5,-5,0), float4(3.5,-0.5,-5,0), float4(-3.5,-0.5,-5,0))
-crs = Square(float4(-3.5,0.5,-5,0), float4(2.5,0.5,-5,0), float4(3.5,3.5,-5,0), float4(-3.5,3.5,-5,0))
+cls = Square(float4(-3.5,-3.5,-90,0), float4(3.5,-3.5,-90,0), float4(3.5,-0.5,-90,0), float4(-3.5,-0.5,-90,0))
+crs = Square(float4(-3.5,0.5,-90,0), float4(2.5,0.5,-90,0), float4(3.5,3.5,-90,0), float4(-3.5,3.5,-90,0))
 col = SimpleCollimator(cls, crs)
-cls2 = Square(float4(-3.5,-3.5,-6,0), float4(-0.5,-3.5,-6,0), float4(-0.5,3.5,-6,0), float4(-3.5,3.5,-6,0))
-crs2 = Square(float4(0.5,-3.5,-6,0), float4(3.5,-3.5,-6,0), float4(3.5,3.5,-6,0), float4(0.5,3.5,-6,0))
+cls2 = Square(float4(-3.5,-3.5,-99,0), float4(-0.5,-3.5,-99,0), float4(-0.5,3.5,-99,0), float4(-3.5,3.5,-99,0))
+crs2 = Square(float4(0.5,-3.5,-99,0), float4(3.5,-3.5,-99,0), float4(3.5,3.5,-99,0), float4(0.5,3.5,-99,0))
 col2 = SimpleCollimator(cls2, crs2)
-collimators = [col]
-fm = FluenceMap(Square(float4(-3.5,-3.5,-10,0), float4(3.5,-3.5,-10,0), float4(3.5,3.5,-10,0), float4(-3.5,3.5,-10,0)))
+collimators = [col, col2]
+fm = FluenceMap(Square(float4(-3.5,-3.5,-100,0), float4(3.5,-3.5,-100,0), float4(3.5,3.5,-100,0), float4(-3.5,3.5,-100,0)))
 scene = Scene(rs,col,fm)
 scene2 = Scene2(rs,len(collimators),fm)
 
 # Settings
-flx = 16
-fly = 16
+flx = 600
+fly = 600
 xstep = (0.0 + length(scene.fluenceMap.square.p1 - scene.fluenceMap.square.p0))/flx # Length in x / x resolution
 ystep = (0.0 + length(scene.fluenceMap.square.p3 - scene.fluenceMap.square.p0))/fly # Length in y / y resolution
 xoffset = xstep/2.0
 yoffset = ystep/2.0
-lsamples = 10
+lsamples = 20
 lstep = scene.raySource.disc.radius*2/(lsamples-1)
 render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep)
 if python:
@@ -82,13 +82,14 @@ if openCL:
     program = oclu.loadProgram(ctx, "RayTracing.cl")
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
+    scene2_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene2)
     render_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=render)
-    flx_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=numpy.array([flx]))
-    fly_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=numpy.array([fly]))
+    collimators_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=numpy.array(collimators, dtype='16float32,16float32'))
     fluence_dataOpenCL_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=fluence_dataOpenCL)
     debugOpenCL_buf = cl.Buffer(ctx, mf.WRITE_ONLY, sizeof(debugOpenCL))
     
-    program.drawScene2(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, debugOpenCL_buf)
+    #program.drawScene(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, debugOpenCL_buf)
+    program.drawScene2(queue, fluence_dataOpenCL.shape, None, scene2_buf, render_buf, fluence_dataOpenCL_buf, collimators_buf, debugOpenCL_buf)
     cl.enqueue_read_buffer(queue, fluence_dataOpenCL_buf, fluence_dataOpenCL)
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
     timeOpenCL = time()-time1

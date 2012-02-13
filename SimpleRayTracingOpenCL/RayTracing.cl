@@ -79,9 +79,12 @@ void intersectLinePlane(const Line *l, const Plane *p, bool *intersect, float *d
 	*distance = NAN;
 	*ip = (NAN, NAN, NAN, NAN);
 	if (dot(l->direction, p->normal) != 0.0f) { // Not parallel -> intersect.
-		*intersect = true;
-		*distance = (dot(p->normal, (p->origin - l->origin))) / (dot(p->normal, l->direction));;
-		*ip = l->origin + l->direction*(*distance);
+		float t = (dot(p->normal, (p->origin - l->origin))) / (dot(p->normal, l->direction));
+		if (t > 0) { // Plane is located in positive ray direction from the ray origin. Avoids hitting same thing it just hit.
+			*intersect = true;
+			*distance = t;
+			*ip = l->origin + l->direction*(*distance);
+		}
 	}
 }
 
@@ -180,19 +183,74 @@ void intersectSimpleRaySourceDisc(const Line *l, __constant const SimpleRaySourc
 
 // Ray tracing
 
+void firstHitCollimator(__constant const Scene2 *s, const Line *r, __constant const SimpleCollimator *collimators, bool *intersect, float *distance, float4 *ip, float *attenuation, __global Debug *debug) {
+	*intersect = false;
+	float minDistance = MAXFLOAT;
+	*ip = (NAN, NAN, NAN, NAN);
+	for (int i = 0; i < s->collimators; i++) {
+		bool intersectTmp;
+		float distanceTmp;
+		float4 ipTmp;
+		intersectSimpleCollimator(r, &(collimators[i]), &intersectTmp, &distanceTmp, &ipTmp);
+		/*if (i == 0) {
+			debug->i0 = intersectTmp;
+			debug->f0 = distanceTmp;
+			debug->v0 = collimators[i].leftSquare.p0;
+			debug->v1 = collimators[i].leftSquare.p1;
+			debug->v2 = collimators[i].leftSquare.p2;
+			debug->v3 = collimators[i].leftSquare.p3;
+		}*/
+		if (intersectTmp && (distanceTmp < minDistance)) {
+			minDistance = distanceTmp;
+            *intersect = true;
+            *ip = ipTmp;
+            *attenuation = 0.2;
+		}
+	}
+}
+
+void traceRayFirstHit(__constant const Scene2 *s, const Line *r, __constant const SimpleCollimator *collimators, float *i, __global Debug *debug) {
+	float intensity = 1;
+	bool intersectCollimator = true;
+	float distanceCollimator;
+	float4 ipCollimator;
+	float attenuation;
+	firstHitCollimator(s, r, collimators, &intersectCollimator, &distanceCollimator, &ipCollimator, &attenuation, debug);
+	while (intersectCollimator) {
+		intensity = intensity * attenuation;
+		Line newRay = {
+			.origin = ipCollimator+r->direction*0.0000000001, // Cast a new ray just after the collimator. TODO: Figure out good offset value.
+			.direction = r->direction};
+		firstHitCollimator(s, &newRay, collimators, &intersectCollimator, &distanceCollimator, &ipCollimator, &attenuation, debug);
+	}
+	//debug->f0 = intensity;
+	//debug->f1 = attenuation;
+
+	bool intersectRaySource;
+	float distanceRaySource;
+	float4 ipRaySource;
+	intersectSimpleRaySourceDisc(r, &(s->raySource), &intersectRaySource, &distanceRaySource, &ipRaySource);
+	if (intersectRaySource) {
+		*i = intensity;
+	}
+	else {
+		*i = 0; // To infinity
+	}
+}
+
 void traceRay(__constant const Scene *s, const Line *r, float *i) {
 	bool intersectCollimator;
-	float intersectionDistanceCollimator;
-	float4 intersectionPointCollimator;
-	intersectSimpleCollimator(r, &(s->collimator), &intersectCollimator, &intersectionDistanceCollimator, &intersectionPointCollimator);
+	float distanceCollimator;
+	float4 ipCollimator;
+	intersectSimpleCollimator(r, &(s->collimator), &intersectCollimator, &distanceCollimator, &ipCollimator);
 	if (intersectCollimator) {
 		*i = 0;
 	}
 	else {
 		bool intersectRaySource;
-		float intersectionDistanceRaySource;
-		float4 intersectionPointRaySource;
-		intersectSimpleRaySourceDisc(r, &(s->raySource), &intersectRaySource, &intersectionDistanceRaySource, &intersectionPointRaySource);
+		float distanceRaySource;
+		float4 ipRaySource;
+		intersectSimpleRaySourceDisc(r, &(s->raySource), &intersectRaySource, &distanceRaySource, &ipRaySource);
 		if (intersectRaySource) {
 			*i = 1;
 		}
@@ -207,7 +265,9 @@ void calculateFluenceElementLightStraightUp(__constant const Scene *scene, __con
     unsigned int j = get_global_id(1);
 
 	Line ray = {
-		.origin = (float4) ((scene->fluenceMap.square.p0.x + i*render->xstep + render->xoffset), (scene->fluenceMap.square.p0.y + j*render->ystep + render->yoffset), 0, 0), 
+		.origin = (float4) (scene->fluenceMap.square.p0.x + i*render->xstep + render->xoffset, 
+							scene->fluenceMap.square.p0.y + j*render->ystep + render->yoffset, 
+							scene->fluenceMap.square.p0.z, 0), 
 		.direction = (float4) (0,0,1,0)};
 	
 	float intensity;
@@ -215,7 +275,7 @@ void calculateFluenceElementLightStraightUp(__constant const Scene *scene, __con
 	fluence_data[i*render->flx+j] = intensity;
 }
 
-void calcFluenceElementLightAllAngles(__constant const Scene *scene, __constant const Render *render, __global float *fluence_data, __global Debug *debug){
+void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant const Render *render, __constant const *collimators, __global float *fluence_data, __global Debug *debug){
 	unsigned int i = get_global_id(0);
     unsigned int j = get_global_id(1);
 
@@ -247,7 +307,8 @@ void calcFluenceElementLightAllAngles(__constant const Scene *scene, __constant 
 				.direction = normalize(rayDirection)};
 
 			float intensity;
-			traceRay(scene, &ray, &intensity);
+			traceRayFirstHit(scene, &ray, collimators, &intensity, debug);
+			//traceRay(scene, &ray, &intensity);
 			
 			fluenceSum += intensity*ratio; // Add intensity from ray
 		}
@@ -264,10 +325,15 @@ __kernel void drawScene(__constant const Scene *scene, __constant const Render *
 	calculateFluenceElementLightStraightUp(scene, render, fluence_data, debug);
 }
 
-__kernel void drawScene2(__constant const Scene *scene, __constant const Render *render, __global float *fluence_data, __global Debug *debug)
+__kernel void drawScene2(__constant const Scene2 *scene, __constant const Render *render, __global float *fluence_data, __constant const SimpleCollimator *collimators, __global Debug *debug)
 {
 	//unsigned int i = get_global_id(0);
     //unsigned int j = get_global_id(1);
-
-	calcFluenceElementLightAllAngles(scene, render, fluence_data, debug);
+	/*debug->v0 = collimators[0].leftSquare.p0;
+	debug->v1 = collimators[0].leftSquare.p1;
+	debug->v2 = collimators[0].rightSquare.p0;
+	debug->v3 = collimators[0].rightSquare.p1;
+	debug->v4 = collimators[1].leftSquare.p2;
+	debug->v5 = collimators[1].leftSquare.p3;*/
+	calcFluenceElementLightAllAngles(scene, render, collimators, fluence_data, debug);
 }

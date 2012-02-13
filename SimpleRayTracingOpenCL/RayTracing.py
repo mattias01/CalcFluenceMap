@@ -1,6 +1,6 @@
 import numpy
 import sys
-from ctypes import Structure
+from ctypes import *
 from OpenCLTypes import *
 from math import acos, pi
 
@@ -98,9 +98,11 @@ def intersectLinePlane(line, plane):
     intersectionPoint = None
     if dot(line.direction, plane.normal) != 0:
         # Does intersect.
-        intersect = True
-        intersectionDistance = (dot(plane.normal, (plane.origin - line.origin))) / (dot(plane.normal, line.direction))
-        intersectionPoint = line.origin + line.direction*intersectionDistance
+        t = (dot(plane.normal, (plane.origin - line.origin))) / (dot(plane.normal, line.direction))
+        if t > 0: # Plane is located in positive ray direction from the ray origin. Avoids hitting same thing it just hit.
+            intersect = True
+            intersectionDistance = t
+            intersectionPoint = line.origin + line.direction*intersectionDistance
 
     return [intersect, intersectionDistance, intersectionPoint]
 
@@ -180,7 +182,7 @@ def firstHitCollimator(scene, ray, collimators):
             minDistance = intersectionDistanceTmp
             intersect = True
             intersectionPoint = intersectionPointTmp
-            attenuation = 0.2
+            attenuation = 0.5
 
     return [intersect, minDistance, intersectionPoint, attenuation]
 
@@ -189,11 +191,11 @@ def traceRayFirstHit(scene, ray, collimators):
     [intersectCollimator, distanceCollimator, intersectionPointCollimator, attenuation] = firstHitCollimator(scene, ray, collimators)
     while intersectCollimator: # Enable several layers of collimators
         intensity *= attenuation
-        newRay = Line(intersectionPointCollimator+ray.direction*(sys.float_info.min*2)) # Cast a new ray just after the collimator.
+        newRay = Line(intersectionPointCollimator+ray.direction*0.0000000001, ray.direction) # Cast a new ray just after the collimator.
         [intersectCollimator, distanceCollimator, intersectionPointCollimator, attenuation] = firstHitCollimator(scene, newRay, collimators)
     
     [intersectRS, intersectionDistanceRS, intersectionPointRS] = intersectLineSimpleRaySourceDisc(ray, scene.raySource)
-    if intersectRS != None:
+    if intersectRS == True:
         return intensity
     else:
         return 0
@@ -212,8 +214,9 @@ def traceRay(scene, ray):
 def calcFluenceLightStraightUp(scene, render, fluency_data, debug):
     for i in range(render.flx):
         for j in range(render.fly):
-            ray = Line(float4((scene.fluenceMap.square.p0.x + i*render.xstep + render.xoffset), 
-                              (scene.fluenceMap.square.p0.y + j*render.ystep + render.yoffset), 0,0), float4(0,0,1,0))
+            ray = Line(float4(scene.fluenceMap.square.p0.x + i*render.xstep + render.xoffset, 
+                              scene.fluenceMap.square.p0.y + j*render.ystep + render.yoffset, 
+                              scene.fluenceMap.square.p0.z,0), float4(0,0,1,0))
             fluency_data[i][j] = traceRay(scene, ray)
 
 def calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug):
