@@ -64,7 +64,7 @@ void testIntersectLineTriangle(int *passed, __global Debug *debug)
 	}
 }
 
-void testIntersectLineSquare(int *passed, __global Debug *debug)
+void testIntersectLineRectangle(int *passed, __global Debug *debug)
 {
 	Line l1 = { // Intersects first triangle
 		.origin = (float4) (1.0f,1.0f,0.0f,0.0f),
@@ -75,7 +75,7 @@ void testIntersectLineSquare(int *passed, __global Debug *debug)
 	Line l3 = { // Does not intersect
 		.origin = (float4) (-2.0f,-2.0f,0.0f,0.0f),
 		.direction = (float4) (0.0f,0.0f,1.0f,0.0f)};
-	Square s = {
+	Rectangle s = {
 		.p0 = (float4) (0.0f,0.0f,1.0f,0.0f),
 		.p1 = (float4) (3.0f,0.0f,1.0f,0.0f),
 		.p2 = (float4) (3.0f,3.0f,1.0f,0.0f),
@@ -91,9 +91,9 @@ void testIntersectLineSquare(int *passed, __global Debug *debug)
 	float4 p1;
 	float4 p2;
 	
-	intersectLineSquare(&l1,&s,&intersection1,&distance1,&p0);
-	intersectLineSquare(&l2,&s,&intersection2,&distance2,&p1);
-	intersectLineSquare(&l3,&s,&intersection3,&distance3,&p2);
+	intersectLineRectangle(&l1,&s,&intersection1,&distance1,&p0);
+	intersectLineRectangle(&l2,&s,&intersection2,&distance2,&p1);
+	intersectLineRectangle(&l3,&s,&intersection3,&distance3,&p2);
 
 	debug->f0 = intersection1;
 	debug->f1 = intersection2;
@@ -172,30 +172,30 @@ void testIntersectLineDisc(int *passed, __global Debug *debug)
 		.radius = (float) 3};
 	SimpleRaySourceDisc rs = {
 		.disc = rsd};
-	Square cls = {
+	Rectangle cls = {
 		.p0 = (float4) (0,0,3,0),
 		.p1 = (float4) (7,0,3,0),
 		.p2 = (float4) (7,3,3,0),
 		.p3 = (float4) (0,3,3,0)};
-	Square crs = {
+	Rectangle crs = {
 		.p0 = (float4) (0,4,3,0),
 		.p1 = (float4) (7,4,3,0),
 		.p2 = (float4) (7,7,3,0),
 		.p3 = (float4) (0,7,3,0)};
 	SimpleCollimator cm = {
-		.leftSquare = cls,
-		.rightSquare = crs};
-	Square flss = {
+		.leftRectangle = cls,
+		.rightRectangle = crs};
+	Rectangle flss = {
 		.p0 = (float4) (0,0,0,0),
 		.p1 = (float4) (7,0,0,0),
 		.p2 = (float4) (7,7,0,0),
 		.p3 = (float4) (0,7,0,0)};
-	FluencySquare fs = {
-		.square = flss};
+	FluencyRectangle fs = {
+		.rectangle = flss};
 	Scene source = {
 		.raySource = rs,
 		.collimator = cm,
-		.fluencySquare = fs};
+		.fluencyRectangle = fs};
 	Line l1 = {
 		.origin = (float4) (1.0f,1.0f,0.0f,0),
 		.direction = (float4) (0.0f,0.0f,1.0f,0)};
@@ -232,7 +232,7 @@ __kernel void test(__global int *passed, __global Debug *debug)
 		*passed = 0; return;
 	}
 
-	testIntersectLineSquare(&passedTmp, debug);
+	testIntersectLineRectangle(&passedTmp, debug);
 	if (passedTmp == 0) {
 		*passed = 0; return;
 	}

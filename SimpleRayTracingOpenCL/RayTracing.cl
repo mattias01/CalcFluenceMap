@@ -15,12 +15,12 @@ typedef struct Triangle {
 	float4 p2;
 } __attribute__((packed)) Triangle;
 
-typedef struct Square {
+typedef struct Rectangle {
 	float4 p0;
 	float4 p1;
 	float4 p2;
 	float4 p3;
-} __attribute__((packed)) Square;
+} __attribute__((packed)) Rectangle;
 
 typedef struct Disc {
 	float4 origin;
@@ -28,21 +28,21 @@ typedef struct Disc {
 	float radius;
 } __attribute__((packed)) Disc;
 
-typedef struct SimpleRaySourceSquare {
-	Square square;
-} __attribute__((packed)) SimpleRaySourceSquare;
+typedef struct SimpleRaySourceRectangle {
+	Rectangle rectangle;
+} __attribute__((packed)) SimpleRaySourceRectangle;
 
 typedef struct SimpleRaySourceDisc {
 	Disc disc;
 } __attribute__((packed)) SimpleRaySourceDisc;
 
 typedef struct SimpleCollimator {
-	Square leftSquare;
-	Square rightSquare;
+	Rectangle leftRectangle;
+	Rectangle rightRectangle;
 } __attribute__((packed)) SimpleCollimator;
 
 typedef struct FluenceMap {
-	Square square;
+	Rectangle rectangle;
 } __attribute__((packed)) FluenceMap;
 
 typedef struct Scene {
@@ -124,7 +124,7 @@ void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, fl
 	}
 }
 
-void intersectLineSquare(const Line *l, const Square *s, bool *intersect, float *distance, float4 *ip)
+void intersectLineRectangle(const Line *l, const Rectangle *s, bool *intersect, float *distance, float4 *ip)
 {
 	Triangle t1 = {
 		.p0 = s->p0,
@@ -162,18 +162,18 @@ void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float *dis
 
 void intersectSimpleCollimator(const Line *l, __constant const SimpleCollimator *c, bool *intersect, float *distance, float4 *ip)
 {
-	Square ls = c->leftSquare; // Copy from constant memory to private
-	intersectLineSquare(l, &ls, intersect, distance, ip);
+	Rectangle ls = c->leftRectangle; // Copy from constant memory to private
+	intersectLineRectangle(l, &ls, intersect, distance, ip);
 
-	if (!(*intersect)) { // Check the other square of the SimpleCollimator
-		Square rs = c->rightSquare; // Copy from constant memory to private
-		intersectLineSquare(l, &rs, intersect, distance, ip);
+	if (!(*intersect)) { // Check the other rectangle of the SimpleCollimator
+		Rectangle rs = c->rightRectangle; // Copy from constant memory to private
+		intersectLineRectangle(l, &rs, intersect, distance, ip);
 	}
 }
 
-void intersectSimpleRaySourceSquare(const Line *l, __constant const SimpleRaySourceSquare *rs, bool *intersect, float *distance, float4 *ip) {
-	Square s = rs->square; // Copy from constant memory to private
-	intersectLineSquare(l, &s, intersect, distance, ip);
+void intersectSimpleRaySourceRectangle(const Line *l, __constant const SimpleRaySourceRectangle *rs, bool *intersect, float *distance, float4 *ip) {
+	Rectangle s = rs->rectangle; // Copy from constant memory to private
+	intersectLineRectangle(l, &s, intersect, distance, ip);
 }
 
 void intersectSimpleRaySourceDisc(const Line *l, __constant const SimpleRaySourceDisc *rs, bool *intersect, float *distance, float4 *ip) {
@@ -195,10 +195,10 @@ void firstHitCollimator(__constant const Scene2 *s, const Line *r, __constant co
 		/*if (i == 0) {
 			debug->i0 = intersectTmp;
 			debug->f0 = distanceTmp;
-			debug->v0 = collimators[i].leftSquare.p0;
-			debug->v1 = collimators[i].leftSquare.p1;
-			debug->v2 = collimators[i].leftSquare.p2;
-			debug->v3 = collimators[i].leftSquare.p3;
+			debug->v0 = collimators[i].leftRectangle.p0;
+			debug->v1 = collimators[i].leftRectangle.p1;
+			debug->v2 = collimators[i].leftRectangle.p2;
+			debug->v3 = collimators[i].leftRectangle.p3;
 		}*/
 		if (intersectTmp && (distanceTmp < minDistance)) {
 			minDistance = distanceTmp;
@@ -265,9 +265,9 @@ void calculateFluenceElementLightStraightUp(__constant const Scene *scene, __con
     unsigned int j = get_global_id(1);
 
 	Line ray = {
-		.origin = (float4) (scene->fluenceMap.square.p0.x + i*render->xstep + render->xoffset, 
-							scene->fluenceMap.square.p0.y + j*render->ystep + render->yoffset, 
-							scene->fluenceMap.square.p0.z, 0), 
+		.origin = (float4) (scene->fluenceMap.rectangle.p0.x + i*render->xstep + render->xoffset, 
+							scene->fluenceMap.rectangle.p0.y + j*render->ystep + render->yoffset, 
+							scene->fluenceMap.rectangle.p0.z, 0), 
 		.direction = (float4) (0,0,1,0)};
 	
 	float intensity;
@@ -279,9 +279,9 @@ void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant
 	unsigned int i = get_global_id(0);
     unsigned int j = get_global_id(1);
 
-	float4 rayOrigin = (float4) (scene->fluenceMap.square.p0.x + i*render->xstep + render->xoffset, 
-								 scene->fluenceMap.square.p0.y + j*render->ystep + render->yoffset, 
-								 scene->fluenceMap.square.p0.z, 0);
+	float4 rayOrigin = (float4) (scene->fluenceMap.rectangle.p0.x + i*render->xstep + render->xoffset, 
+								 scene->fluenceMap.rectangle.p0.y + j*render->ystep + render->yoffset, 
+								 scene->fluenceMap.rectangle.p0.z, 0);
 
 	float4 v0 = (float4) (scene->raySource.disc.origin.x - scene->raySource.disc.radius, 
 						  scene->raySource.disc.origin.y - scene->raySource.disc.radius, 
@@ -329,11 +329,11 @@ __kernel void drawScene2(__constant const Scene2 *scene, __constant const Render
 {
 	//unsigned int i = get_global_id(0);
     //unsigned int j = get_global_id(1);
-	/*debug->v0 = collimators[0].leftSquare.p0;
-	debug->v1 = collimators[0].leftSquare.p1;
-	debug->v2 = collimators[0].rightSquare.p0;
-	debug->v3 = collimators[0].rightSquare.p1;
-	debug->v4 = collimators[1].leftSquare.p2;
-	debug->v5 = collimators[1].leftSquare.p3;*/
+	/*debug->v0 = collimators[0].leftRectangle.p0;
+	debug->v1 = collimators[0].leftRectangle.p1;
+	debug->v2 = collimators[0].rightRectangle.p0;
+	debug->v3 = collimators[0].rightRectangle.p1;
+	debug->v4 = collimators[1].leftRectangle.p2;
+	debug->v5 = collimators[1].leftRectangle.p3;*/
 	calcFluenceElementLightAllAngles(scene, render, collimators, fluence_data, debug);
 }

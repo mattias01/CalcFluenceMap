@@ -20,16 +20,16 @@ class Triangle(Structure):
                 ("p1", float4),
                 ("p2", float4)]
 
-# Square class
+# Rectangle class
 # Points assigned anti-clockwise
-class Square(Structure):
+class Rectangle(Structure):
     _fields_ = [("p0", float4),
                 ("p1", float4),
                 ("p2", float4),
                 ("p3", float4)]
 
 # Utility function for matplotlib to create path.
-def Square2dVertexArray(s):
+def Rectangle2dVertexArray(s):
     return [[s.p0.y, s.p0.x], [s.p1.y, s.p1.x], [s.p2.y, s.p2.x], [s.p3.y, s.p3.x], [s.p0.y, s.p0.x]]
 
 class Disc(Structure):
@@ -37,18 +37,18 @@ class Disc(Structure):
                 ("normal", float4),
                 ("radius", c_float)]
 
-class SimpleRaySourceSquare(Structure):
-    _fields_ = [("square", Square)]
+class SimpleRaySourceRectangle(Structure):
+    _fields_ = [("rectangle", Rectangle)]
 
 class SimpleRaySourceDisc(Structure):
     _fields_ = [("disc", Disc)]
 
 class SimpleCollimator(Structure):
-    _fields_ = [("leftSquare", Square),
-                ("rightSquare", Square)]
+    _fields_ = [("leftRectangle", Rectangle),
+                ("rightRectangle", Rectangle)]
 
 class FluenceMap(Structure):
-    _fields_ = [("square", Square)]
+    _fields_ = [("rectangle", Rectangle)]
 
 class Scene(Structure):
     _fields_ = [("raySource", SimpleRaySourceDisc),
@@ -135,10 +135,10 @@ def intersectLineTriangle(line, triangle):
 
     return [intersect, intersectionDistance, intersectionPoint]
 
-def intersectLineSquare(line, square):
-    # Split square into two triangles and test them individually.
-    t1 = Triangle(square.p0, square.p1, square.p2)
-    t2 = Triangle(square.p2, square.p3, square.p0)
+def intersectLineRectangle(line, rectangle):
+    # Split rectangle into two triangles and test them individually.
+    t1 = Triangle(rectangle.p0, rectangle.p1, rectangle.p2)
+    t2 = Triangle(rectangle.p2, rectangle.p3, rectangle.p0)
     [intersect, intersectionDistance, intersectionPoint] = intersectLineTriangle(line, t1) # Test the first triangle
     if intersect == False:
         [intersect, intersectionDistance, intersectionPoint] = intersectLineTriangle(line, t2) # Test the other triangle
@@ -157,14 +157,14 @@ def intersectLineDisc(line, disc):
     return [intersect, intersectionDistance, intersectionPoint]
 
 def intersectLineSimpleCollimator(line, collimator):
-    [intersect, intersectionDistance, intersectionPoint] = intersectLineSquare(line, collimator.leftSquare)
+    [intersect, intersectionDistance, intersectionPoint] = intersectLineRectangle(line, collimator.leftRectangle)
     if intersect == False:
-        [intersect, intersectionDistance, intersectionPoint] = intersectLineSquare(line, collimator.rightSquare)
+        [intersect, intersectionDistance, intersectionPoint] = intersectLineRectangle(line, collimator.rightRectangle)
 
     return [intersect, intersectionDistance, intersectionPoint]
 
-def intersectLineSimpleRaySourceSquare(line, raySource):
-    return intersectLineSquare(line, raySource.square)
+def intersectLineSimpleRaySourceRectangle(line, raySource):
+    return intersectLineRectangle(line, raySource.rectangle)
 
 def intersectLineSimpleRaySourceDisc(line, raySource):
     return intersectLineDisc(line, raySource.disc)
@@ -214,18 +214,18 @@ def traceRay(scene, ray):
 def calcFluenceLightStraightUp(scene, render, fluency_data, debug):
     for i in range(render.flx):
         for j in range(render.fly):
-            ray = Line(float4(scene.fluenceMap.square.p0.x + i*render.xstep + render.xoffset, 
-                              scene.fluenceMap.square.p0.y + j*render.ystep + render.yoffset, 
-                              scene.fluenceMap.square.p0.z,0), float4(0,0,1,0))
+            ray = Line(float4(scene.fluenceMap.rectangle.p0.x + i*render.xstep + render.xoffset, 
+                              scene.fluenceMap.rectangle.p0.y + j*render.ystep + render.yoffset, 
+                              scene.fluenceMap.rectangle.p0.z,0), float4(0,0,1,0))
             fluency_data[i][j] = traceRay(scene, ray)
 
 def calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug):
     for fi in range(render.flx):
         print fi
         for fj in range(render.fly):
-            rayOrigin = float4(scene.fluenceMap.square.p0.x + fi*render.xstep + render.xoffset, 
-                               scene.fluenceMap.square.p0.y + fj*render.ystep + render.yoffset,
-                               scene.fluenceMap.square.p0.z, 0)
+            rayOrigin = float4(scene.fluenceMap.rectangle.p0.x + fi*render.xstep + render.xoffset, 
+                               scene.fluenceMap.rectangle.p0.y + fj*render.ystep + render.yoffset,
+                               scene.fluenceMap.rectangle.p0.z, 0)
 
             v0 = float4(scene.raySource.disc.origin.x - scene.raySource.disc.radius, 
                         scene.raySource.disc.origin.y - scene.raySource.disc.radius, 

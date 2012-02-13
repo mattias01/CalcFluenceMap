@@ -14,16 +14,16 @@ def testIntersectLineTriangle():
         print "intersectLineTriangle FAILED"
         return False
 
-def testIntersectLineSquare():
+def testIntersectLineRectangle():
     l1 = Line(float4(1,1,0,0), float4(0,0,1,0))
     l2 = Line(float4(2,2,0,0), float4(0,0,1,0))
-    s = Square(float4(0,0,1,0), float4(3,0,1,0), float4(0,3,1,0), float4(3,3,1,0))
-    [intersect1, intersectionDistance1, intersectionPoint1] = intersectLineSquare(l1,s)
-    [intersect2, intersectionDistance2, intersectionPoint2] = intersectLineSquare(l2,s)
+    s = Rectangle(float4(0,0,1,0), float4(3,0,1,0), float4(0,3,1,0), float4(3,3,1,0))
+    [intersect1, intersectionDistance1, intersectionPoint1] = intersectLineRectangle(l1,s)
+    [intersect2, intersectionDistance2, intersectionPoint2] = intersectLineRectangle(l2,s)
     if intersect1 and (intersectionPoint1 == float4(1,1,1,0)) and intersect2 and (intersectionPoint2 == float4(2,2,1,0)):
         return True
     else:
-        print "intersectLineSquare FAILED"
+        print "intersectLineRectangle FAILED"
         return False
 
 def testIntersectLineDisc():
@@ -40,7 +40,7 @@ def testIntersectLineDisc():
 
 def testPython():
     passed = False
-    if testIntersectLineTriangle() and testIntersectLineSquare() and testIntersectLineDisc():
+    if testIntersectLineTriangle() and testIntersectLineRectangle() and testIntersectLineDisc():
         passed = True
     else:
         passed = False

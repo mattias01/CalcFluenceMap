@@ -15,11 +15,11 @@ rt.test()
 #queue = cl.CommandQueue(ctx)
 
 # Build scene objects
-rs = rt.SimpleRaySource(rt.Square(numpy.array([0,3,6]), numpy.array([7,3,6]), numpy.array([7,5,6]), numpy.array([0,5,6])))
-cls = rt.Square(numpy.array([0,0,3]), numpy.array([7,0,3]), numpy.array([7,3,3]), numpy.array([0,3,3]))
-crs = rt.Square(numpy.array([0,4,3]), numpy.array([6,4,3]), numpy.array([7,7,3]), numpy.array([0,7,3]))
+rs = rt.SimpleRaySource(rt.Rectangle(numpy.array([0,3,6]), numpy.array([7,3,6]), numpy.array([7,5,6]), numpy.array([0,5,6])))
+cls = rt.Rectangle(numpy.array([0,0,3]), numpy.array([7,0,3]), numpy.array([7,3,3]), numpy.array([0,3,3]))
+crs = rt.Rectangle(numpy.array([0,4,3]), numpy.array([6,4,3]), numpy.array([7,7,3]), numpy.array([0,7,3]))
 cm = rt.SimpleCollimator(cls, crs)
-fs = rt.FluencySquare(rt.Square(numpy.array([0,0,0]), numpy.array([7,0,0]), numpy.array([7,7,0]), numpy.array([0,7,0])))
+fs = rt.FluencySquare(rt.Rectangle(numpy.array([0,0,0]), numpy.array([7,0,0]), numpy.array([7,7,0]), numpy.array([0,7,0])))
 scene = rt.Scene(rs,cm, fs)
 
 # Settings
