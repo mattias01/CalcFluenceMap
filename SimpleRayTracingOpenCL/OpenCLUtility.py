@@ -14,6 +14,3 @@ class OpenCLUtility(object):
         return cl.Program(context, fstr).build()
 
     loadProgram = staticmethod(loadProgram)
-
-
-

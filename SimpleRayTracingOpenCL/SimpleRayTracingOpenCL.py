@@ -1,16 +1,17 @@
-import pyopencl as cl
-from time import time
-from OpenCLUtility import OpenCLUtility as oclu
-from OpenCLTypes import *
-from RayTracing import *
-import matplotlib.pyplot as plt
+from ctypes import sizeof
 import matplotlib.cm as cm
-from matplotlib.path import Path
 from matplotlib.contour import ContourSet
 import matplotlib.patches as patches
+from matplotlib.path import Path
+import matplotlib.pyplot as plt
+import pyopencl as cl
 from sys import getsizeof
-from Tests import testPython, testOpenCL
-from ctypes import sizeof
+from time import time
+
+from OpenCLUtility import OpenCLUtility as oclu
+from OpenCLTypes import *
+from Python.RayTracing import *
+from Test import *
 
 print 'Start SimpleRayTracingOpenCL'
 
@@ -79,7 +80,7 @@ if python:
 if openCL:
     time1 = time()
     debugOpenCL = Debug()
-    program = oclu.loadProgram(ctx, "RayTracing.cl")
+    program = oclu.loadProgram(ctx, "OpenCL/RayTracing.cl")
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
     scene2_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene2)

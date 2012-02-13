@@ -1,4 +1,5 @@
-#include "RayTracing.cl"
+#include "OpenCL/Misc.cl"
+#include "OpenCL/Primitives.cl"
 
 // Tests
 

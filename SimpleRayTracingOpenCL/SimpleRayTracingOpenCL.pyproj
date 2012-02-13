@@ -24,13 +24,24 @@
   <ItemGroup>
     <Compile Include="OpenCLTypes.py" />
     <Compile Include="OpenCLUtility.py" />
-    <Compile Include="RayTracing.py" />
+    <Compile Include="Python\Collimator.py" />
+    <Compile Include="Python\Primitives.py" />
+    <Compile Include="Python\RayTracing.py" />
+    <Compile Include="Python\RayTracingTests.py" />
+    <Compile Include="Python\__init__.py" />
     <Compile Include="SimpleRayTracingOpenCL.py" />
-    <Compile Include="Tests.py" />
+    <Compile Include="Test.py" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="RayTracing.cl" />
-    <Content Include="RayTracingTests.cl" />
+    <Content Include="OpenCL\Collimator.cl" />
+    <Content Include="OpenCL\Misc.cl" />
+    <Content Include="OpenCL\Primitives.cl" />
+    <Content Include="OpenCL\RayTracing.cl" />
+    <Content Include="OpenCL\RayTracingTests.cl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="OpenCL" />
+    <Folder Include="Python" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
 </Project>
