@@ -31,6 +31,11 @@ typedef struct Disc {
 	float radius;
 } __attribute__((packed)) Disc;
 
+typedef struct Box {
+	float4 min;
+	float4 max;
+} __attribute__((packed)) Box;
+
 // Intersection calculations
 void intersectLinePlane(const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip)
 {
@@ -118,6 +123,64 @@ void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float *dis
 			*ip = (NAN, NAN, NAN, NAN);
 		}
 	}
+}
+
+// Relies on IEEE 754 floating point arithmetic (div by 0 -> inf).
+void intersectLineBox(const Line *l, const Box *b, bool *intersect, float *distance, float4 *ip)
+{
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	if (l->direction.x >= 0) {
+        tmin = (b->min.x - l->origin.x) / l->direction.x;
+        tmax = (b->max.x - l->origin.x) / l->direction.x;
+	}
+    else {
+        tmin = (b->max.x - l->origin.x) / l->direction.x;
+        tmax = (b->min.x - l->origin.x) / l->direction.x;
+	}
+    if (l->direction.y >= 0) {
+        tymin = (b->min.y - l->origin.y) / l->direction.y;
+        tymax = (b->max.y - l->origin.y) / l->direction.y;
+	}
+    else {
+        tymin = (b->max.y - l->origin.y) / l->direction.y;
+        tymax = (b->min.y - l->origin.y) / l->direction.y;
+	}
+    if ((tmin > tymax) || (tymin > tmax)) {
+		*intersect = false;
+		*distance = NAN;
+		*ip = (NAN, NAN, NAN, NAN);
+        return;
+	}
+    if (tymin > tmin) {
+        tmin = tymin;
+	}
+    if (tymax < tmax) {
+       tmax = tymax;
+	}
+    if (l->direction.z >= 0) {
+        tzmin = (b->min.z - l->origin.z) / l->direction.z;
+        tzmax = (b->max.z - l->origin.z) / l->direction.z;
+	}
+    else {
+        tzmin = (b->max.z - l->origin.z) / l->direction.z;
+        tzmax = (b->min.z - l->origin.z) / l->direction.z;
+	}
+    if ((tmin > tzmax) || (tzmin > tmax)) {
+        *intersect = false;
+		*distance = NAN;
+		*ip = (NAN, NAN, NAN, NAN);
+        return;
+	}
+    if (tzmin > tmin) {
+        tmin = tzmin;
+	}
+    if (tzmax < tmax) {
+        tmax = tzmax;
+	}
+	*intersect = true;
+	*distance = tmin;
+	*ip = l->origin + l->direction*tmin;
+	// Could give the outgoing distance (tmax) and point here as well.
 }
 
 #endif //__Primitives__

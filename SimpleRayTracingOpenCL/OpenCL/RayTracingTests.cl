@@ -165,6 +165,44 @@ void testIntersectLineDisc(int *passed, __global Debug *debug)
 	}
 }
 
+void testIntersectLineBox(int *passed, __global Debug *debug)
+{
+	Line l1 = { // Intersects disc
+		.origin = (float4) (1.0f,1.0f,0.0f,0.0f),
+		.direction = (float4) (0.0f,0.0f,1.0f,0.0f)};
+	Line l2 = { // Does not intersect
+		.origin = (float4) (3.0f,3.0f,0.0f,0.0f),
+		.direction = (float4) (0.0f,0.0f,1.0f,0.0f)};
+	Box b = {
+		.min = (float4) (0.0f,0.0f,0.0f,0.0f),
+		.max = (float4) (2.0f,2.0f,2.0f,0.0f)};
+
+	bool intersection1;
+	bool intersection2;
+	float distance1;
+	float distance2;
+	float4 p0;
+	float4 p1;
+	intersectLineBox(&l1,&b,&intersection1,&distance1,&p0);
+	intersectLineBox(&l2,&b,&intersection2,&distance2,&p1);
+
+	debug->f0 = intersection1;
+	debug->f1 = intersection2;
+	debug->f2 = all(p0 == ((float4) (1.0f,1.0f,0.0f,0.0f)));
+	debug->v0 = p0;
+	debug->v1 = p1;
+
+	if (all(p0 == ((float4) (1.0f,1.0f,0.0f,0.0f))) &&
+		distance1 == 0 &&
+		intersection1 == true &&
+		intersection2 == false) {
+		*passed = 1;
+	}
+	else {
+		*passed = 0;
+	}
+}
+
 /*void testTraceRay(int *passed, __global Debug *debug) Does not work. Scene not in __constant.
 {
 	Disc rsd = {
@@ -243,10 +281,15 @@ __kernel void test(__global int *passed, __global Debug *debug)
 		*passed = 0; return;
 	}
 
-	//testTraceRay(&passedTmp, debug);
+	testIntersectLineBox(&passedTmp, debug);
 	if (passedTmp == 0) {
 		*passed = 0; return;
 	}
+
+	//testTraceRay(&passedTmp, debug);
+	//if (passedTmp == 0) {
+	//	*passed = 0; return;
+	//}
 					
 	*passed = 1; // Return result
 }

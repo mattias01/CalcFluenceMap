@@ -4,6 +4,7 @@ from matplotlib.contour import ContourSet
 import matplotlib.patches as patches
 from matplotlib.path import Path
 import matplotlib.pyplot as plt
+import numpy as np
 import pyopencl as cl
 from sys import getsizeof
 from time import time
@@ -33,6 +34,7 @@ if openCL:
 
 # Run tests
 if python:
+    np.seterr(divide='ignore') # Disable warning on division by zero.
     testPython()
 if openCL:
     testOpenCL(ctx, queue)
