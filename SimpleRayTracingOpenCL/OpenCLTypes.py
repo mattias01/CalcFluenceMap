@@ -17,7 +17,7 @@ class float4(Structure):
     def __mul__(self, other):
         if type(other) == type(self):
             return float4(self.x * other.x, self.y * other.y, self.z * other.z, self.w * other.w)
-        elif type(other) == float:
+        elif type(other) == float or type(other) == int:
             return float4(self.x * other, self.y * other, self.z * other, self.w * other)
         else: #Undefined
             return None
@@ -53,5 +53,18 @@ def length(v):
 
 def normalize(v):
     return v/length(v)
+
+def perpendicular(v):
+    x = 0
+    y = 0
+    z = 0
+    m = min([v.x, v.y, v.z])
+    if v.x == m:
+        x = 1
+    elif v.y == m:
+        y = 1
+    elif v.z == m:
+        z = 1
+    return cross(v, float4(x,y,z,0))
 
 
