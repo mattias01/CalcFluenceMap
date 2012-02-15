@@ -1,14 +1,14 @@
 import pyopencl as cl
 from OpenCLUtility import OpenCLUtility as oclu
 from OpenCLTypes import *
-from Python.RayTracing import *
-from Python.RayTracingTests import *
+from Python.CollimatorTest import collimatorTest
+from Python.PrimitivesTest import primitivesTest
 
 ###################### Test Python ######################
 
 def testPython():
     passed = False
-    if testprojectPointOntoPlane() and testIntersectLineTriangle() and testIntersectLineRectangle() and testIntersectLineDisc() and testIntersectLineBox():
+    if collimatorTest() and primitivesTest():
         passed = True
     else:
         passed = False

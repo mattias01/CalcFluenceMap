@@ -51,11 +51,25 @@ def testIntersectLineDisc():
 def testIntersectLineBox():
     l1 = Line(float4(1,1,0,0), float4(0,0,1,0))
     l2 = Line(float4(3,3,0,0), float4(0,0,1,0))
-    b = Box(float4(0,0,0,0), float4(2,2,2,0))
-    [intersect1, intersectionDistance1, intersectionPoint1] = intersectLineBox(l1, b)
-    [intersect2, intersectionDistance2, intersectionPoint2] = intersectLineBox(l2, b)
+    b1 = Box(float4(0,0,0,0), float4(2,2,2,0))
+    [intersect1, intersectionDistance1, intersectionPoint1] = intersectLineBox(l1, b1)
+    [intersect2, intersectionDistance2, intersectionPoint2] = intersectLineBox(l2, b1)
     if intersect1 and (intersectionDistance1 == 0) and (intersectionPoint1 == float4(1,1,0,0)) and not intersect2:
         return True
     else:
         print "intersectLineBox FAILED"
         return False
+
+def primitivesTest():
+    passed = False
+    if testprojectPointOntoPlane() and testIntersectLineTriangle() and testIntersectLineRectangle() and testIntersectLineDisc() and testIntersectLineBox():
+        passed = True
+    else:
+        passed = False
+
+    if passed == True:
+        print "Python primitives unit tests PASSED"
+    else:
+        print "Python primitives unit tests FAILED"
+
+    return passed

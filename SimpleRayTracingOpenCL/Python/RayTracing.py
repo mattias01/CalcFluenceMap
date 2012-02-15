@@ -72,12 +72,13 @@ def firstHitCollimator(scene, ray, collimators):
     intersectionPoint = None
     attenuation = 1
     for i in range(scene.collimators):
-        [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineSimpleCollimator(ray, collimators[i])
+        #[intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineSimpleCollimator(ray, collimators[i])
+        [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineFlatCollimator(ray, collimators[i])
         if intersectTmp == True and intersectionDistanceTmp < minDistance:
             minDistance = intersectionDistanceTmp
             intersect = True
             intersectionPoint = intersectionPointTmp
-            attenuation = 0.5
+            attenuation = collimators[i].attenuation
 
     return [intersect, minDistance, intersectionPoint, attenuation]
 

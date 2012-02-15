@@ -25,9 +25,10 @@
     <Compile Include="OpenCLTypes.py" />
     <Compile Include="OpenCLUtility.py" />
     <Compile Include="Python\Collimator.py" />
+    <Compile Include="Python\CollimatorTest.py" />
     <Compile Include="Python\Primitives.py" />
+    <Compile Include="Python\PrimitivesTest.py" />
     <Compile Include="Python\RayTracing.py" />
-    <Compile Include="Python\RayTracingTests.py" />
     <Compile Include="Python\__init__.py" />
     <Compile Include="SimpleRayTracingOpenCL.py" />
     <Compile Include="Test.py" />
