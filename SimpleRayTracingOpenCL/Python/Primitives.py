@@ -40,6 +40,13 @@ class Box(Structure):
     _fields_ = [("min", float4),
                 ("max", float4)]
 
+###################### Projection calculations ######################
+def projectPointOntoPlane(p0, plane):
+    sn = -dot(plane.normal, (p0 - plane.origin));
+    sd = dot(plane.normal, plane.normal);
+    sb = sn / sd;
+    return p0 + plane.normal * sb
+
 ###################### Intersection calculations ######################
 def intersectLinePlane(line, plane):
     # Init to not intersect.

@@ -8,7 +8,7 @@ from Python.RayTracingTests import *
 
 def testPython():
     passed = False
-    if testIntersectLineTriangle() and testIntersectLineRectangle() and testIntersectLineDisc() and testIntersectLineBox():
+    if testprojectPointOntoPlane() and testIntersectLineTriangle() and testIntersectLineRectangle() and testIntersectLineDisc() and testIntersectLineBox():
         passed = True
     else:
         passed = False

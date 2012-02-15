@@ -1,6 +1,19 @@
 from Python.Primitives import *
 from Python.RayTracing import *
 
+def testprojectPointOntoPlane():
+    p0 = float4(0,0,1,0)
+    p1 = float4(1,1,0,0)
+    plane1 = Plane(float4(0,0,0,0), float4(0,0,1,0))
+    plane2 = Plane(float4(0,0,0,0), float4(1,1,0,0))
+    pp1 = projectPointOntoPlane(p0, plane1)
+    pp2 = projectPointOntoPlane(p1, plane2)
+    if pp1 == float4(0,0,0,0) and pp2 == float4(0,0,0,0):
+        return True
+    else:
+        print "projectPointOntoPlane FAILED"
+        return False
+
 def testIntersectLineTriangle():
     l = Line(float4(1,1,0,0), float4(0,0,1,0))
     t = Triangle(float4(0,0,1,0), float4(3,0,1,0), float4(0,3,1,0))
