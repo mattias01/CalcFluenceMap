@@ -48,7 +48,7 @@ void intersectSimpleRaySourceDisc(const Line *l, __constant const SimpleRaySourc
 
 // Ray tracing
 
-void firstHitCollimator(__constant const Scene2 *s, const Line *r, __constant const SimpleCollimator *collimators, bool *intersect, float *distance, float4 *ip, float *attenuation, __global Debug *debug) {
+void firstHitCollimator(__constant const Scene2 *s, const Line *r, __constant const FlatCollimator40 *collimators, bool *intersect, float *distance, float4 *ip, float *attenuation, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
 	*ip = (NAN, NAN, NAN, NAN);
@@ -56,25 +56,20 @@ void firstHitCollimator(__constant const Scene2 *s, const Line *r, __constant co
 		bool intersectTmp;
 		float distanceTmp;
 		float4 ipTmp;
-		intersectSimpleCollimator(r, &(collimators[i]), &intersectTmp, &distanceTmp, &ipTmp);
-		/*if (i == 0) {
-			debug->i0 = intersectTmp;
-			debug->f0 = distanceTmp;
-			debug->v0 = collimators[i].leftRectangle.p0;
-			debug->v1 = collimators[i].leftRectangle.p1;
-			debug->v2 = collimators[i].leftRectangle.p2;
-			debug->v3 = collimators[i].leftRectangle.p3;
-		}*/
+		//intersectSimpleCollimator(r, &(collimators[i]), &intersectTmp, &distanceTmp, &ipTmp);
+		FlatCollimator40 fc = collimators[i];
+		intersectLineFlatCollimator(r, &fc, &intersectTmp, &distanceTmp, &ipTmp);
+
 		if (intersectTmp && (distanceTmp < minDistance)) {
 			minDistance = distanceTmp;
             *intersect = true;
             *ip = ipTmp;
-            *attenuation = 0.2;
+            *attenuation = fc.attenuation;
 		}
 	}
 }
 
-void traceRayFirstHit(__constant const Scene2 *s, const Line *r, __constant const SimpleCollimator *collimators, float *i, __global Debug *debug) {
+void traceRayFirstHit(__constant const Scene2 *s, const Line *r, __constant const FlatCollimator40 *collimators, float *i, __global Debug *debug) {
 	float intensity = 1;
 	bool intersectCollimator = true;
 	float distanceCollimator;
@@ -88,8 +83,6 @@ void traceRayFirstHit(__constant const Scene2 *s, const Line *r, __constant cons
 			.direction = r->direction};
 		firstHitCollimator(s, &newRay, collimators, &intersectCollimator, &distanceCollimator, &ipCollimator, &attenuation, debug);
 	}
-	//debug->f0 = intensity;
-	//debug->f1 = attenuation;
 
 	bool intersectRaySource;
 	float distanceRaySource;
@@ -140,7 +133,7 @@ void calculateFluenceElementLightStraightUp(__constant const Scene *scene, __con
 	fluence_data[i*render->flx+j] = intensity;
 }
 
-void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant const Render *render, __constant const *collimators, __global float *fluence_data, __global Debug *debug){
+void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant const Render *render, __constant const FlatCollimator40 *collimators, __global float *fluence_data, __global Debug *debug){
 	unsigned int i = get_global_id(0);
     unsigned int j = get_global_id(1);
 
@@ -190,15 +183,10 @@ __kernel void drawScene(__constant const Scene *scene, __constant const Render *
 	calculateFluenceElementLightStraightUp(scene, render, fluence_data, debug);
 }
 
-__kernel void drawScene2(__constant const Scene2 *scene, __constant const Render *render, __global float *fluence_data, __constant const SimpleCollimator *collimators, __global Debug *debug)
+__kernel void drawScene2(__constant const Scene2 *scene, __constant const Render *render, __global float *fluence_data, __constant const FlatCollimator40 *collimators, __global Debug *debug)
 {
 	//unsigned int i = get_global_id(0);
     //unsigned int j = get_global_id(1);
-	/*debug->v0 = collimators[0].leftRectangle.p0;
-	debug->v1 = collimators[0].leftRectangle.p1;
-	debug->v2 = collimators[0].rightRectangle.p0;
-	debug->v3 = collimators[0].rightRectangle.p1;
-	debug->v4 = collimators[1].leftRectangle.p2;
-	debug->v5 = collimators[1].leftRectangle.p3;*/
+
 	calcFluenceElementLightAllAngles(scene, render, collimators, fluence_data, debug);
 }
