@@ -26,6 +26,7 @@
     <Compile Include="OpenCLUtility.py" />
     <Compile Include="Python\Collimator.py" />
     <Compile Include="Python\CollimatorTest.py" />
+    <Compile Include="Python\Misc.py" />
     <Compile Include="Python\Primitives.py" />
     <Compile Include="Python\PrimitivesTest.py" />
     <Compile Include="Python\RayTracing.py" />
@@ -35,8 +36,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="OpenCL\Collimator.cl" />
+    <Content Include="OpenCL\CollimatorTest.cl" />
     <Content Include="OpenCL\Misc.cl" />
     <Content Include="OpenCL\Primitives.cl" />
+    <Content Include="OpenCL\PrimitivesTest.cl" />
     <Content Include="OpenCL\RayTracing.cl" />
     <Content Include="OpenCL\RayTracingTests.cl" />
   </ItemGroup>
