@@ -9,44 +9,44 @@ class SimpleCollimator(Structure):
                 ("rightRectangle", Rectangle)]
 
 class FlatCollimator2(Structure):
-    __fields__ = [("boundingBox", Box),
-                  ("position", float4),
-                  ("xdir", float4),
-                  ("ydir", float4),
-                  ("attenuation", c_float),
-                  ("numberOfLeaves", c_int),
-                  ("leaves", Rectangle * 2)]
+    _fields_ = [("boundingBox", Box),
+                ("position", float4),
+                ("xdir", float4),
+                ("ydir", float4),
+                ("attenuation", c_float),
+                ("numberOfLeaves", c_int),
+                ("leaves", Rectangle * 2)]
 
 class FlatCollimator40(Structure):
-   __fields__ = [("boundingBox", Box),
-                 ("position", float4),
-                 ("xdir", float4),
-                 ("ydir", float4),
-                 ("attenuation", c_float),
-                 ("numberOfLeaves", c_int),
-                 ("leaves", Rectangle * 40)]
+   _fields_ = [("boundingBox", Box),
+               ("position", float4),
+               ("xdir", float4),
+               ("ydir", float4),
+               ("attenuation", c_float),
+               ("numberOfLeaves", c_int),
+               ("leaves", Rectangle * 40)]
 
 class Collimator2(Structure):
-    __fields__ = [("boundingBox", Box),
-                  ("position", float4),
-                  ("xdir", float4),
-                  ("ydir", float4),
-                  ("attenuation", c_float),
-                  ("height", c_float),
-                  ("leafWidth", c_float),
-                  ("numberOfLeaves", c_int),
-                  ("leafPositions", c_float * 2)]
+    _fields_ = [("boundingBox", Box),
+                ("position", float4),
+                ("xdir", float4),
+                ("ydir", float4),
+                ("attenuation", c_float),
+                ("height", c_float),
+                ("leafWidth", c_float),
+                ("numberOfLeaves", c_int),
+                ("leafPositions", c_float * 2)]
 
 class Collimator40(Structure):
-    __fields__ = [("boundingBox", Box),
-                  ("position", float4),
-                  ("xdir", float4),
-                  ("ydir", float4),
-                  ("attenuation", c_float),
-                  ("height", c_float),
-                  ("leafWidth", c_float),
-                  ("numberOfLeaves", c_int),
-                  ("leafPositions", c_float * 40)]
+    _fields_ = [("boundingBox", Box),
+                ("position", float4),
+                ("xdir", float4),
+                ("ydir", float4),
+                ("attenuation", c_float),
+                ("height", c_float),
+                ("leafWidth", c_float),
+                ("numberOfLeaves", c_int),
+                ("leafPositions", c_float * 40)]
 
 ###################### Collimator generation ######################
 
