@@ -1,7 +1,9 @@
+import numpy
 import pyopencl as cl
 from OpenCLUtility import OpenCLUtility as oclu
 from OpenCLTypes import *
 from Python.CollimatorTest import collimatorTest
+from Python.Misc import *
 from Python.PrimitivesTest import primitivesTest
 
 ###################### Test Python ######################
