@@ -42,9 +42,9 @@ class Box(Structure):
 
 ###################### Projection calculations ######################
 def projectPointOntoPlane(p0, plane):
-    sn = -dot(plane.normal, (p0 - plane.origin));
-    sd = dot(plane.normal, plane.normal);
-    sb = sn / sd;
+    sn = -dot(plane.normal, (p0 - plane.origin))
+    sd = dot(plane.normal, plane.normal)
+    sb = sn / sd
     return p0 + plane.normal * sb
 
 ###################### Intersection calculations ######################
