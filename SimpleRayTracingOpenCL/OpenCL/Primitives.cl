@@ -36,6 +36,15 @@ typedef struct Box {
 	float4 max;
 } __attribute__((packed)) Box;
 
+// Projection calculations
+
+void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint) {
+    float sn = -dot(plane->normal, (*p0 - plane->origin));
+    float sd = dot(plane->normal, plane->normal);
+    float sb = sn / sd;
+    *resultPoint = *p0 + plane->normal * sb;
+}
+
 // Intersection calculations
 void intersectLinePlane(const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip)
 {
