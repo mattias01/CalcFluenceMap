@@ -51,49 +51,51 @@ rs = SimpleRaySourceDisc(Disc(float4(0,0,0,0), float4(0,0,1,0), 1))
 #col2 = SimpleCollimator(cls2, crs2)
 #collimators = [col, col2]
 
-col1 = Collimator40()
-col1.position = float4(-30,-30,-99,0)
+col1 = Collimator()
+col1.position = float4(-20,-20,-70,0)
 col1.xdir = float4(0,1,0,0)
 col1.ydir = float4(1,0,0,0)
-col1.attenuation = 0.6
+col1.attenuation = 0.7
 col1.height = 8.2
-col1.leafWidth = 60/40.0
+col1.leafWidth = 1
 col1.numberOfLeaves = 40
-col1.leafPositions = tuple([10*x for x in (3,2.9,2.8,2.7,2.6,2.5,2.4,2.3,2.2,2.1,2.0,1.9,1.8,1.7,1.6,1.5,1.4,1.3,2,3,2,3,3,2,1,2,1,2,1,1,3,3,1,3,3,2,1,2,3,2)])
+col1.leafPositions = (10,19,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,20,10,20,10,10,20,10,20,10,20,10,10,10,10,10,10,10,20,10,20,10,20)
 col1.boundingBox = calculateCollimatorBoundingBox(col1)
-fc1 = createFlatCollimator40(col1)
+#col1.flatCollimator = createFlatCollimator(col1)
 
-col2 = Collimator40()
-col2.position = float4(30,30,-99,0)
+col2 = Collimator()
+col2.position = float4(20,20,-70,0)
 col2.xdir = float4(0,-1,0,0)
 col2.ydir = float4(-1,0,0,0)
-col2.attenuation = 0.5
+col2.attenuation = 0.7
 col2.height = 8.2
-col2.leafWidth = 60/2
+col2.leafWidth = 20
 col2.numberOfLeaves = 2
-col2.leafPositions = (25,10)
+col2.leafPositions = (10,10)
 col2.boundingBox = calculateCollimatorBoundingBox(col2)
-#col2 = Collimator2(Box(), float4(3.5,3.5,-90,0), float4(0,-1,0,0), float4(-1,0,0,0), 0.5, 1, 7, 1, (1,))
-#col2.boundingBox = calculateCollimatorBoundingBox(col2)
-fc2 = createFlatCollimator40(col2)
+#col2.flatCollimator = createFlatCollimator(col2)
 
-collimator_array = FlatCollimator40 * 2 # Define ctypes array.
-collimators = collimator_array(fc1, fc2)
+collimator_array = Collimator * 2 # Define ctypes array.
+collimators = collimator_array(col1, col2)
 
 fm = FluenceMap(Rectangle(float4(-30,-30,-100,0), float4(30,-30,-100,0), float4(30,30,-100,0), float4(-30,30,-100,0)))
 #scene = Scene(rs,col,fm)
 scene2 = Scene2(rs,len(collimators),fm)
 
 # Settings
-flx = 128
-fly = 128
+flx = 150
+fly = 150
 xstep = (0.0 + length(scene2.fluenceMap.rectangle.p1 - scene2.fluenceMap.rectangle.p0))/flx # Length in x / x resolution
 ystep = (0.0 + length(scene2.fluenceMap.rectangle.p3 - scene2.fluenceMap.rectangle.p0))/fly # Length in y / y resolution
 xoffset = xstep/2.0
 yoffset = ystep/2.0
 lsamples = 20
 lstep = scene2.raySource.disc.radius*2/(lsamples-1)
-render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep)
+mode = 0
+render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep,mode)
+
+init(scene2, render, collimators)
+
 if python:
     fluence_dataPython = numpy.zeros(shape=(flx,fly), dtype=numpy.float32)
 if openCL:

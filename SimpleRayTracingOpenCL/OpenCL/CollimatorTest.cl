@@ -5,7 +5,7 @@
 #include "OpenCL/Primitives.cl"
 
 void testCreateFlatCollimator(int *passed) {
-    Collimator2 collimator = {
+    Collimator collimator = {
 		.boundingBox = (Box) {
 			.min = (float4) (-3.5,-3.5,-91,0),
 			.max = (float4) (3.5,-2.5,-90,0)},
@@ -17,8 +17,9 @@ void testCreateFlatCollimator(int *passed) {
 		.leafWidth = 3.5,
 		.numberOfLeaves = 2,
 		.leafPositions = {0.5, 1}};
-	FlatCollimator2 fc;
-    createFlatCollimator2(&collimator, &fc);
+
+	FlatCollimator fc;
+    createFlatCollimator(&collimator, &fc);
     if (all(fc.leaves[0].p0 == (float4) (-3.5,-3.5,-90,0)) &&
 		all(fc.leaves[1].p2 == (float4) (3.5,-2.5,-90,0))) {
 		*passed = 1;

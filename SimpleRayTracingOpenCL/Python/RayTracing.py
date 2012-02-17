@@ -36,7 +36,8 @@ class Render(Structure):
                 ("xoffset", c_float),
                 ("yoffset", c_float),
                 ("lsamples", c_int),
-                ("lstep", c_float)]
+                ("lstep", c_float),
+                ("mode", c_int)]
 
 def intersectLineSimpleRaySourceRectangle(line, raySource):
     return intersectLineRectangle(line, raySource.rectangle)
@@ -46,14 +47,19 @@ def intersectLineSimpleRaySourceDisc(line, raySource):
 
 ###################### Ray tracing ######################
 
-def firstHitCollimator(scene, ray, collimators):
+def firstHitCollimator(scene, render, ray, collimators):
     intersect = False
     minDistance = float("inf")
     intersectionPoint = None
     attenuation = 1
     for i in range(scene.collimators):
         #[intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineSimpleCollimator(ray, collimators[i])
-        [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineFlatCollimator(ray, collimators[i])
+        intersectTmp = False
+        intersectionDistanceTmp = float("inf")
+        intersectionPointTmp = None
+        if render.mode == 0:
+            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineFlatCollimator(ray, collimators[i].flatCollimator)
+
         if intersectTmp == True and intersectionDistanceTmp < minDistance:
             minDistance = intersectionDistanceTmp
             intersect = True
@@ -62,13 +68,13 @@ def firstHitCollimator(scene, ray, collimators):
 
     return [intersect, minDistance, intersectionPoint, attenuation]
 
-def traceRayFirstHit(scene, ray, collimators):
+def traceRayFirstHit(scene, render, ray, collimators):
     intensity = 1;
-    [intersectCollimator, distanceCollimator, intersectionPointCollimator, attenuation] = firstHitCollimator(scene, ray, collimators)
+    [intersectCollimator, distanceCollimator, intersectionPointCollimator, attenuation] = firstHitCollimator(scene, render, ray, collimators)
     while intersectCollimator: # Enable several layers of collimators
         intensity *= attenuation
         newRay = Line(intersectionPointCollimator+ray.direction*0.0000000001, ray.direction) # Cast a new ray just after the collimator.
-        [intersectCollimator, distanceCollimator, intersectionPointCollimator, attenuation] = firstHitCollimator(scene, newRay, collimators)
+        [intersectCollimator, distanceCollimator, intersectionPointCollimator, attenuation] = firstHitCollimator(scene, render, newRay, collimators)
     
     [intersectRS, intersectionDistanceRS, intersectionPointRS] = intersectLineSimpleRaySourceDisc(ray, scene.raySource)
     if intersectRS == True:
@@ -133,10 +139,19 @@ def calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug):
                         debug.v2 = ray.direction
 
                     #fluency_data[fi][fj] += traceRay(scene, ray)*ratio
-                    fluency_data[fi][fj] += traceRayFirstHit(scene, ray, collimators)*ratio
+                    fluency_data[fi][fj] += traceRayFirstHit(scene, render, ray, collimators)*ratio
+
+def init(scene, render, collimators):
+    if render.mode == 0:
+        for col in collimators:
+            col.flatCollimator = createFlatCollimator(col)
+    else:
+        print "Undefined mode"
+
 
 def drawScene(scene, render, fluency_data, debug):
     calcFluenceLightStraightUp(scene, render, fluency_data, debug)
 
 def drawScene2(scene, render, collimators, fluency_data, debug):
+    init(scene, render, collimators)
     calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug)

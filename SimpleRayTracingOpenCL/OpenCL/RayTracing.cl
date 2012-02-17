@@ -32,6 +32,7 @@ typedef struct Render {
 	float xstep, ystep, xoffset, yoffset;
 	int lsamples;
 	float lstep;
+	int mode;
 } __attribute((packed)) Render;
 
 // Intersections
@@ -48,7 +49,7 @@ void intersectSimpleRaySourceDisc(const Line *l, __constant const SimpleRaySourc
 
 // Ray tracing
 
-void firstHitCollimator(__constant const Scene2 *s, const Line *r, __constant const FlatCollimator40 *collimators, bool *intersect, float *distance, float4 *ip, float *attenuation, __global Debug *debug) {
+void firstHitCollimator(__constant const Scene2 *s, __constant const Render *render, const Line *r, const Collimator *collimators, bool *intersect, float *distance, float4 *ip, float *attenuation, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
 	*ip = (NAN, NAN, NAN, NAN);
@@ -57,31 +58,34 @@ void firstHitCollimator(__constant const Scene2 *s, const Line *r, __constant co
 		float distanceTmp;
 		float4 ipTmp;
 		//intersectSimpleCollimator(r, &(collimators[i]), &intersectTmp, &distanceTmp, &ipTmp);
-		FlatCollimator40 fc = collimators[i];
-		intersectLineFlatCollimator(r, &fc, &intersectTmp, &distanceTmp, &ipTmp);
+		if (render->mode == 0) {
+			FlatCollimator fc = collimators[i].flatCollimator;
+			intersectLineFlatCollimator(r, &fc, &intersectTmp, &distanceTmp, &ipTmp);
+			*attenuation = fc.attenuation;
+		}
 
 		if (intersectTmp && (distanceTmp < minDistance)) {
 			minDistance = distanceTmp;
             *intersect = true;
             *ip = ipTmp;
-            *attenuation = fc.attenuation;
+            //*attenuation = collimators[i].attenuation;
 		}
 	}
 }
 
-void traceRayFirstHit(__constant const Scene2 *s, const Line *r, __constant const FlatCollimator40 *collimators, float *i, __global Debug *debug) {
+void traceRayFirstHit(__constant const Scene2 *s, __constant const Render *render, const Line *r, const Collimator *collimators, float *i, __global Debug *debug) {
 	float intensity = 1;
 	bool intersectCollimator = true;
 	float distanceCollimator;
 	float4 ipCollimator;
 	float attenuation;
-	firstHitCollimator(s, r, collimators, &intersectCollimator, &distanceCollimator, &ipCollimator, &attenuation, debug);
+	firstHitCollimator(s, render, r, collimators, &intersectCollimator, &distanceCollimator, &ipCollimator, &attenuation, debug);
 	while (intersectCollimator) {
 		intensity = intensity * attenuation;
 		Line newRay = {
 			.origin = ipCollimator+r->direction*0.0000000001, // Cast a new ray just after the collimator. TODO: Figure out good offset value.
 			.direction = r->direction};
-		firstHitCollimator(s, &newRay, collimators, &intersectCollimator, &distanceCollimator, &ipCollimator, &attenuation, debug);
+		firstHitCollimator(s, render, &newRay, collimators, &intersectCollimator, &distanceCollimator, &ipCollimator, &attenuation, debug);
 	}
 
 	bool intersectRaySource;
@@ -133,7 +137,7 @@ void calculateFluenceElementLightStraightUp(__constant const Scene *scene, __con
 	fluence_data[i*render->flx+j] = intensity;
 }
 
-void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant const Render *render, __constant const FlatCollimator40 *collimators, __global float *fluence_data, __global Debug *debug){
+void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant const Render *render, const Collimator *collimators, __global float *fluence_data, __global Debug *debug){
 	unsigned int i = get_global_id(0);
     unsigned int j = get_global_id(1);
 
@@ -165,7 +169,7 @@ void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant
 				.direction = normalize(rayDirection)};
 
 			float intensity;
-			traceRayFirstHit(scene, &ray, collimators, &intensity, debug);
+			traceRayFirstHit(scene, render, &ray, collimators, &intensity, debug);
 			//traceRay(scene, &ray, &intensity);
 			
 			fluenceSum += intensity*ratio; // Add intensity from ray
@@ -173,6 +177,30 @@ void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant
 	}
 
 	fluence_data[i*render->flx+j] = fluenceSum;
+}
+
+void initCollimators(__constant const Scene2 *scene, __constant const Render *render, __global const Collimator *collimators, Collimator *collimators_new) {
+	// First copy all properties
+	for (int i = 0; i < scene->collimators; i++) {
+		collimators_new[i].boundingBox = collimators[i].boundingBox;
+		collimators_new[i].position = collimators[i].position;
+		collimators_new[i].xdir = collimators[i].xdir;
+		collimators_new[i].ydir = collimators[i].ydir;
+		collimators_new[i].attenuation = collimators[i].attenuation;
+		collimators_new[i].numberOfLeaves = collimators[i].numberOfLeaves;
+		for (int l = 0; l < collimators[i].numberOfLeaves; l++) {
+			collimators_new[i].leafPositions[l] = collimators[i].leafPositions[l];
+		}
+	}
+	// Copy simplified model according to mode.
+	if (render->mode == 0) { 
+		for (int i = 0; i < scene->collimators; i++) {
+			FlatCollimator flatCollimator;
+			Collimator col = collimators[i]; // Copy from constant to private memory.
+			createFlatCollimator(&col, &flatCollimator);
+			collimators_new[i].flatCollimator = flatCollimator;
+		}
+	}
 }
 
 __kernel void drawScene(__constant const Scene *scene, __constant const Render *render, __global float *fluence_data, __global Debug *debug)
@@ -183,10 +211,24 @@ __kernel void drawScene(__constant const Scene *scene, __constant const Render *
 	calculateFluenceElementLightStraightUp(scene, render, fluence_data, debug);
 }
 
-__kernel void drawScene2(__constant const Scene2 *scene, __constant const Render *render, __global float *fluence_data, __constant const FlatCollimator40 *collimators, __global Debug *debug)
+__kernel void drawScene2(__constant const Scene2 *scene, __constant const Render *render, __global float *fluence_data, __global const Collimator *collimators, __global Debug *debug)
 {
 	//unsigned int i = get_global_id(0);
     //unsigned int j = get_global_id(1);
+	
+	Collimator collimators_new[2];
+	collimators_new[0] = collimators[0];
+	collimators_new[1] = collimators[1];
+	//Collimator collimators_new[2];
+	//if (i < 30 && j < 30) {
+		//initCollimators(scene, render, collimators, (Collimator *) collimators_new);
+	//}
+	//barrier(CLK_LOCAL_MEM_FENCE && CLK_GLOBAL_MEM_FENCE);
 
-	calcFluenceElementLightAllAngles(scene, render, collimators, fluence_data, debug);
+	/*if (i == 0) {
+		debug->v0 = collimators_new[0].flatCollimator.position;
+		debug->v1 = collimators_new[1].flatCollimator.leaves[1].p3;
+	}*/
+
+	calcFluenceElementLightAllAngles(scene, render, collimators_new, fluence_data, debug);
 }
