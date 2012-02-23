@@ -4,7 +4,7 @@ from Python.Primitives import *
 
 def testCreateFlatCollimator():
     collimator = Collimator()
-    collimator.boundingBox = Box(float4(-3.5,-3.5,-91,0), float4(3.5,-2.5,-90,0))
+    collimator.boundingBox = BBox(float4(-3.5,-3.5,-91,0), float4(3.5,-2.5,-90,0))
     collimator.position = float4(-3.5,-3.5,-90,0)
     collimator.xdir = float4(0,1,0,0)
     collimator.ydir = float4(1,0,0,0)
@@ -20,9 +20,9 @@ def testCreateFlatCollimator():
         print "createFlatCollimator FAILED"
         return False
 
-def testCreateBoxCollimator():
+def testCreateBBoxCollimator():
     collimator = Collimator()
-    collimator.boundingBox = Box(float4(-3.5,-3.5,-91,0), float4(3.5,-2.5,-90,0))
+    collimator.boundingBox = BBox(float4(-3.5,-3.5,-91,0), float4(3.5,-2.5,-90,0))
     collimator.position = float4(-3.5,-3.5,-90,0)
     collimator.xdir = float4(0,1,0,0)
     collimator.ydir = float4(1,0,0,0)
@@ -31,7 +31,7 @@ def testCreateBoxCollimator():
     collimator.leafWidth = 3.5
     collimator.numberOfLeaves = 2
     collimator.leafPositions = (0.5,1)
-    bc = createBoxCollimator(collimator)
+    bc = createBBoxCollimator(collimator)
     if bc.leaves[0].min == float4(-3.5,-3.5,-91,0) and bc.leaves[0].max == float4(0,-3.0,-90,0) and bc.leaves[1].min == float4(0,-3.5,-91,0) and bc.leaves[1].max == float4(3.5,-2.5,-90,0):
          return True
     else:
@@ -40,7 +40,7 @@ def testCreateBoxCollimator():
 
 def collimatorTest():
     passed = False
-    if testCreateFlatCollimator() and testCreateBoxCollimator():
+    if testCreateFlatCollimator() and testCreateBBoxCollimator():
         passed = True
     else:
         passed = False

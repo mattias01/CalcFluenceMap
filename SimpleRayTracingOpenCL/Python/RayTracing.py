@@ -58,9 +58,12 @@ def firstHitLeaf(scene, render, ray, collimator):
         intersectionDistanceTmp = float("inf")
         intersectionPointTmp = None
         if render.mode == 0:
-            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineRectangle(ray, collimator.leaves[i])
+            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineFlatCollimatorLeaf(ray, collimator.leaves[i])
         elif render.mode == 1:
-            [intersectTmp, intersectionDistanceInTmp, intersectionDistanceOutTmp, intersectionPointInTmp, intersectionPointOutTmp] = intersectLineBoxInOut(ray, collimator.leaves[i])
+            [intersectTmp, intersectionDistanceInTmp, intersectionDistanceOutTmp, intersectionPointInTmp, intersectionPointOutTmp] = intersectLineBBoxCollimatorLeaf(ray, collimator.leaves[i])
+            intersectionDistanceTmp = intersectionDistanceInTmp
+        elif render.mode == 2:
+            [intersectTmp, intersectionDistanceInTmp, intersectionDistanceOutTmp, intersectionPointInTmp, intersectionPointOutTmp] = intersectLineBoxCollimatorLeaf(ray, collimator.leaves[i])
             intersectionDistanceTmp = intersectionDistanceInTmp
 
         if intersectTmp == True and intersectionDistanceTmp < minDistance:
@@ -68,7 +71,7 @@ def firstHitLeaf(scene, render, ray, collimator):
             minDistance = intersectionDistanceTmp
             if render.mode == 0:
                 intersectionPoint = intersectionPointTmp
-            elif render.mode == 1:
+            elif render.mode == 1 or render.mode == 2:
                 thickness = intersectionDistanceOutTmp - intersectionDistanceInTmp
                 intersectionPoint = intersectionPointOutTmp
 
@@ -89,9 +92,11 @@ def firstHitCollimator(scene, render, ray, collimators):
         intersectionDistanceTmp = float("inf")
         intersectionPointTmp = None
         if render.mode == 0:
-            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineBox(ray, collimators[i].flatCollimator.boundingBox)
+            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineBBox(ray, collimators[i].flatCollimator.boundingBox)
         elif render.mode == 1:
-            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineBox(ray, collimators[i].boxCollimator.boundingBox)
+            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineBBox(ray, collimators[i].bboxCollimator.boundingBox)
+        elif render.mode == 2:
+            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineBBox(ray, collimators[i].boxCollimator.boundingBox)
 
         if intersectTmp == True and intersectionDistanceTmp < minDistance:
             collimatorIndex = i
@@ -102,6 +107,8 @@ def firstHitCollimator(scene, render, ray, collimators):
         if render.mode == 0:
             [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, ray, collimators[collimatorIndex].flatCollimator)
         elif render.mode == 1:
+            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, ray, collimators[collimatorIndex].bboxCollimator)
+        elif render.mode == 2:
             [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, ray, collimators[collimatorIndex].boxCollimator)
         while intersectTmp:
             intersect = True
@@ -114,6 +121,8 @@ def firstHitCollimator(scene, render, ray, collimators):
             if render.mode == 0:
                 [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, newRay, collimators[collimatorIndex].flatCollimator)
             elif render.mode == 1:
+                [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, newRay, collimators[collimatorIndex].bboxCollimator)
+            elif render.mode == 2:
                 [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, newRay, collimators[collimatorIndex].boxCollimator)
 
     return [intersect, minDistance, intersectionPoint, intensityCoeff]
@@ -188,6 +197,9 @@ def init(scene, render, collimators):
         for col in collimators:
             col.flatCollimator = createFlatCollimator(col)
     elif render.mode == 1:
+        for col in collimators:
+            col.bboxCollimator = createBBoxCollimator(col)
+    elif render.mode == 2:
         for col in collimators:
             col.boxCollimator = createBoxCollimator(col)
     else:
