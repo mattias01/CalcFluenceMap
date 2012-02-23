@@ -14,26 +14,37 @@ typedef struct FlatCollimator {
 	float4 position;
 	float4 xdir;
 	float4 ydir;
-	float attenuation;
+	float absorptionCoeff;
 	int numberOfLeaves;
 	Rectangle leaves[40];
 } __attribute__((packed)) FlatCollimator;
+
+typedef struct BoxCollimator {
+	Box boundingBox;
+	float4 position;
+	float4 xdir;
+	float4 ydir;
+	float absorptionCoeff;
+	int numberOfLeaves;
+	Box leaves[40];
+} __attribute__((packed)) BoxCollimator;
 
 typedef struct Collimator {
 	Box boundingBox;
 	float4 position;
 	float4 xdir;
 	float4 ydir;
-	float attenuation;
+	float absorptionCoeff;
 	float height;
 	float leafWidth;
 	int numberOfLeaves;
 	float leafPositions[40];
 	FlatCollimator flatCollimator;
+	BoxCollimator boxCollimator;
 } __attribute__((packed)) Collimator;
 
 // Collimator generation
-void calculateCollimatorBoundingBox(Collimator *collimator, Box *boundingBox) {
+void calculateCollimatorBoundingBox(Collimator *collimator, Box *bbox) {
     float maxPosition = 0;
     for (int i = 0; i < collimator->numberOfLeaves; i++) {
         if (maxPosition < collimator->leafPositions[i]) {
@@ -54,29 +65,9 @@ void calculateCollimatorBoundingBox(Collimator *collimator, Box *boundingBox) {
     float4 p6 = p4 + down + y;
     float4 p7 = p4 + y;
 
-	float4 pointArray[8] = {p0,p1,p2,p3,p4,p5,p6,p7};
-
-    float xmin = INFINITY;
-    float ymin = INFINITY;
-    float zmin = INFINITY;
-	float xmax = -INFINITY;
-    float ymax = -INFINITY;
-    float zmax = -INFINITY;
-	for (int i = 0; i < 8; i++) {
-		xmin = fmin(xmin, pointArray[i].x);
-		ymin = fmin(ymin, pointArray[i].y);
-		zmin = fmin(zmin, pointArray[i].z);
-
-		xmax = fmax(xmin, pointArray[i].x);
-		ymax = fmax(ymin, pointArray[i].y);
-		zmax = fmax(zmin, pointArray[i].z);
-	}
-
-	Box bbox = {
-		.min = (float4) (xmin,ymin,zmin,0),
-		.max = (float4) (xmax,ymax,zmax,0)};
-
-    *boundingBox = bbox;
+	Box box;
+	boundingBox(&p0, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &box);
+    *bbox = box;
 }
 
 void createRectangles(float4 *position, float4 *xdir, float4 *ydir, float *rectangleWidth, int *numberOfRect, float *rectangleLength, Rectangle *rectangles) {
@@ -107,7 +98,7 @@ void createFlatCollimator(Collimator *collimator, FlatCollimator *fc) {
     fc->position = collimator->position;
     fc->xdir = collimator->xdir;
     fc->ydir = collimator->ydir;
-    fc->attenuation = collimator->attenuation;
+    fc->absorptionCoeff = collimator->absorptionCoeff;
     fc->numberOfLeaves = collimator->numberOfLeaves;
 	Rectangle leaves[40];
 	createRectangles(&(collimator->position), &(collimator->xdir), &(collimator->ydir), &(collimator->leafWidth), &(collimator->numberOfLeaves), (float *) &(collimator->leafPositions), leaves);

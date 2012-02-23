@@ -36,6 +36,35 @@ typedef struct Box {
 	float4 max;
 } __attribute__((packed)) Box;
 
+// Other
+
+void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, float4 *p5, float4 *p6, float4 *p7, Box *bbox) {
+	float4 pointArray[8] = {*p0, *p1, *p2, *p3, *p4, *p5, *p6, *p7};
+
+    float xmin = INFINITY;
+    float ymin = INFINITY;
+    float zmin = INFINITY;
+	float xmax = -INFINITY;
+    float ymax = -INFINITY;
+    float zmax = -INFINITY;
+
+	for (int i = 0; i < 8; i++) {
+		xmin = fmin(xmin, pointArray[i].x);
+		ymin = fmin(ymin, pointArray[i].y);
+		zmin = fmin(zmin, pointArray[i].z);
+
+		xmax = fmax(xmin, pointArray[i].x);
+		ymax = fmax(ymin, pointArray[i].y);
+		zmax = fmax(zmin, pointArray[i].z);
+	}
+
+	Box box = {
+		.min = (float4) (xmin,ymin,zmin,0),
+		.max = (float4) (xmax,ymax,zmax,0)};
+
+	*bbox = box;
+}
+
 // Projection calculations
 
 void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint) {
@@ -186,10 +215,86 @@ void intersectLineBox(const Line *l, const Box *b, bool *intersect, float *dista
     if (tzmax < tmax) {
         tmax = tzmax;
 	}
+	if (tmax <= 0) { // Only in the positive direction.
+		*intersect = false;
+		*distance = NAN;
+		*ip = (NAN, NAN, NAN, NAN);
+        return;
+	}
 	*intersect = true;
 	*distance = tmin;
 	*ip = l->origin + l->direction*tmin;
 	// Could give the outgoing distance (tmax) and point here as well.
+}
+
+void intersectLineBoxInOut(const Line *l, const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+{
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	if (l->direction.x >= 0) {
+        tmin = (b->min.x - l->origin.x) / l->direction.x;
+        tmax = (b->max.x - l->origin.x) / l->direction.x;
+	}
+    else {
+        tmin = (b->max.x - l->origin.x) / l->direction.x;
+        tmax = (b->min.x - l->origin.x) / l->direction.x;
+	}
+    if (l->direction.y >= 0) {
+        tymin = (b->min.y - l->origin.y) / l->direction.y;
+        tymax = (b->max.y - l->origin.y) / l->direction.y;
+	}
+    else {
+        tymin = (b->max.y - l->origin.y) / l->direction.y;
+        tymax = (b->min.y - l->origin.y) / l->direction.y;
+	}
+    if ((tmin > tymax) || (tymin > tmax)) {
+		*intersect = false;
+		*inDistance = NAN;
+		*outDistance = NAN;
+		*inIp = (NAN, NAN, NAN, NAN);
+		*outIp = (NAN, NAN, NAN, NAN);
+        return;
+	}
+    if (tymin > tmin) {
+        tmin = tymin;
+	}
+    if (tymax < tmax) {
+       tmax = tymax;
+	}
+    if (l->direction.z >= 0) {
+        tzmin = (b->min.z - l->origin.z) / l->direction.z;
+        tzmax = (b->max.z - l->origin.z) / l->direction.z;
+	}
+    else {
+        tzmin = (b->max.z - l->origin.z) / l->direction.z;
+        tzmax = (b->min.z - l->origin.z) / l->direction.z;
+	}
+    if ((tmin > tzmax) || (tzmin > tmax)) {
+        *intersect = false;
+		*inDistance = NAN;
+		*outDistance = NAN;
+		*inIp = (NAN, NAN, NAN, NAN);
+		*outIp = (NAN, NAN, NAN, NAN);
+        return;
+	}
+    if (tzmin > tmin) {
+        tmin = tzmin;
+	}
+    if (tzmax < tmax) {
+        tmax = tzmax;
+	}
+	if (tmax <= 0) { // Only in the positive direction.
+		*intersect = false;
+		*inDistance = NAN;
+		*outDistance = NAN;
+		*inIp = (NAN, NAN, NAN, NAN);
+		*outIp = (NAN, NAN, NAN, NAN);
+        return;
+	}
+	*intersect = true;
+	*inDistance = tmin;
+	*outDistance = tmax;
+	*inIp = l->origin + l->direction*tmin;
+	*outIp = l->origin + l->direction*tmax;
 }
 
 #endif //__Primitives__

@@ -12,7 +12,7 @@ void testCreateFlatCollimator(int *passed) {
 		.position = (float4) (-3.5,-3.5,-90,0),
 		.xdir = (float4) (0,1,0,0),
 		.ydir = (float4) (1,0,0,0),
-		.attenuation = 0.5,
+		.absorptionCoeff = 0.5,
 		.height = 1,
 		.leafWidth = 3.5,
 		.numberOfLeaves = 2,
