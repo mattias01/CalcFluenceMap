@@ -166,7 +166,7 @@ void testIntersectLineDisc(int *passed, __global Debug *debug)
 	}
 }
 
-void testIntersectLineBox(int *passed, __global Debug *debug)
+void testIntersectLineBBox(int *passed, __global Debug *debug)
 {
 	Line l1 = { // Intersects disc
 		.origin = (float4) (1.0f,1.0f,0.0f,0.0f),
@@ -174,7 +174,7 @@ void testIntersectLineBox(int *passed, __global Debug *debug)
 	Line l2 = { // Does not intersect
 		.origin = (float4) (3.0f,3.0f,0.0f,0.0f),
 		.direction = (float4) (0.0f,0.0f,1.0f,0.0f)};
-	Box b = {
+	BBox b = {
 		.min = (float4) (0.0f,0.0f,0.0f,0.0f),
 		.max = (float4) (2.0f,2.0f,2.0f,0.0f)};
 
@@ -184,8 +184,8 @@ void testIntersectLineBox(int *passed, __global Debug *debug)
 	float distance2;
 	float4 p0;
 	float4 p1;
-	intersectLineBox(&l1,&b,&intersection1,&distance1,&p0);
-	intersectLineBox(&l2,&b,&intersection2,&distance2,&p1);
+	intersectLineBBox(&l1,&b,&intersection1,&distance1,&p0);
+	intersectLineBBox(&l2,&b,&intersection2,&distance2,&p1);
 
 	debug->f0 = intersection1;
 	debug->f1 = intersection2;
@@ -195,6 +195,53 @@ void testIntersectLineBox(int *passed, __global Debug *debug)
 
 	if (all(p0 == ((float4) (1.0f,1.0f,0.0f,0.0f))) &&
 		distance1 == 0 &&
+		intersection1 == true &&
+		intersection2 == false) {
+		*passed = 1;
+	}
+	else {
+		*passed = 0;
+	}
+}
+
+void testIntersectLineBox(int *passed, __global Debug *debug)
+{
+	Line l1 = { // Intersects disc
+		.origin = (float4) (1.0f,1.0f,-0.1f,0.0f),
+		.direction = (float4) (0.0f,0.0f,1.0f,0.0f)};
+	Line l2 = { // Does not intersect
+		.origin = (float4) (3.0f,3.0f,-0.1f,0.0f),
+		.direction = (float4) (0.0f,0.0f,1.0f,0.0f)};
+	Box b;
+	createBoxFromPoints((float4)(0,0,0,0), (float4)(2,0,0,0), (float4)(2,2,0,0), (float4)(0,2,0,0), 
+						(float4)(0,0,2,0), (float4)(2,0,2,0), (float4)(2,2,2,0), (float4)(0,2,2,0), &b);
+
+	bool intersection1;
+	bool intersection2;
+	float mindistance1;
+	float maxdistance1;
+	float mindistance2;
+	float maxdistance2;
+	float4 minp0;
+	float4 maxp0;
+	float4 minp1;
+	float4 maxp1;
+
+	intersectLineBoxInOut(&l1, &b, &intersection1, &mindistance1, &maxdistance1, &minp0, &maxp0);
+	intersectLineBoxInOut(&l2, &b, &intersection2, &mindistance2, &maxdistance2, &minp1, &maxp1);
+
+	maxp0.z = (float) round(maxp0.z); // Round to nearest integer.
+
+	/*debug->i0 = all(minp0 == ((float4) (1.0f,1.0f,0.0f,0.0f)));
+	debug->i1 = all(maxp0 == ((float4) (1.0f,1.0f,2.0f,0.0f)));
+	debug->i2 = intersection1;
+	debug->i3 = intersection2;
+	debug->v0 = minp0;
+	debug->v1 = maxp0;
+	debug->f0 = round(maxp0.z);*/
+
+	if (all(minp0 == ((float4) (1.0f,1.0f,0.0f,0.0f))) &&
+		all(maxp0 == ((float4) (1.0f,1.0f,2.0f,0.0f))) &&
 		intersection1 == true &&
 		intersection2 == false) {
 		*passed = 1;
@@ -224,6 +271,11 @@ void testPrimitives(int *passed, __global Debug *debug)
 	}
 
 	testIntersectLineDisc(&passedTmp, debug);
+	if (passedTmp == 0) {
+		*passed = 0; return;
+	}
+
+	testIntersectLineBBox(&passedTmp, debug);
 	if (passedTmp == 0) {
 		*passed = 0; return;
 	}

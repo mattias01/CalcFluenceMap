@@ -10,7 +10,7 @@ typedef struct SimpleCollimator {
 } __attribute__((packed)) SimpleCollimator;
 
 typedef struct FlatCollimator {
-	Box boundingBox;
+	BBox boundingBox;
 	float4 position;
 	float4 xdir;
 	float4 ydir;
@@ -19,8 +19,18 @@ typedef struct FlatCollimator {
 	Rectangle leaves[40];
 } __attribute__((packed)) FlatCollimator;
 
+typedef struct BBoxCollimator {
+	BBox boundingBox;
+	float4 position;
+	float4 xdir;
+	float4 ydir;
+	float absorptionCoeff;
+	int numberOfLeaves;
+	BBox leaves[40];
+} __attribute__((packed)) BBoxCollimator;
+
 typedef struct BoxCollimator {
-	Box boundingBox;
+	BBox boundingBox;
 	float4 position;
 	float4 xdir;
 	float4 ydir;
@@ -30,7 +40,7 @@ typedef struct BoxCollimator {
 } __attribute__((packed)) BoxCollimator;
 
 typedef struct Collimator {
-	Box boundingBox;
+	BBox boundingBox;
 	float4 position;
 	float4 xdir;
 	float4 ydir;
@@ -40,11 +50,12 @@ typedef struct Collimator {
 	int numberOfLeaves;
 	float leafPositions[40];
 	FlatCollimator flatCollimator;
+	BBoxCollimator bboxCollimator;
 	BoxCollimator boxCollimator;
 } __attribute__((packed)) Collimator;
 
 // Collimator generation
-void calculateCollimatorBoundingBox(Collimator *collimator, Box *bbox) {
+void calculateCollimatorBoundingBox(Collimator *collimator, BBox *bbox) {
     float maxPosition = 0;
     for (int i = 0; i < collimator->numberOfLeaves; i++) {
         if (maxPosition < collimator->leafPositions[i]) {
@@ -65,7 +76,7 @@ void calculateCollimatorBoundingBox(Collimator *collimator, Box *bbox) {
     float4 p6 = p4 + down + y;
     float4 p7 = p4 + y;
 
-	Box box;
+	BBox box;
 	boundingBox(&p0, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &box);
     *bbox = box;
 }
@@ -87,7 +98,7 @@ void createFlatCollimator(Collimator *collimator, FlatCollimator *fc) {
     Plane plane = {
 		.origin = collimator->position,
 		.normal = cross(collimator->xdir, collimator->ydir)}; // Plane perpendicular to xdir and ydir.
-    Box bbox;
+    BBox bbox;
 	float4 oldMin = collimator->boundingBox.min;
 	float4 oldMax = collimator->boundingBox.max;
 	float4 min, max;
@@ -119,23 +130,16 @@ void intersectSimpleCollimator(const Line *l, __constant const SimpleCollimator 
 	}
 }
 
-void intersectLineFlatCollimator(const Line *line, const FlatCollimator *collimator, bool *intersect, float *distance, float4 *ip) {
-	bool intersectBBox;
-	float intersectionDistanceBBox;
-	float4 intersectionPointBBox;
-    intersectLineBox(line, &(collimator->boundingBox), &intersectBBox, &intersectionDistanceBBox, &intersectionPointBBox);
-    if (intersectBBox) { // If bounding box is hit: check all leaves.
-        for (int i = 0; i < collimator->numberOfLeaves; i++) {
-            intersectLineRectangle(line, &(collimator->leaves[i]), intersect, distance, ip);
-            if (*intersect) {
-                return; // If intersection found: stop looking for intersections.
-			}
-		}
-	}
+void intersectLineFlatCollimatorLeaf(const Line *l, const Rectangle *c, bool *intersect, float *distance, float4 *ip) {
+	intersectLineRectangle(l, c, intersect, distance, ip);
+}
 
-    *intersect = false;
-	*distance = NAN;
-	*ip = (NAN, NAN, NAN, NAN);
+void intersectLineBBoxCollimatorLeaf(const Line *l, const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
+	intersectLineBBoxInOut(l, b, intersect, inDistance, outDistance, inIp, outIp);
+}
+
+void intersectLineBoxCollimatorLeaf(const Line *l, const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
+	intersectLineBoxInOut(l, b, intersect, inDistance, outDistance, inIp, outIp);
 }
 
 #endif //__Collimator__

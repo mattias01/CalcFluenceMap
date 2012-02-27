@@ -9,6 +9,7 @@ import pyopencl as cl
 import struct
 from sys import getsizeof
 from time import time
+import visual as vs
 
 from OpenCLUtility import OpenCLUtility as oclu
 from OpenCLTypes import *
@@ -52,55 +53,66 @@ rs = SimpleRaySourceDisc(Disc(float4(0,0,0,0), float4(0,0,1,0), 1))
 #collimators = [col, col2]
 
 col1 = Collimator()
+#float4(-5.9,-5.9,-29.5,0)
 col1.position = float4(-5.9,-5.9,-29.5,0)
 col1.xdir = float4(0,1,0,0)
 col1.ydir = float4(1,0,0,0)
 col1.absorptionCoeff = 0.9
 col1.height = 8.2
-col1.leafWidth = 11.8/40
 col1.numberOfLeaves = 40
-col1.leafPositions = (5,6,7,8,2,4,5,4,4,1,0,5,6,1,7,3,3,3,4,4,4,4,1,1,7,8,1,2,1,1,1,1,1,1,1,2,1,2,1,2)
+col1.leafWidth = abs(col1.position.x)*2/col1.numberOfLeaves
+col1.leafPositions = (2,2.1,2.2,2.3,2.2,2.1,2.0,1.9,1.8,1.7,1.6,1.5,1.4,1.2,1,0.8,0.6,0.4,0.2,0.3,0.4,0.5,1,1,1.3,1.4,1,2,1,1,1,1,1,1,1,2,1,2,1,2)
 col1.boundingBox = calculateCollimatorBoundingBox(col1)
-#col1.flatCollimator = createFlatCollimator(col1)
 
 col2 = Collimator()
-col2.position = float4(20,20,-29.5,0)
+col2.position = float4(5.9,5.9,-29.5,0)
 col2.xdir = float4(0,-1,0,0)
 col2.ydir = float4(-1,0,0,0)
-col2.absorptionCoeff = 0.9
+col2.absorptionCoeff = 0.2
 col2.height = 8.2
-col2.leafWidth = 20
 col2.numberOfLeaves = 2
-col2.leafPositions = (15,10)
+col2.leafWidth = abs(col2.position.x)*2/col2.numberOfLeaves
+col2.leafPositions = (1,2)
 col2.boundingBox = calculateCollimatorBoundingBox(col2)
-#col2.flatCollimator = createFlatCollimator(col2)
 
-#jaw1 = Collimator()
-#jaw1.position = float4(20,20,-45.1,0)
-#jaw1.xdir = float4(0,-1,0,0)
-#jaw1.ydir = float4(-1,0,0,0)
-#jaw1.absorptionCoeff = 1.0
-#jaw1.height = 7.2
-#jaw1.leafWidth = 40
-#jaw1.numberOfLeaves = 1
-#jaw1.leafPositions = (10)
-#jaw1.boundingBox = calculateCollimatorBoundingBox(jaw1)
+jaw1 = Collimator()
+jaw1.position = float4(15,15,-45.1,0)
+jaw1.xdir = float4(-1,0,0,0)
+jaw1.ydir = float4(0,-1,0,0)
+jaw1.absorptionCoeff = 1.0
+jaw1.height = 7.2
+jaw1.leafWidth = 20
+jaw1.numberOfLeaves = 2
+jaw1.leafPositions = (10,10)
+jaw1.boundingBox = calculateCollimatorBoundingBox(jaw1)
 
-collimator_array = Collimator * 2 # Define ctypes array.
-collimators = collimator_array(col1, col2)
+jaw2 = Collimator()
+jaw2.position = float4(15,15,-45.1,0)
+jaw2.xdir = float4(0,1,0,0)
+jaw2.ydir = float4(-1,0,0,0)
+jaw2.absorptionCoeff = 1.0
+jaw2.height = 7.2
+jaw2.leafWidth = 20
+jaw2.numberOfLeaves = 2
+jaw2.leafPositions = (10,10)
+jaw2.boundingBox = calculateCollimatorBoundingBox(jaw1)
 
-fm = FluenceMap(Rectangle(float4(-20,-20,-100,0), float4(20,-20,-100,0), float4(20,20,-100,0), float4(-20,20,-100,0)))
+collimator_array = Collimator * 2
+#collimators = collimator_array(col1, col2)
+collimators = collimator_array(jaw1, jaw2)
+
+fm = FluenceMap(Rectangle(float4(-30,-30,-100,0), float4(30,-30,-100,0), float4(30,30,-100,0), float4(-30,30,-100,0)))
 #scene = Scene(rs,col,fm)
 scene2 = Scene2(rs,len(collimators),fm)
 
 # Settings
-flx = 16
-fly = 16
+flx = 128
+fly = 128
 xstep = (0.0 + length(scene2.fluenceMap.rectangle.p1 - scene2.fluenceMap.rectangle.p0))/flx # Length in x / x resolution
 ystep = (0.0 + length(scene2.fluenceMap.rectangle.p3 - scene2.fluenceMap.rectangle.p0))/fly # Length in y / y resolution
 xoffset = xstep/2.0
 yoffset = ystep/2.0
-lsamples = 10
+lsamples = 20
 lstep = scene2.raySource.disc.radius*2/(lsamples-1)
 mode = 2
 render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep,mode)
@@ -136,8 +148,8 @@ if openCL:
     debugOpenCL_buf = cl.Buffer(ctx, mf.WRITE_ONLY, sizeof(debugOpenCL))
     
     #program.drawScene(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, debugOpenCL_buf)
-    program.drawScene2(queue, fluence_dataOpenCL.shape, None, scene2_buf, render_buf, fluence_dataOpenCL_buf, collimators_buf, debugOpenCL_buf)
-    cl.enqueue_read_buffer(queue, fluence_dataOpenCL_buf, fluence_dataOpenCL)
+    program.drawScene2(queue, fluence_dataOpenCL.shape, None, scene2_buf, render_buf, fluence_dataOpenCL_buf, collimators_buf, debugOpenCL_buf).wait()
+    cl.enqueue_read_buffer(queue, fluence_dataOpenCL_buf, fluence_dataOpenCL).wait()
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
     timeOpenCL = time()-time1
 
@@ -185,3 +197,35 @@ if openCL:
     plt.gca().add_patch(rspatch)
     plt.title("OpenCL " + "Time: " + str(timeOpenCL) + " Samples per second: " + str(samplesPerSecondOpenCL))
     plt.show()
+
+# Visual python
+disp = vs.display()
+#disp.autocenter = True
+disp.userspin = True
+disp.ambient = 0.5
+disp.forward = (0, 0, -1)
+disp.center = (0, 0, -50)
+disp.range = (22, 22, -100)
+
+# Collimators
+for i in range(len(collimators)):
+    fr = vs.frame()
+    if render.mode == 0:
+        f = vs.faces(frame=fr, pos = collimators[i].flatCollimator.getVertices())
+    elif render.mode == 1:
+        f = vs.faces()
+    elif render.mode == 2:
+        f = vs.faces(frame=fr, pos = collimators[i].boxCollimator.getVertices())
+    f.color = vs.color.orange
+    f.make_normals()
+
+# Fluence map
+fr = vs.frame()
+f = vs.faces(frame=fr, pos=scene2.fluenceMap.rectangle.getVertices(), color = vs.color.gray(50))
+f.make_normals()
+f.make_twosided()
+
+# Ray source
+vs.cylinder(pos=scene2.raySource.disc.origin.get3DTuple(), axis=scene2.raySource.disc.normal.get3DTuple(), radius=scene2.raySource.disc.radius, color=vs.color.red)
+
+#fr.rotate (angle = -pi/2, axis = (1.0, 1.0, 0.0))

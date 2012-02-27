@@ -17,6 +17,24 @@ class FlatCollimator(Structure):
                 ("numberOfLeaves", c_int),
                 ("leaves", Rectangle * 40)]
 
+    def getVertices(self):
+        list = []
+        for i in range(self.numberOfLeaves):
+            leaf = self.leaves[i]
+            t0p0 = (leaf.p0.x, leaf.p0.y, leaf.p0.z)
+            t0p1 = (leaf.p1.x, leaf.p1.y, leaf.p1.z)
+            t0p2 = (leaf.p2.x, leaf.p2.y, leaf.p2.z)
+            t1p0 = (leaf.p0.x, leaf.p0.y, leaf.p0.z)
+            t1p1 = (leaf.p2.x, leaf.p2.y, leaf.p2.z)
+            t1p2 = (leaf.p3.x, leaf.p3.y, leaf.p3.z)
+            list.append(t0p0)
+            list.append(t0p1)
+            list.append(t0p2)
+            list.append(t1p0)
+            list.append(t1p1)
+            list.append(t1p2)
+        return list
+
 class BBoxCollimator(Structure):
     _fields_ = [("boundingBox", BBox),
                 ("position", float4),
@@ -34,6 +52,19 @@ class BoxCollimator(Structure):
                 ("absorptionCoeff", c_float),
                 ("numberOfLeaves", c_int),
                 ("leaves", Box * 40)]
+
+    def getVertices(self):
+        list = []
+        for i in range(self.numberOfLeaves):
+            for j in range(12):
+                leaf = self.leaves[i].triangles[j]
+                p0 = (leaf.p0.x, leaf.p0.y, leaf.p0.z)
+                p1 = (leaf.p1.x, leaf.p1.y, leaf.p1.z)
+                p2 = (leaf.p2.x, leaf.p2.y, leaf.p2.z)
+                list.append(p0)
+                list.append(p1)
+                list.append(p2)
+        return list
 
 class Collimator(Structure):
     _fields_ = [("boundingBox", BBox),
@@ -97,18 +128,26 @@ def createBBoxes(position, xdir, ydir, boxHeight, boxWidth, numberOfBoxes, boxLe
 def createBoxes(position, xdir, ydir, boxHeight, boxWidth, numberOfBoxes, boxLength):
     box_array = Box * 40
     boxes = box_array()
-    topWidth = abs(position.z*0.4)
-    topPosition = float4(position.z*0.2, position.z*0.2, position.z, 0)
-    tr = createRectangles(topPosition, xdir, ydir, topWidth, numberOfBoxes, boxLength)
+    topWidth = abs(position.z*0.4)/numberOfBoxes
+    #topPosition = float4(position.z*0.2, position.z*0.2, position.z, 0)
+    tr = createRectangles(position, xdir, ydir, topWidth, numberOfBoxes, boxLength)
     bottomz = position.z-boxHeight
-    bottomWidth = abs(bottomz)*0.4
-    bottomPosition = float4(bottomz*0.2, bottomz*0.2, bottomz, 0)
+    bottomWidth = abs(bottomz)*0.4/numberOfBoxes
+    bottomRatio = bottomWidth/topWidth
+    bottomOffset = (bottomWidth-topWidth)*numberOfBoxes/2
+    bottomPosition = float4(position.x, position.y, bottomz, 0)-xdir*bottomOffset-ydir*bottomOffset
     br = createRectangles(bottomPosition, xdir, ydir, bottomWidth, numberOfBoxes, boxLength)
 
-    for i in range(numberOfBoxes):
-        boxes[i] = createBoxFromPoints(tr[i].p0, tr[i].p1, tr[i].p2, tr[i].p3, br[i].p0, br[i].p1, br[i].p2, br[i].p3)
+    bbox = None
 
-    return boxes
+    for i in range(numberOfBoxes):
+        boxes[i] = createBoxFromPoints(br[i].p1, br[i].p0, br[i].p3, br[i].p2, tr[i].p1, tr[i].p2, tr[i].p3, tr[i].p0)
+        if bbox == None:
+            bbox = boundingBox(tr[i].p0, tr[i].p1, tr[i].p2, tr[i].p3, br[i].p0, br[i].p1, br[i].p2, br[i].p3)
+        else:
+            bbox = boundingBox10(tr[i].p0, tr[i].p1, tr[i].p2, tr[i].p3, br[i].p0, br[i].p1, br[i].p2, br[i].p3, bbox.min, bbox.max)
+
+    return [boxes, bbox]
 
 def createFlatCollimator(collimator):
     plane = Plane(collimator.position, cross(collimator.xdir, collimator.ydir)) # Plane perpendicular to xdir and ydir.
@@ -137,9 +176,10 @@ def createBBoxCollimator(collimator):
     return bc
 
 def createBoxCollimator(collimator):
-    boxes = createBoxes(collimator.position, collimator.xdir, collimator.ydir, collimator.height, collimator.leafWidth, collimator.numberOfLeaves, collimator.leafPositions)
+    [boxes, bbox] = createBoxes(collimator.position, collimator.xdir, collimator.ydir, collimator.height, collimator.leafWidth, collimator.numberOfLeaves, collimator.leafPositions)
+    collimator.boundingBox = bbox
     bc = BoxCollimator()
-    bc.boundingBox = collimator.boundingBox
+    bc.boundingBox = bbox
     bc.position = collimator.position
     bc.xdir = collimator.xdir
     bc.ydir = collimator.ydir

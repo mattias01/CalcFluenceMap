@@ -169,13 +169,17 @@ def calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug):
                                scene.fluenceMap.rectangle.p0.z, 0)
 
             v0 = float4(scene.raySource.disc.origin.x - scene.raySource.disc.radius, 
+                        scene.raySource.disc.origin.y, 
+                        scene.raySource.disc.origin.z,
+                        scene.raySource.disc.origin.w) - rayOrigin
+            v1 = float4(scene.raySource.disc.origin.x, 
                         scene.raySource.disc.origin.y - scene.raySource.disc.radius, 
                         scene.raySource.disc.origin.z,
                         scene.raySource.disc.origin.w) - rayOrigin
             vi = float4(v0.x + scene.raySource.disc.radius*2, v0.y, v0.z, v0.w) - rayOrigin
-            vj = float4(v0.x, v0.y + scene.raySource.disc.radius*2, v0.z, v0.w) - rayOrigin
+            vj = float4(v1.x, v1.y + scene.raySource.disc.radius*2, v1.z, v1.w) - rayOrigin
             anglei = acos(dot(normalize(v0),normalize(vi)))
-            anglej = acos(dot(normalize(v0),normalize(vj)))
+            anglej = acos(dot(normalize(v1),normalize(vj)))
 
             ratio = anglei*anglej/pi*2
 

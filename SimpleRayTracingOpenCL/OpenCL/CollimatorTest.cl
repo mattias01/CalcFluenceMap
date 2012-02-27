@@ -6,7 +6,7 @@
 
 void testCreateFlatCollimator(int *passed) {
     Collimator collimator = {
-		.boundingBox = (Box) {
+		.boundingBox = (BBox) {
 			.min = (float4) (-3.5,-3.5,-91,0),
 			.max = (float4) (3.5,-2.5,-90,0)},
 		.position = (float4) (-3.5,-3.5,-90,0),

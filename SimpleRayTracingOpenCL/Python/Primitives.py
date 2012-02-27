@@ -27,6 +27,9 @@ class Rectangle(Structure):
                 ("p2", float4),
                 ("p3", float4)]
 
+    def getVertices(self):
+        return [self.p0.get3DTuple(), self.p1.get3DTuple(), self.p2.get3DTuple(), self.p0.get3DTuple(), self.p2.get3DTuple(), self.p3.get3DTuple()]
+
 # Utility function for matplotlib to create path.
 def Rectangle2dVertexArray(s):
     return [[s.p0.y, s.p0.x], [s.p1.y, s.p1.x], [s.p2.y, s.p2.x], [s.p3.y, s.p3.x], [s.p0.y, s.p0.x]]
@@ -58,6 +61,17 @@ def boundingBox(p0, p1, p2, p3, p4, p5, p6, p7):
     xmax = max([p0.x, p1.x, p2.x, p3.x, p4.x, p5.x, p6.x, p7.x])
     ymax = max([p0.y, p1.y, p2.y, p3.y, p4.y, p5.y, p6.y, p7.y])
     zmax = max([p0.z, p1.z, p2.z, p3.z, p4.z, p5.z, p6.z, p7.z])
+
+    return BBox(float4(xmin,ymin,zmin,0), float4(xmax,ymax,zmax,0))
+
+def boundingBox10(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9):
+    xmin = min([p0.x, p1.x, p2.x, p3.x, p4.x, p5.x, p6.x, p7.x, p8.x, p9.x])
+    ymin = min([p0.y, p1.y, p2.y, p3.y, p4.y, p5.y, p6.y, p7.y, p8.y, p9.y])
+    zmin = min([p0.z, p1.z, p2.z, p3.z, p4.z, p5.z, p6.z, p7.z, p8.z, p9.z])
+
+    xmax = max([p0.x, p1.x, p2.x, p3.x, p4.x, p5.x, p6.x, p7.x, p8.x, p9.x])
+    ymax = max([p0.y, p1.y, p2.y, p3.y, p4.y, p5.y, p6.y, p7.y, p8.y, p9.y])
+    zmax = max([p0.z, p1.z, p2.z, p3.z, p4.z, p5.z, p6.z, p7.z, p8.z, p9.z])
 
     return BBox(float4(xmin,ymin,zmin,0), float4(xmax,ymax,zmax,0))
 
@@ -255,6 +269,7 @@ def intersectLineBox(line, box):
 
     return [intersect, minDistance, minPoint]
 
+# Does not support flat boxes.
 def intersectLineBoxInOut(line, box):
     counter = 0
     intersect = False
@@ -272,6 +287,8 @@ def intersectLineBoxInOut(line, box):
                 maxDistance = distance
                 maxPoint = point
             if minDistance != maxDistance:
+                counter = counter + 1
+            elif counter == 0:
                 counter = counter + 1
             if counter == 2: # Stop if two intersections haven been found.
                 break;

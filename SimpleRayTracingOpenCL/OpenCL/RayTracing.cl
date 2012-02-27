@@ -61,12 +61,21 @@ void firstHitLeaf(__constant const Scene2 *s, __constant const Render *render, c
 		float4 ipTmp;
 		float thicknessTmp;
 		if (render->mode == 0) {
-			intersectLineRectangle(r, &(collimator->flatCollimator.leaves[i]), &intersectTmp, &distanceTmp, &ipTmp);
+			intersectLineFlatCollimatorLeaf(r, &(collimator->flatCollimator.leaves[i]), &intersectTmp, &distanceTmp, &ipTmp);
+			//intersectLineRectangle(r, &(collimator->flatCollimator.leaves[i]), &intersectTmp, &distanceTmp, &ipTmp);
 		}
 		else if (render->mode == 1) {
 			float4 ipInTmp;
 			float distanceOutTmp;
-			intersectLineBoxInOut(r, &(collimator->boxCollimator.leaves[i]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
+			intersectLineBBoxCollimatorLeaf(r, &(collimator->bboxCollimator.leaves[i]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
+			//intersectLineBoxInOut(r, &(collimator->bboxCollimator.leaves[i]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
+			thicknessTmp = distanceOutTmp - distanceTmp;
+		}
+		else if (render->mode == 2) {
+			float4 ipInTmp;
+			float distanceOutTmp;
+			intersectLineBoxCollimatorLeaf(r, &(collimator->boxCollimator.leaves[i]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
+			//intersectLineBoxInOut(r, &(collimator->bboxCollimator.leaves[i]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 			thicknessTmp = distanceOutTmp - distanceTmp;
 		}
 
@@ -74,7 +83,7 @@ void firstHitLeaf(__constant const Scene2 *s, __constant const Render *render, c
 			leafIndex = i;
 			minDistance = distanceTmp;
 			*ip = ipTmp;
-			if (render->mode == 1) {
+			if (render->mode == 1 || render->mode == 2) {
 				*thickness = thicknessTmp;
 			}
 		}
@@ -86,7 +95,7 @@ void firstHitLeaf(__constant const Scene2 *s, __constant const Render *render, c
 	}
 }
 
-void firstHitCollimator(__constant const Scene2 *s, __constant const Render *render, const Line *r, const Collimator *collimators, bool *intersect, float *distance, float4 *ip, float *intensityCoeff, __global Debug *debug) {
+void firstHitCollimator(__constant const Scene2 *s, __constant const Render *render, const Line *r, __constant const Collimator *collimators, bool *intersect, float *distance, float4 *ip, float *intensityCoeff, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
 	*ip = (NAN, NAN, NAN, NAN);
@@ -94,14 +103,19 @@ void firstHitCollimator(__constant const Scene2 *s, __constant const Render *ren
 	*intensityCoeff = 1;
 	int collimatorIndex = -1;
 	for (int i = 0; i < s->collimators; i++) { // Find first collimator
-		bool intersectTmp;
+		bool intersectTmp = false;
 		float distanceTmp;
 		
+		Collimator collimator = collimators[i];
+
 		if (render->mode == 0) {
-			intersectLineBox(r, &(collimators[i].flatCollimator.boundingBox), &intersectTmp, &distanceTmp, &ipTmpCollimatorBB);
+			intersectLineBBox(r, &(collimator.flatCollimator.boundingBox), &intersectTmp, &distanceTmp, &ipTmpCollimatorBB);
 		}
 		else if (render->mode == 1) {
-			intersectLineBox(r, &(collimators[i].boxCollimator.boundingBox), &intersectTmp, &distanceTmp, &ipTmpCollimatorBB);
+			intersectLineBBox(r, &(collimator.bboxCollimator.boundingBox), &intersectTmp, &distanceTmp, &ipTmpCollimatorBB);
+		}
+		else if (render->mode == 2) {
+			intersectLineBBox(r, &(collimator.boxCollimator.boundingBox), &intersectTmp, &distanceTmp, &ipTmpCollimatorBB);
 		}
 
 		if (intersectTmp && (distanceTmp < minDistance)) {
@@ -111,36 +125,37 @@ void firstHitCollimator(__constant const Scene2 *s, __constant const Render *ren
 	}
 	
 	if (collimatorIndex != -1) {
-		bool intersectTmp;
+		Collimator collimator = collimators[collimatorIndex]; // Remove this!
+		bool intersectTmp = false;
 		float distanceTmp;
 		float4 ipTmpLeaf;
 		float thickness = 0;
-		firstHitLeaf(s, render, r, &(collimators[collimatorIndex]), &intersectTmp, &distanceTmp, &ipTmpLeaf, &thickness, debug);
+		firstHitLeaf(s, render, r, &collimator, &intersectTmp, &distanceTmp, &ipTmpLeaf, &thickness, debug);
 		while (intersectTmp) {
 			*intersect = true;
 			*distance = minDistance; // Not used.
 			if (render->mode == 0) {
-				thickness = collimators[collimatorIndex].height;
+				thickness = collimator.height;
 			}
-			*intensityCoeff *= exp(-collimators[collimatorIndex].absorptionCoeff*thickness);
-			if (render->mode == 0) { // One leaf hit. Continue after collimator bounding box.
+			*intensityCoeff *= exp(-collimator.absorptionCoeff*thickness);
+			if (render->mode == 0) { // One leaf hit. Continue ray after collimator bounding box.
 				*ip = ipTmpCollimatorBB; 
 				intersectTmp = false;
 			}
-			else if (render->mode == 1) { // One ray can hit several leaves.
+			else if (render->mode == 1 || render->mode == 2) { // One ray can hit several leaves.
 				*ip = ipTmpLeaf;
 				Line newRay = {
 					.origin = ipTmpLeaf,
 					.direction = r->direction};
-				firstHitLeaf(s, render, &newRay, &(collimators[collimatorIndex]), &intersectTmp, &distanceTmp, &ipTmpLeaf, &thickness, debug);
+				firstHitLeaf(s, render, &newRay, &collimator, &intersectTmp, &distanceTmp, &ipTmpLeaf, &thickness, debug);
 			}
 		}
 	}
 }
 
-void traceRayFirstHit(__constant const Scene2 *s, __constant const Render *render, const Line *r, const Collimator *collimators, float *i, __global Debug *debug) {
+void traceRayFirstHit(__constant const Scene2 *s, __constant const Render *render, const Line *r, __constant const Collimator *collimators, float *i, __global Debug *debug) {
 	float intensity = 1;
-	bool intersectCollimator = true;
+	bool intersectCollimator = false;
 	float distanceCollimator;
 	float4 ipCollimator;
 	float intensityCoeff;
@@ -202,7 +217,7 @@ void calculateFluenceElementLightStraightUp(__constant const Scene *scene, __con
 	fluence_data[i*render->flx+j] = intensity;
 }
 
-void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant const Render *render, const Collimator *collimators, __global float *fluence_data, __global Debug *debug){
+void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant const Render *render, __constant const Collimator *collimators, __global float *fluence_data, __global Debug *debug){
 	unsigned int i = get_global_id(0);
     unsigned int j = get_global_id(1);
 
@@ -211,13 +226,17 @@ void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant
 								 scene->fluenceMap.rectangle.p0.z, 0);
 
 	float4 v0 = (float4) (scene->raySource.disc.origin.x - scene->raySource.disc.radius, 
+						  scene->raySource.disc.origin.y, 
+                          scene->raySource.disc.origin.z,
+                          scene->raySource.disc.origin.w) - rayOrigin;
+	float4 v1 = (float4) (scene->raySource.disc.origin.x, 
 						  scene->raySource.disc.origin.y - scene->raySource.disc.radius, 
                           scene->raySource.disc.origin.z,
                           scene->raySource.disc.origin.w) - rayOrigin;
     float4 vi = (float4) (v0.x + scene->raySource.disc.radius*2, v0.y, v0.z, v0.w) - rayOrigin;
-    float4 vj = (float4) (v0.x, v0.y + scene->raySource.disc.radius*2, v0.z, v0.w) - rayOrigin;
+    float4 vj = (float4) (v1.x, v1.y + scene->raySource.disc.radius*2, v1.z, v1.w) - rayOrigin;
 	float anglei = acos(dot(normalize(v0),normalize(vi)));
-    float anglej = acos(dot(normalize(v0),normalize(vj)));
+    float anglej = acos(dot(normalize(v1),normalize(vj)));
 	float ratio = anglei*anglej/M_PI_F*2; // The ratio of a half sphere that are covering the light source. => Things that are further away recieves less photons.
 
 	float fluenceSum = 0;
@@ -244,7 +263,7 @@ void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant
 	fluence_data[i*render->flx+j] = fluenceSum;
 }
 
-void initCollimators(__constant const Scene2 *scene, __constant const Render *render, __global const Collimator *collimators, Collimator *collimators_new) {
+void initCollimators(__constant const Scene2 *scene, __constant const Render *render, __constant const Collimator *collimators, Collimator *collimators_new) {
 	// First copy all properties
 	for (int i = 0; i < scene->collimators; i++) {
 		collimators_new[i].boundingBox = collimators[i].boundingBox;
@@ -276,14 +295,14 @@ __kernel void drawScene(__constant const Scene *scene, __constant const Render *
 	calculateFluenceElementLightStraightUp(scene, render, fluence_data, debug);
 }
 
-__kernel void drawScene2(__constant const Scene2 *scene, __constant const Render *render, __global float *fluence_data, __global const Collimator *collimators, __global Debug *debug)
+__kernel void drawScene2(__constant const Scene2 *scene, __constant const Render *render, __global float *fluence_data, __constant const Collimator *collimators, __global Debug *debug)
 {
 	//unsigned int i = get_global_id(0);
     //unsigned int j = get_global_id(1);
 	
-	Collimator collimators_new[2];
-	collimators_new[0] = collimators[0];
-	collimators_new[1] = collimators[1];
+	//Collimator collimators_new[2];
+	//collimators_new[0] = collimators[0];
+	//collimators_new[1] = collimators[1];
 	//Collimator collimators_new[2];
 	//if (i < 30 && j < 30) {
 		//initCollimators(scene, render, collimators, (Collimator *) collimators_new);
@@ -295,5 +314,5 @@ __kernel void drawScene2(__constant const Scene2 *scene, __constant const Render
 		debug->v1 = collimators_new[1].flatCollimator.leaves[1].p3;
 	}*/
 
-	calcFluenceElementLightAllAngles(scene, render, collimators_new, fluence_data, debug);
+	calcFluenceElementLightAllAngles(scene, render, collimators, fluence_data, debug);
 }

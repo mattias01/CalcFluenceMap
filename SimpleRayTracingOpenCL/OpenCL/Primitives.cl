@@ -31,14 +31,18 @@ typedef struct Disc {
 	float radius;
 } __attribute__((packed)) Disc;
 
-typedef struct Box {
+typedef struct BBox {
 	float4 min;
 	float4 max;
+} __attribute__((packed)) BBox;
+
+typedef struct Box {
+	Triangle triangles[12];
 } __attribute__((packed)) Box;
 
 // Other
 
-void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, float4 *p5, float4 *p6, float4 *p7, Box *bbox) {
+void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, float4 *p5, float4 *p6, float4 *p7, BBox *bbox) {
 	float4 pointArray[8] = {*p0, *p1, *p2, *p3, *p4, *p5, *p6, *p7};
 
     float xmin = INFINITY;
@@ -58,11 +62,37 @@ void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, flo
 		zmax = fmax(zmin, pointArray[i].z);
 	}
 
-	Box box = {
+	BBox box = {
 		.min = (float4) (xmin,ymin,zmin,0),
 		.max = (float4) (xmax,ymax,zmax,0)};
 
 	*bbox = box;
+}
+
+void createBoxFromPoints(float4 p0, float4 p1, float4 p2, float4 p3, float4 p4, float4 p5, float4 p6, float4 p7, Box *box) {
+    // Bottom
+	Triangle t0 = {.p0=p0, .p1=p1, .p2=p3};
+	Triangle t1 = {.p0=p1, .p1=p2, .p2=p3};
+    // Top
+	Triangle t2 = {.p0=p5, .p1=p6, .p2=p4};
+	Triangle t3 = {.p0=p6, .p1=p7, .p2=p4};
+    // Left side
+	Triangle t4 = {.p0=p1, .p1=p7, .p2=p2};
+	Triangle t5 = {.p0=p7, .p1=p6, .p2=p2};
+    // Right side
+    Triangle t6 = {.p0=p4, .p1=p0, .p2=p5};
+    Triangle t7 = {.p0=p0, .p1=p3, .p2=p5};
+    // Front side
+    Triangle t8 = {.p0=p3, .p1=p2, .p2=p5};
+    Triangle t9 = {.p0=p2, .p1=p6, .p2=p5};
+    // Back side (Not needed?)
+    Triangle t10 = {.p0=p4, .p1=p7, .p2=p0};
+    Triangle t11 = {.p0=p7, .p1=p1, .p2=p0};
+	
+	Triangle new_triangles[12] = {t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11};
+	for (int i = 0; i < 12; i++) {
+		box->triangles[i] = new_triangles[i];
+	}
 }
 
 // Projection calculations
@@ -164,7 +194,7 @@ void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float *dis
 }
 
 // Relies on IEEE 754 floating point arithmetic (div by 0 -> inf).
-void intersectLineBox(const Line *l, const Box *b, bool *intersect, float *distance, float4 *ip)
+void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *distance, float4 *ip)
 {
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	if (l->direction.x >= 0) {
@@ -227,7 +257,7 @@ void intersectLineBox(const Line *l, const Box *b, bool *intersect, float *dista
 	// Could give the outgoing distance (tmax) and point here as well.
 }
 
-void intersectLineBoxInOut(const Line *l, const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+void intersectLineBBoxInOut(const Line *l, const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	if (l->direction.x >= 0) {
@@ -295,6 +325,71 @@ void intersectLineBoxInOut(const Line *l, const Box *b, bool *intersect, float *
 	*outDistance = tmax;
 	*inIp = l->origin + l->direction*tmin;
 	*outIp = l->origin + l->direction*tmax;
+}
+
+void intersectLineBox(const Line *l, const Box *b, bool *intersect, float *distance, float4 *ip) {
+	int counter = 0;
+	*intersect = false;
+	*distance = NAN;
+	*ip = (NAN, NAN, NAN, NAN);
+	float minDistance = INFINITY;
+	float4 minPoint;
+	for (int i = 0; i < 12; i++) {
+		intersectLineTriangle(l, &(b->triangles[i]), intersect, distance, ip);
+		if (*intersect) {
+			if (*distance < minDistance) {
+				minDistance = *distance;
+				minPoint = *ip;
+			}
+			counter = counter + 1;
+			if (counter == 2) {
+				*intersect = true;
+				*distance = minDistance;
+				*ip = minPoint;
+				return;
+			}
+		}
+	}
+}
+
+void intersectLineBoxInOut(const Line *l, const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
+	int counter = 0;
+	*intersect = false;
+	*inDistance = NAN;
+	*outDistance = NAN;
+	*inIp = (NAN, NAN, NAN, NAN);
+	*outIp = (NAN, NAN, NAN, NAN);
+	float minDistance = INFINITY;
+	float4 minPoint;
+	float maxDistance = -INFINITY;
+	float4 maxPoint;
+	for (int i = 0; i < 12; i++) {
+		intersectLineTriangle(l, &(b->triangles[i]), intersect, inDistance, inIp);
+		if (*intersect) {
+			if (*inDistance < minDistance) {
+				minDistance = *inDistance;
+				minPoint = *inIp;
+			}
+			if (*inDistance > maxDistance) {
+				maxDistance = *inDistance;
+				maxPoint = *inIp;
+			}
+			if (minDistance != maxDistance) {
+				counter = counter + 1;
+			}
+			else if (counter == 0) {
+				counter = counter + 1;
+			}
+			if (counter == 2) {
+				*intersect = true;
+				*inDistance = minDistance;
+				*outDistance = maxDistance;
+				*inIp = minPoint;
+				*outIp = maxPoint;
+				return;
+			}
+		}
+	}
 }
 
 #endif //__Primitives__
