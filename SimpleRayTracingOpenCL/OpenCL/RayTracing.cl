@@ -214,7 +214,7 @@ void traceRay(__constant const Scene *s, const Line *r, float *i) {
 	}
 }
 
-void calculateFluenceElementLightStraightUp(__constant const Scene *scene, __constant const Render *render, __global float *fluence_data, __global Debug *debug){
+void calculateFluenceElementLightStraightUp(__constant const Scene *scene, __constant const Render *render, __global float *fluence_data, __global Debug *debug) {
 	unsigned int i = get_global_id(0);
     unsigned int j = get_global_id(1);
 
@@ -229,7 +229,110 @@ void calculateFluenceElementLightStraightUp(__constant const Scene *scene, __con
 	fluence_data[i*render->flx+j] = intensity;
 }
 
-void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant const Render *render, __global const Collimator *collimators, __global float *fluence_data, __global Debug *debug){
+// Gives vectors from the ray origin to left, right, bottom, top of the ray source.
+void lightSourceAreaVectors(__constant const Scene2 *scene, const float4 *rayOrigin, float4 *vi0, float4 *vi1, float4 *vj0, float4 *vj1, __global Debug *debug) {
+	*vi0 = (float4) (scene->raySource.disc.origin.x - scene->raySource.disc.radius, 
+					 scene->raySource.disc.origin.y, 
+					 scene->raySource.disc.origin.z,
+					 scene->raySource.disc.origin.w) - *rayOrigin;
+
+	*vi1 = (float4) (scene->raySource.disc.origin.x + scene->raySource.disc.radius, 
+					 scene->raySource.disc.origin.y, 
+					 scene->raySource.disc.origin.z,
+					 scene->raySource.disc.origin.w) - *rayOrigin;
+
+	*vj0 = (float4) (scene->raySource.disc.origin.x, 
+					 scene->raySource.disc.origin.y - scene->raySource.disc.radius, 
+					 scene->raySource.disc.origin.z,
+					 scene->raySource.disc.origin.w) - *rayOrigin;
+
+	*vj1 = (float4) (scene->raySource.disc.origin.x, 
+					 scene->raySource.disc.origin.y + scene->raySource.disc.radius, 
+					 scene->raySource.disc.origin.z,
+					 scene->raySource.disc.origin.w) - *rayOrigin;
+}
+
+void calculateIntensityDecreaseWithDistance(__constant const Scene2 *scene, const float4 *rayOrigin, float *distanceFactor, __global Debug *debug) {
+	float4 vi0, vi1, vj0, vj1;
+	lightSourceAreaVectors(scene, rayOrigin, &vi0, &vi1, &vj0, &vj1, debug);
+	float anglei = acos(dot(normalize(vi0), normalize(vi1)));
+    float anglej = acos(dot(normalize(vj0), normalize(vj1)));
+	*distanceFactor = anglei*anglej/M_PI_F*2; // The ratio of a unit half sphere that are covering the light source. => Things that are further away recieves less photons.
+}
+
+// Integration over the light source is done as if the rays where cast from a pixel straight under the origin of the light source. The sampling is uniform only from that point.
+void flatLightSourceSampling(__constant const Scene2 *scene, __constant const Render *render, __global const Collimator *collimators, const float4 *rayOrigin, float *fluenceSum, __global Debug *debug) {
+	for (int li = 0; li < render->lsamples; li++) {
+		for (int lj = 0; lj < render->lsamples; lj++) {
+			float4 lPoint =  (float4) (scene->raySource.disc.origin.x - scene->raySource.disc.radius + li*render->lstep, 
+									   scene->raySource.disc.origin.y - scene->raySource.disc.radius + lj*render->lstep, 
+                                       scene->raySource.disc.origin.z,
+                                       scene->raySource.disc.origin.w);
+			float4 rayDirection = lPoint - *rayOrigin;
+
+			Line ray = {
+				.origin = *rayOrigin, 
+				.direction = normalize(rayDirection)};
+
+			float intensity;
+			traceRayFirstHit(scene, render, &ray, collimators, &intensity, debug);
+			//traceRay(scene, &ray, &intensity);
+			
+			*fluenceSum += intensity; // Add intensity from ray
+		}
+	}
+}
+
+// Integration is done in a uniform way over the light source. The sampling is uniform from every point. This might contain errors.
+void uniformLightSourceSampling(__constant const Scene2 *scene, __constant const Render *render, __global const Collimator *collimators, const float4 *rayOrigin, float *fluenceSum, __global Debug *debug) {
+	float4 lvi0, lvi1, lvj0, lvj1;
+	lightSourceAreaVectors(scene, rayOrigin, &lvi0, &lvi1, &lvj0, &lvj1, debug);
+
+	float4 vi0, vi1, vj0, vj1; // 0 is the closest vector
+	if (length(lvi0) < length(lvi1)) { // Find the closest i vector.
+		vi0 = lvi0;
+		vi1 = lvi1;
+	}
+	else {
+		vi0 = lvi1;
+		vi1 = lvi0;
+	}
+	if (length(lvj0) < length(lvj1)) { // Find the closest j vector.
+		vj0 = lvj0;
+		vj1 = lvj1;
+	}
+	else {
+		vj0 = lvj1;
+		vj1 = lvj0;
+	}
+	vi1 = length(vi0)*normalize(vi1); // vx1 is now of same length as vx0 which creates a plane that we cast rays on to get an uniform sampling.
+	vj1 = length(vj0)*normalize(vj1);
+	float4 idir = (*rayOrigin + vi1) - (*rayOrigin + vi0);
+	float4 jdir = (*rayOrigin + vj1) - (*rayOrigin + vj0);
+	float istep = length(idir)/(render->lsamples-1);
+	float jstep = length(jdir)/(render->lsamples-1);
+	
+	float4 corner = (*rayOrigin + vi0) - normalize(jdir)*length(jdir)/2;
+
+	for (int li = 0; li < render->lsamples; li++) {
+		for (int lj = 0; lj < render->lsamples; lj++) {
+			float4 lPoint =  corner + li*istep*idir + lj*jstep*jdir;
+			float4 rayDirection = lPoint - *rayOrigin;
+
+			Line ray = {
+				.origin = *rayOrigin, 
+				.direction = normalize(rayDirection)};
+
+			float intensity;
+			traceRayFirstHit(scene, render, &ray, collimators, &intensity, debug);
+			//traceRay(scene, &ray, &intensity);
+			
+			*fluenceSum += intensity; // Add intensity from ray
+		}
+	}
+}
+
+void calcFluenceElement(__constant const Scene2 *scene, __constant const Render *render, __global const Collimator *collimators, __global float *fluence_data, __global Debug *debug){
 	unsigned int i = get_global_id(0);
     unsigned int j = get_global_id(1);
 
@@ -237,41 +340,12 @@ void calcFluenceElementLightAllAngles(__constant const Scene2 *scene, __constant
 								 scene->fluenceMap.rectangle.p0.y + j*render->ystep + render->yoffset, 
 								 scene->fluenceMap.rectangle.p0.z, 0);
 
-	float4 v0 = (float4) (scene->raySource.disc.origin.x - scene->raySource.disc.radius, 
-						  scene->raySource.disc.origin.y, 
-                          scene->raySource.disc.origin.z,
-                          scene->raySource.disc.origin.w) - rayOrigin;
-	float4 v1 = (float4) (scene->raySource.disc.origin.x, 
-						  scene->raySource.disc.origin.y - scene->raySource.disc.radius, 
-                          scene->raySource.disc.origin.z,
-                          scene->raySource.disc.origin.w) - rayOrigin;
-    float4 vi = (float4) (v0.x + scene->raySource.disc.radius*2, v0.y, v0.z, v0.w) - rayOrigin;
-    float4 vj = (float4) (v1.x, v1.y + scene->raySource.disc.radius*2, v1.z, v1.w) - rayOrigin;
-	float anglei = acos(dot(normalize(v0),normalize(vi)));
-    float anglej = acos(dot(normalize(v1),normalize(vj)));
-	float ratio = anglei*anglej/M_PI_F*2; // The ratio of a half sphere that are covering the light source. => Things that are further away recieves less photons.
-
+	float distanceFactor;
+	calculateIntensityDecreaseWithDistance(scene, &rayOrigin, &distanceFactor, debug);
 	float fluenceSum = 0;
-	for (int li = 0; li < render->lsamples; li++) {
-		for (int lj = 0; lj < render->lsamples; lj++) {
-			float4 lPoint =  (float4) (scene->raySource.disc.origin.x - scene->raySource.disc.radius + li*render->lstep, 
-									   scene->raySource.disc.origin.y - scene->raySource.disc.radius + lj*render->lstep, 
-                                       scene->raySource.disc.origin.z,
-                                       scene->raySource.disc.origin.w);
-			float4 rayDirection = lPoint - rayOrigin;
-
-			Line ray = {
-				.origin = rayOrigin, 
-				.direction = normalize(rayDirection)};
-
-			float intensity;
-			traceRayFirstHit(scene, render, &ray, collimators, &intensity, debug);
-			//traceRay(scene, &ray, &intensity);
-			
-			fluenceSum += intensity; // Add intensity from ray
-		}
-	}
-	fluence_data[i*render->flx+j] = fluenceSum*ratio;
+	//flatLightSourceSampling(scene, render, collimators, &rayOrigin, &fluenceSum, debug);
+	uniformLightSourceSampling(scene, render, collimators, &rayOrigin, &fluenceSum, debug);
+	fluence_data[i*render->flx+j] = fluenceSum*distanceFactor;
 }
 
 void initCollimators(__constant const Scene2 *scene, __constant const Render *render, __global const Collimator *collimators, Collimator *collimators_new) {
@@ -310,15 +384,6 @@ __kernel void drawScene2(__constant const Scene2 *scene, __constant const Render
 {
 	//unsigned int i = get_global_id(0);
     //unsigned int j = get_global_id(1);
-	
-	//Collimator collimators_new[2];
-	//collimators_new[0] = collimators[0];
-	//collimators_new[1] = collimators[1];
-	//Collimator collimators_new[2];
-	//if (i < 30 && j < 30) {
-		//initCollimators(scene, render, collimators, (Collimator *) collimators_new);
-	//}
-	//barrier(CLK_LOCAL_MEM_FENCE && CLK_GLOBAL_MEM_FENCE);
 
-	calcFluenceElementLightAllAngles(scene, render, collimators, fluence_data, debug);
+	calcFluenceElement(scene, render, collimators, fluence_data, debug);
 }

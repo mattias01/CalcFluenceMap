@@ -57,7 +57,7 @@ col1 = Collimator()
 col1.position = float4(-5.9, -10, -29.5,0)
 col1.xdir = float4(0,1,0,0)
 col1.ydir = float4(1,0,0,0)
-col1.absorptionCoeff = 1
+col1.absorptionCoeff = 1.0
 col1.height = 8.2
 col1.numberOfLeaves = 40
 col1.width = 11.8
@@ -68,7 +68,7 @@ col2 = Collimator()
 col2.position = float4(5.9, 10, -29.5,0)
 col2.xdir = float4(0,-1,0,0)
 col2.ydir = float4(-1,0,0,0)
-col2.absorptionCoeff = 1
+col2.absorptionCoeff = 1.0
 col2.height = 8.2
 col2.numberOfLeaves = 2
 col2.width = 11.8
@@ -98,7 +98,7 @@ jaw2.leafPositions = (10,)
 jaw2.boundingBox = calculateCollimatorBoundingBox(jaw2)
 
 collimator_array = Collimator * 4
-#collimators = collimator_array(col1, col2)
+#collimators = collimator_array(col1)
 collimators = collimator_array(jaw1, jaw2, col1, col2)
 
 fm = FluenceMap(Rectangle(float4(-30,-30,-100,0), float4(30,-30,-100,0), float4(30,30,-100,0), float4(-30,30,-100,0)))
@@ -114,7 +114,7 @@ xoffset = xstep/2.0
 yoffset = ystep/2.0
 lsamples = 10
 lstep = scene2.raySource.disc.radius*2/(lsamples-1)
-mode = 0
+mode = 2
 render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep,mode)
 
 init(scene2, render, collimators) # Init Collimator
