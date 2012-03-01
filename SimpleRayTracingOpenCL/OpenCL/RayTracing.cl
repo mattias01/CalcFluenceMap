@@ -153,7 +153,7 @@ void firstHitCollimator(__constant const Scene *s, __constant const Render *rend
 	}
 }
 
-void traceRayFirstHit(__constant const Scene *s, __constant const Render *render, const Line *r, __global const Collimator *collimators, float *i, __global Debug *debug) {
+void traceRay(__constant const Scene *s, __constant const Render *render, const Line *r, __global const Collimator *collimators, float *i, __global Debug *debug) {
 	float intensity = 1;
 	bool intersectCollimator = false;
 	float distanceCollimator;
@@ -232,8 +232,7 @@ void flatLightSourceSampling(__constant const Scene *scene, __constant const Ren
 				.direction = normalize(rayDirection)};
 
 			float intensity;
-			traceRayFirstHit(scene, render, &ray, collimators, &intensity, debug);
-			//traceRay(scene, &ray, &intensity);
+			traceRay(scene, render, &ray, collimators, &intensity, debug);
 			
 			*fluenceSum += intensity; // Add intensity from ray
 		}
@@ -281,8 +280,7 @@ void uniformLightSourceSampling(__constant const Scene *scene, __constant const 
 				.direction = normalize(rayDirection)};
 
 			float intensity;
-			traceRayFirstHit(scene, render, &ray, collimators, &intensity, debug);
-			//traceRay(scene, &ray, &intensity);
+			traceRay(scene, render, &ray, collimators, &intensity, debug);
 			
 			*fluenceSum += intensity; // Add intensity from ray
 		}

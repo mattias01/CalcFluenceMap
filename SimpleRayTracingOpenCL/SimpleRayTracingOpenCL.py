@@ -147,15 +147,6 @@ if openCL:
     print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
 
 # Show plots
-codes = [Path.MOVETO,
-         Path.LINETO,
-         Path.LINETO,
-         Path.LINETO,
-         Path.CLOSEPOLY]
-#colpath1 = Path(Rectangle2dVertexArray(col.leftRectangle), codes)
-#colpath2 = Path(Rectangle2dVertexArray(col.rightRectangle), codes)
-#colpatch1 = patches.PathPatch(colpath1, facecolor='none', edgecolor='blue', linewidth=4, alpha=0.5)
-#colpatch2 = patches.PathPatch(colpath2, facecolor='none', edgecolor='blue', linewidth=4, alpha=0.5)
 rspatch = patches.Circle((scene.raySource.disc.origin.y, scene.raySource.disc.origin.x), 
                          scene.raySource.disc.radius, facecolor='none', edgecolor='red', linewidth=1, alpha=0.5)
 
@@ -167,8 +158,6 @@ if python:
                                                                                -scene.fluenceMap.rectangle.p0.x,
                                                                                -scene.fluenceMap.rectangle.p1.x])
 
-    #plt.gca().add_patch(colpatch1)
-    #plt.gca().add_patch(colpatch2)
     plt.gca().add_patch(rspatch)
 
     plt.title("Python " + "Time: " + str(timePython) + " Samples per second: " + str(samplesPerSecondPython))
@@ -181,8 +170,6 @@ if openCL:
                                                                                scene.fluenceMap.rectangle.p3.y,
                                                                                -scene.fluenceMap.rectangle.p0.x,
                                                                                -scene.fluenceMap.rectangle.p1.x])
-    #plt.gca().add_patch(colpatch1)
-    #plt.gca().add_patch(colpatch2)
     plt.gca().add_patch(rspatch)
     plt.title("OpenCL " + "Time: " + str(timeOpenCL) + " Samples per second: " + str(samplesPerSecondOpenCL))
     plt.show()
