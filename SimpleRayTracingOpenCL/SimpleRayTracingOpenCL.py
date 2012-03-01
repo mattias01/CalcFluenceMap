@@ -42,15 +42,7 @@ if openCL:
     testOpenCL(ctx, queue)
 
 # Build scene objects
-#rs = SimpleRaySourceRectangle(Rectangle(float4(0,3,6,0), float4(7,3,6,0), float4(7,5,6,0), float4(0,5,6,0)))
 rs = SimpleRaySourceDisc(Disc(float4(0,0,0,0), float4(0,0,1,0), 1))
-#cls = Rectangle(float4(-3.5,-3.5,-90,0), float4(3.5,-3.5,-90,0), float4(3.5,-0.5,-90,0), float4(-3.5,-0.5,-90,0))
-#crs = Rectangle(float4(-3.5,0.5,-90,0), float4(2.5,0.5,-90,0), float4(3.5,3.5,-90,0), float4(-3.5,3.5,-90,0))
-#col = SimpleCollimator(cls, crs)
-#cls2 = Rectangle(float4(-3.5,-3.5,-99,0), float4(-0.5,-3.5,-99,0), float4(-0.5,3.5,-99,0), float4(-3.5,3.5,-99,0))
-#crs2 = Rectangle(float4(0.5,-3.5,-99,0), float4(3.5,-3.5,-99,0), float4(3.5,3.5,-99,0), float4(0.5,3.5,-99,0))
-#col2 = SimpleCollimator(cls2, crs2)
-#collimators = [col, col2]
 
 col1 = Collimator()
 #float4(-5.9,-5.9,-29.5,0)
@@ -102,22 +94,21 @@ collimator_array = Collimator * 4
 collimators = collimator_array(jaw1, jaw2, col1, col2)
 
 fm = FluenceMap(Rectangle(float4(-30,-30,-100,0), float4(30,-30,-100,0), float4(30,30,-100,0), float4(-30,30,-100,0)))
-#scene = Scene(rs,col,fm)
-scene2 = Scene2(rs,len(collimators),fm)
+scene = Scene(rs,len(collimators),fm)
 
 # Settings
 flx = 128
 fly = 128
-xstep = (0.0 + length(scene2.fluenceMap.rectangle.p1 - scene2.fluenceMap.rectangle.p0))/flx # Length in x / x resolution
-ystep = (0.0 + length(scene2.fluenceMap.rectangle.p3 - scene2.fluenceMap.rectangle.p0))/fly # Length in y / y resolution
+xstep = (0.0 + length(scene.fluenceMap.rectangle.p1 - scene.fluenceMap.rectangle.p0))/flx # Length in x / x resolution
+ystep = (0.0 + length(scene.fluenceMap.rectangle.p3 - scene.fluenceMap.rectangle.p0))/fly # Length in y / y resolution
 xoffset = xstep/2.0
 yoffset = ystep/2.0
 lsamples = 10
-lstep = scene2.raySource.disc.radius*2/(lsamples-1)
+lstep = scene.raySource.disc.radius*2/(lsamples-1)
 mode = 2
 render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep,mode)
 
-init(scene2, render, collimators) # Init Collimator
+init(scene, render, collimators) # Init Collimator
 
 if python:
     fluence_dataPython = numpy.zeros(shape=(flx,fly), dtype=numpy.float32)
@@ -128,7 +119,7 @@ if openCL:
 if python:
     time1 = time()
     debugPython = Debug()
-    drawScene2(scene2, render, collimators, fluence_dataPython, debugPython)
+    drawScene(scene, render, collimators, fluence_dataPython, debugPython)
     timePython = time()-time1
 
     samplesPerSecondPython = flx*fly*lsamples*lsamples/timePython
@@ -140,15 +131,13 @@ if openCL:
     debugOpenCL = Debug()
     program = oclu.loadProgram(ctx, "OpenCL/RayTracing.cl")
     mf = cl.mem_flags
-    #scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
-    scene2_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene2)
+    scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
     render_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=render)
     collimators_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=collimators)
     fluence_dataOpenCL_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=fluence_dataOpenCL)
     debugOpenCL_buf = cl.Buffer(ctx, mf.WRITE_ONLY, sizeof(debugOpenCL))
     
-    #program.drawScene(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, debugOpenCL_buf)
-    program.drawScene2(queue, fluence_dataOpenCL.shape, None, scene2_buf, render_buf, fluence_dataOpenCL_buf, collimators_buf, debugOpenCL_buf).wait()
+    program.drawScene(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, collimators_buf, debugOpenCL_buf).wait()
     cl.enqueue_read_buffer(queue, fluence_dataOpenCL_buf, fluence_dataOpenCL).wait()
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
     timeOpenCL = time()-time1
@@ -167,16 +156,16 @@ codes = [Path.MOVETO,
 #colpath2 = Path(Rectangle2dVertexArray(col.rightRectangle), codes)
 #colpatch1 = patches.PathPatch(colpath1, facecolor='none', edgecolor='blue', linewidth=4, alpha=0.5)
 #colpatch2 = patches.PathPatch(colpath2, facecolor='none', edgecolor='blue', linewidth=4, alpha=0.5)
-rspatch = patches.Circle((scene2.raySource.disc.origin.y, scene2.raySource.disc.origin.x), 
-                         scene2.raySource.disc.radius, facecolor='none', edgecolor='red', linewidth=1, alpha=0.5)
+rspatch = patches.Circle((scene.raySource.disc.origin.y, scene.raySource.disc.origin.x), 
+                         scene.raySource.disc.radius, facecolor='none', edgecolor='red', linewidth=1, alpha=0.5)
 
 # Python
 if python:
     print fluence_dataPython
-    plt.imshow(fluence_dataPython, interpolation='none', cmap=cm.gray, extent=[scene2.fluenceMap.rectangle.p0.y,
-                                                                               scene2.fluenceMap.rectangle.p3.y,
-                                                                               -scene2.fluenceMap.rectangle.p0.x,
-                                                                               -scene2.fluenceMap.rectangle.p1.x])
+    plt.imshow(fluence_dataPython, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.rectangle.p0.y,
+                                                                               scene.fluenceMap.rectangle.p3.y,
+                                                                               -scene.fluenceMap.rectangle.p0.x,
+                                                                               -scene.fluenceMap.rectangle.p1.x])
 
     #plt.gca().add_patch(colpatch1)
     #plt.gca().add_patch(colpatch2)
@@ -188,10 +177,10 @@ if python:
 # OpenCL
 if openCL:
     print fluence_dataOpenCL
-    plt.imshow(fluence_dataOpenCL, interpolation='none', cmap=cm.gray, extent=[scene2.fluenceMap.rectangle.p0.y,
-                                                                               scene2.fluenceMap.rectangle.p3.y,
-                                                                               -scene2.fluenceMap.rectangle.p0.x,
-                                                                               -scene2.fluenceMap.rectangle.p1.x])
+    plt.imshow(fluence_dataOpenCL, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.rectangle.p0.y,
+                                                                               scene.fluenceMap.rectangle.p3.y,
+                                                                               -scene.fluenceMap.rectangle.p0.x,
+                                                                               -scene.fluenceMap.rectangle.p1.x])
     #plt.gca().add_patch(colpatch1)
     #plt.gca().add_patch(colpatch2)
     plt.gca().add_patch(rspatch)
@@ -226,11 +215,11 @@ for i in range(len(collimators)):
 #fluence_dataOpenCL *= 255.0/fluence_dataOpenCL.max()
 #tex = vs.materials.texture(data=fluence_dataOpenCL, mapping="rectangular", interpolate=False)
 fr = vs.frame()
-f = vs.faces(frame=fr, pos=scene2.fluenceMap.rectangle.getVertices(), color = vs.color.gray(50))
+f = vs.faces(frame=fr, pos=scene.fluenceMap.rectangle.getVertices(), color = vs.color.gray(50))
 f.make_normals()
 f.make_twosided()
 
 # Ray source
-vs.cylinder(pos=scene2.raySource.disc.origin.get3DTuple(), axis=scene2.raySource.disc.normal.get3DTuple(), radius=scene2.raySource.disc.radius, color=vs.color.red, opacity=0.5)
+vs.cylinder(pos=scene.raySource.disc.origin.get3DTuple(), axis=scene.raySource.disc.normal.get3DTuple(), radius=scene.raySource.disc.radius, color=vs.color.red, opacity=0.5)
 
 #fr.rotate (angle = -pi/2, axis = (1.0, 1.0, 0.0))

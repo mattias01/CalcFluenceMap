@@ -20,11 +20,6 @@ class FluenceMap(Structure):
 
 class Scene(Structure):
     _fields_ = [("raySource", SimpleRaySourceDisc),
-                ("collimator", SimpleCollimator),
-                ("fluenceMap", FluenceMap)]
-
-class Scene2(Structure):
-    _fields_ = [("raySource", SimpleRaySourceDisc),
                 ("collimators", c_int),
                 ("fluenceMap", FluenceMap)]
 
@@ -144,25 +139,6 @@ def traceRayFirstHit(scene, render, ray, collimators):
     else:
         return 0
 
-def traceRay(scene, ray):
-    [intersectCol, intersectionDistanceCol, intersectionPointCol] = intersectLineSimpleCollimator(ray, scene.collimator)
-    if intersectCol == True:
-        return 0
-    else:
-        [intersectRS, intersectionDistanceRS, intersectionPointRS] = intersectLineSimpleRaySourceDisc(ray, scene.raySource)
-        if intersectRS == True:
-            return 1
-        else:
-            return 0 # To infinity
-
-def calcFluenceLightStraightUp(scene, render, fluency_data, debug):
-    for i in range(render.flx):
-        for j in range(render.fly):
-            ray = Line(float4(scene.fluenceMap.rectangle.p0.x + i*render.xstep + render.xoffset, 
-                              scene.fluenceMap.rectangle.p0.y + j*render.ystep + render.yoffset, 
-                              scene.fluenceMap.rectangle.p0.z,0), float4(0,0,1,0))
-            fluency_data[i][j] = traceRay(scene, ray)
-
 def calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug):
     for fi in range(render.flx):
         print fi
@@ -196,7 +172,6 @@ def calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug):
 
                     ray = Line(rayOrigin, normalize(rayDirection))
 
-                    #fluency_data[fi][fj] += traceRay(scene, ray)*ratio
                     fluency_data[fi][fj] += traceRayFirstHit(scene, render, ray, collimators)*ratio
 
 def init(scene, render, collimators):
@@ -212,10 +187,5 @@ def init(scene, render, collimators):
     else:
         print "Undefined mode"
 
-
-def drawScene(scene, render, fluency_data, debug):
-    calcFluenceLightStraightUp(scene, render, fluency_data, debug)
-
-def drawScene2(scene, render, collimators, fluency_data, debug):
-    #init(scene, render, collimators)
+def drawScene(scene, render, collimators, fluency_data, debug):
     calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug)

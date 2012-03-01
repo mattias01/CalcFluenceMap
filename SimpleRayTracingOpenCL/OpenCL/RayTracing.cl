@@ -19,15 +19,9 @@ typedef struct FluenceMap {
 
 typedef struct Scene {
 	SimpleRaySourceDisc raySource;
-	SimpleCollimator collimator;
-	FluenceMap fluenceMap;
-} __attribute((packed)) Scene;
-
-typedef struct Scene2 {
-	SimpleRaySourceDisc raySource;
 	int collimators;
 	FluenceMap fluenceMap;
-} __attribute((packed)) Scene2;
+} __attribute((packed)) Scene;
 
 typedef struct Render {
 	int flx, fly;
@@ -51,7 +45,7 @@ void intersectSimpleRaySourceDisc(const Line *l, __constant const SimpleRaySourc
 
 // Ray tracing
 
-void firstHitLeaf(__constant const Scene2 *s, __constant const Render *render, const Line *r, __global const Collimator *collimator, bool *intersect, float *distance, float4 *ip, float *thickness, __global Debug *debug) {
+void firstHitLeaf(__constant const Scene *s, __constant const Render *render, const Line *r, __global const Collimator *collimator, bool *intersect, float *distance, float4 *ip, float *thickness, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
 	*ip = (NAN, NAN, NAN, NAN);
@@ -94,7 +88,7 @@ void firstHitLeaf(__constant const Scene2 *s, __constant const Render *render, c
 	}
 }
 
-void firstHitCollimator(__constant const Scene2 *s, __constant const Render *render, const Line *r, __global const Collimator *collimators, bool *intersect, float *distance, float4 *ip, float *intensityCoeff, __global Debug *debug) {
+void firstHitCollimator(__constant const Scene *s, __constant const Render *render, const Line *r, __global const Collimator *collimators, bool *intersect, float *distance, float4 *ip, float *intensityCoeff, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
 	*ip = (NAN, NAN, NAN, NAN);
@@ -159,7 +153,7 @@ void firstHitCollimator(__constant const Scene2 *s, __constant const Render *ren
 	}
 }
 
-void traceRayFirstHit(__constant const Scene2 *s, __constant const Render *render, const Line *r, __global const Collimator *collimators, float *i, __global Debug *debug) {
+void traceRayFirstHit(__constant const Scene *s, __constant const Render *render, const Line *r, __global const Collimator *collimators, float *i, __global Debug *debug) {
 	float intensity = 1;
 	bool intersectCollimator = false;
 	float distanceCollimator;
@@ -192,45 +186,8 @@ void traceRayFirstHit(__constant const Scene2 *s, __constant const Render *rende
 	}
 }
 
-void traceRay(__constant const Scene *s, const Line *r, float *i) {
-	bool intersectCollimator;
-	float distanceCollimator;
-	float4 ipCollimator;
-	intersectSimpleCollimator(r, &(s->collimator), &intersectCollimator, &distanceCollimator, &ipCollimator);
-	if (intersectCollimator) {
-		*i = 0;
-	}
-	else {
-		bool intersectRaySource;
-		float distanceRaySource;
-		float4 ipRaySource;
-		intersectSimpleRaySourceDisc(r, &(s->raySource), &intersectRaySource, &distanceRaySource, &ipRaySource);
-		if (intersectRaySource) {
-			*i = 1;
-		}
-		else {
-			*i = 0; // To infinity
-		}
-	}
-}
-
-void calculateFluenceElementLightStraightUp(__constant const Scene *scene, __constant const Render *render, __global float *fluence_data, __global Debug *debug) {
-	unsigned int i = get_global_id(0);
-    unsigned int j = get_global_id(1);
-
-	Line ray = {
-		.origin = (float4) (scene->fluenceMap.rectangle.p0.x + i*render->xstep + render->xoffset, 
-							scene->fluenceMap.rectangle.p0.y + j*render->ystep + render->yoffset, 
-							scene->fluenceMap.rectangle.p0.z, 0), 
-		.direction = (float4) (0,0,1,0)};
-	
-	float intensity;
-	traceRay(scene, &ray, &intensity);
-	fluence_data[i*render->flx+j] = intensity;
-}
-
 // Gives vectors from the ray origin to left, right, bottom, top of the ray source.
-void lightSourceAreaVectors(__constant const Scene2 *scene, const float4 *rayOrigin, float4 *vi0, float4 *vi1, float4 *vj0, float4 *vj1, __global Debug *debug) {
+void lightSourceAreaVectors(__constant const Scene *scene, const float4 *rayOrigin, float4 *vi0, float4 *vi1, float4 *vj0, float4 *vj1, __global Debug *debug) {
 	*vi0 = (float4) (scene->raySource.disc.origin.x - scene->raySource.disc.radius, 
 					 scene->raySource.disc.origin.y, 
 					 scene->raySource.disc.origin.z,
@@ -252,7 +209,7 @@ void lightSourceAreaVectors(__constant const Scene2 *scene, const float4 *rayOri
 					 scene->raySource.disc.origin.w) - *rayOrigin;
 }
 
-void calculateIntensityDecreaseWithDistance(__constant const Scene2 *scene, const float4 *rayOrigin, float *distanceFactor, __global Debug *debug) {
+void calculateIntensityDecreaseWithDistance(__constant const Scene *scene, const float4 *rayOrigin, float *distanceFactor, __global Debug *debug) {
 	float4 vi0, vi1, vj0, vj1;
 	lightSourceAreaVectors(scene, rayOrigin, &vi0, &vi1, &vj0, &vj1, debug);
 	float anglei = acos(dot(normalize(vi0), normalize(vi1)));
@@ -261,7 +218,7 @@ void calculateIntensityDecreaseWithDistance(__constant const Scene2 *scene, cons
 }
 
 // Integration over the light source is done as if the rays where cast from a pixel straight under the origin of the light source. The sampling is uniform only from that point.
-void flatLightSourceSampling(__constant const Scene2 *scene, __constant const Render *render, __global const Collimator *collimators, const float4 *rayOrigin, float *fluenceSum, __global Debug *debug) {
+void flatLightSourceSampling(__constant const Scene *scene, __constant const Render *render, __global const Collimator *collimators, const float4 *rayOrigin, float *fluenceSum, __global Debug *debug) {
 	for (int li = 0; li < render->lsamples; li++) {
 		for (int lj = 0; lj < render->lsamples; lj++) {
 			float4 lPoint =  (float4) (scene->raySource.disc.origin.x - scene->raySource.disc.radius + li*render->lstep, 
@@ -284,7 +241,7 @@ void flatLightSourceSampling(__constant const Scene2 *scene, __constant const Re
 }
 
 // Integration is done in a uniform way over the light source. The sampling is uniform from every point. This might contain errors.
-void uniformLightSourceSampling(__constant const Scene2 *scene, __constant const Render *render, __global const Collimator *collimators, const float4 *rayOrigin, float *fluenceSum, __global Debug *debug) {
+void uniformLightSourceSampling(__constant const Scene *scene, __constant const Render *render, __global const Collimator *collimators, const float4 *rayOrigin, float *fluenceSum, __global Debug *debug) {
 	float4 lvi0, lvi1, lvj0, lvj1;
 	lightSourceAreaVectors(scene, rayOrigin, &lvi0, &lvi1, &lvj0, &lvj1, debug);
 
@@ -332,7 +289,7 @@ void uniformLightSourceSampling(__constant const Scene2 *scene, __constant const
 	}
 }
 
-void calcFluenceElement(__constant const Scene2 *scene, __constant const Render *render, __global const Collimator *collimators, __global float *fluence_data, __global Debug *debug){
+void calcFluenceElement(__constant const Scene *scene, __constant const Render *render, __global const Collimator *collimators, __global float *fluence_data, __global Debug *debug){
 	unsigned int i = get_global_id(0);
     unsigned int j = get_global_id(1);
 
@@ -348,7 +305,7 @@ void calcFluenceElement(__constant const Scene2 *scene, __constant const Render 
 	fluence_data[i*render->flx+j] = fluenceSum*distanceFactor;
 }
 
-void initCollimators(__constant const Scene2 *scene, __constant const Render *render, __global const Collimator *collimators, Collimator *collimators_new) {
+void initCollimators(__constant const Scene *scene, __constant const Render *render, __global const Collimator *collimators, Collimator *collimators_new) {
 	// First copy all properties
 	for (int i = 0; i < scene->collimators; i++) {
 		collimators_new[i].boundingBox = collimators[i].boundingBox;
@@ -372,15 +329,7 @@ void initCollimators(__constant const Scene2 *scene, __constant const Render *re
 	}
 }
 
-__kernel void drawScene(__constant const Scene *scene, __constant const Render *render, __global float *fluence_data, __global Debug *debug)
-{
-	//unsigned int i = get_global_id(0);
-    //unsigned int j = get_global_id(1);
-
-	calculateFluenceElementLightStraightUp(scene, render, fluence_data, debug);
-}
-
-__kernel void drawScene2(__constant const Scene2 *scene, __constant const Render *render, __global float *fluence_data, __global const Collimator *collimators, __global Debug *debug)
+__kernel void drawScene(__constant const Scene *scene, __constant const Render *render, __global float *fluence_data, __global const Collimator *collimators, __global Debug *debug)
 {
 	//unsigned int i = get_global_id(0);
     //unsigned int j = get_global_id(1);
