@@ -19,6 +19,9 @@ class Triangle(Structure):
                 ("p1", float4),
                 ("p2", float4)]
 
+    def getVertices(self):
+        return [self.p0.get3DTuple(), self.p1.get3DTuple(), self.p2.get3DTuple()]
+
 # Rectangle class
 # Points assigned anti-clockwise
 class Rectangle(Structure):
@@ -43,8 +46,17 @@ class BBox(Structure):
     _fields_ = [("min", float4),
                 ("max", float4)]
 
+    def getVertices(self):
+        return bboxToBox(self).getVertices()
+
 class Box(Structure):
     _fields_ = [("triangles", Triangle * 12)]
+
+    def getVertices(self):
+        list = []
+        for i in range(len(self.triangles)):
+            list.extend(self.triangles[i].getVertices())
+        return list
 
 ###################### Other calculations ######################
 def projectPointOntoPlane(p0, plane):
@@ -75,30 +87,46 @@ def boundingBox10(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9):
 
     return BBox(float4(xmin,ymin,zmin,0), float4(xmax,ymax,zmax,0))
 
-# Assumes p0 -> p3 bottom in counter-clockwise order, p4 -> p7 top in counter-clockwise order.
+# Assumes p0 -> p3 bottom in counter-clockwise order, p4 -> p7 top in counter-clockwise order. p4 is above p0.
 def createBoxFromPoints(p0, p1, p2, p3, p4, p5, p6, p7):
     # Bottom
-    t0 = Triangle(p0, p1, p3)
-    t1 = Triangle(p1, p2, p3)
+    t0 = Triangle(p0, p3, p1)
+    t1 = Triangle(p3, p2, p1)
     # Top
     t2 = Triangle(p5, p6, p4)
     t3 = Triangle(p6, p7, p4)
     # Left side
-    t4 = Triangle(p1, p7, p2)
+    t4 = Triangle(p3, p7, p2)
     t5 = Triangle(p7, p6, p2)
     # Right side
     t6 = Triangle(p4, p0, p5)
-    t7 = Triangle(p0, p3, p5)
+    t7 = Triangle(p0, p1, p5)
     # Front side
-    t8 = Triangle(p3, p2, p5)
+    t8 = Triangle(p1, p2, p5)
     t9 = Triangle(p2, p6, p5)
     # Back side (Not needed?)
     t10 = Triangle(p4, p7, p0)
-    t11 = Triangle(p7, p1, p0)
+    t11 = Triangle(p7, p3, p0)
     
     triangle_array = Triangle * 12
     triangles = triangle_array(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11)
     return Box(triangles)
+
+def bboxToBox(bbox):
+    diag = bbox.max - bbox.min
+    x = float4(diag.x, 0, 0, 0)
+    y = float4(0, diag.y, 0, 0)
+    z = float4(0, 0, diag.z, 0)
+    p0 = bbox.min
+    p1 = p0 + x
+    p2 = p0 + x + y
+    p3 = p0 + y
+    p4 = p0 + z
+    p5 = p4 + x
+    p6 = p4 + x + y
+    p7 = p4 + y
+    return createBoxFromPoints(p0, p1, p2, p3, p4, p5, p6, p7)
+
 
 ###################### Hit calculations ###############################
 

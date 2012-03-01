@@ -10,7 +10,7 @@ def testCreateFlatCollimator():
     collimator.ydir = float4(1,0,0,0)
     collimator.absorptionCoeff = 0.5
     collimator.height = 1
-    collimator.leafWidth = 3.5
+    collimator.width = 7
     collimator.numberOfLeaves = 2
     collimator.leafPositions = (0.5,1)
     fc = createFlatCollimator(collimator)
@@ -28,7 +28,7 @@ def testCreateBBoxCollimator():
     collimator.ydir = float4(1,0,0,0)
     collimator.absorptionCoeff = 0.5
     collimator.height = 1
-    collimator.leafWidth = 3.5
+    collimator.width = 7
     collimator.numberOfLeaves = 2
     collimator.leafPositions = (0.5,1)
     bc = createBBoxCollimator(collimator)

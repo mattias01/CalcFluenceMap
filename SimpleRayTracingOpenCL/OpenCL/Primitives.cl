@@ -1,6 +1,8 @@
 #ifndef __Primitives__
 #define __Primitives__
 
+#define EPSILON 0.000001
+
 // Data types
 typedef struct Line {
 	float4 origin;
@@ -334,19 +336,32 @@ void intersectLineBox(const Line *l, const Box *b, bool *intersect, float *dista
 	*ip = (NAN, NAN, NAN, NAN);
 	float minDistance = INFINITY;
 	float4 minPoint;
+	bool intersectTmp;
+	float distanceTmp;
+	float4 ipTmp;
 	for (int i = 0; i < 12; i++) {
-		intersectLineTriangle(l, &(b->triangles[i]), intersect, distance, ip);
-		if (*intersect) {
-			if (*distance < minDistance) {
-				minDistance = *distance;
-				minPoint = *ip;
+		intersectLineTriangle(l, &(b->triangles[i]), &intersectTmp, &distanceTmp, &ipTmp);
+		if (intersectTmp) {
+			if (counter == 0) {
+				minDistance = distanceTmp;
+				minPoint = ipTmp;
+				counter = counter + 1;
 			}
-			counter = counter + 1;
-			if (counter == 2) {
-				*intersect = true;
-				*distance = minDistance;
-				*ip = minPoint;
-				return;
+			else {
+				if (distanceTmp < minDistance - EPSILON) {
+					minDistance = distanceTmp;
+					minPoint = ipTmp;
+					counter = counter + 1;
+				}
+				else if (distanceTmp > minDistance + EPSILON) {
+					counter = counter + 1;
+				}
+				if (counter == 2) {
+					*intersect = true;
+					*distance = minDistance;
+					*ip = minPoint;
+					return;
+				}
 			}
 		}
 	}
@@ -363,30 +378,38 @@ void intersectLineBoxInOut(const Line *l, const Box *b, bool *intersect, float *
 	float4 minPoint;
 	float maxDistance = -INFINITY;
 	float4 maxPoint;
+	bool intersectTmp;
+	float distanceTmp;
+	float4 ipTmp;
 	for (int i = 0; i < 12; i++) {
-		intersectLineTriangle(l, &(b->triangles[i]), intersect, inDistance, inIp);
-		if (*intersect) {
-			if (*inDistance < minDistance) {
-				minDistance = *inDistance;
-				minPoint = *inIp;
-			}
-			if (*inDistance > maxDistance) {
-				maxDistance = *inDistance;
-				maxPoint = *inIp;
-			}
-			if (minDistance != maxDistance) {
+		intersectLineTriangle(l, &(b->triangles[i]), &intersectTmp, &distanceTmp, &ipTmp);
+		if (intersectTmp) {
+			if (counter == 0) {
+				minDistance = distanceTmp;
+				minPoint = ipTmp;
+				maxDistance = distanceTmp;
+				maxPoint = ipTmp;
 				counter = counter + 1;
 			}
-			else if (counter == 0) {
-				counter = counter + 1;
-			}
-			if (counter == 2) {
-				*intersect = true;
-				*inDistance = minDistance;
-				*outDistance = maxDistance;
-				*inIp = minPoint;
-				*outIp = maxPoint;
-				return;
+			else {
+				if (distanceTmp < minDistance - EPSILON) {
+					minDistance = distanceTmp;
+					minPoint = ipTmp;
+					counter = counter + 1;
+				}
+				else if (distanceTmp > maxDistance + EPSILON) {
+					maxDistance = distanceTmp;
+					maxPoint = ipTmp;
+					counter = counter + 1;
+				}
+				if (counter == 2) {
+					*intersect = true;
+					*inDistance = minDistance;
+					*outDistance = maxDistance;
+					*inIp = minPoint;
+					*outIp = maxPoint;
+					return;
+				}
 			}
 		}
 	}

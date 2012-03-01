@@ -128,12 +128,15 @@ def firstHitCollimator(scene, render, ray, collimators):
     return [intersect, minDistance, intersectionPoint, intensityCoeff]
 
 def traceRayFirstHit(scene, render, ray, collimators):
-    intensity = 1;
+    intensity = 1
     [intersectCollimator, distanceCollimator, intersectionPointCollimator, intensityCoeff] = firstHitCollimator(scene, render, ray, collimators)
     while intersectCollimator: # Enable several layers of collimators
         intensity *= intensityCoeff
-        newRay = Line(intersectionPointCollimator, ray.direction)
-        [intersectCollimator, distanceCollimator, intersectionPointCollimator, intensityCoeff] = firstHitCollimator(scene, render, newRay, collimators)
+        if (intensity < 0.0000001): # If intensity is below a treshhold, don't bother to cast more rays. Return 0 intensity.
+            return 0
+        else:
+            newRay = Line(intersectionPointCollimator, ray.direction)
+            [intersectCollimator, distanceCollimator, intersectionPointCollimator, intensityCoeff] = firstHitCollimator(scene, render, newRay, collimators)
 
     [intersectRS, intersectionDistanceRS, intersectionPointRS] = intersectLineSimpleRaySourceDisc(ray, scene.raySource)
     if intersectRS == True:
