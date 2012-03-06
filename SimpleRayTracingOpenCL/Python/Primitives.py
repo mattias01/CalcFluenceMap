@@ -2,6 +2,8 @@ from ctypes import *
 import numpy as np
 from OpenCLTypes import *
 
+EPSILON = 0.000001
+
 ###################### Class definitions ######################
 
 class Line(Structure):
@@ -288,12 +290,19 @@ def intersectLineBox(line, box):
     for i in range(len(box.triangles)):
         [intersect, distance, point] = intersectLineTriangle(line, box.triangles[i])
         if intersect:
-            if distance < minDistance:
+            if counter == 0:
                 minDistance = distance
                 minPoint = point
-            counter = counter + 1
-            if counter == 2: # Stop if two intersections haven been found.
-                break;
+                counter = counter + 1
+            else:
+                if distance < minDistance - EPSILON:
+                    minDistance = distance
+                    minPoint = point
+                    counter = counter + 1
+                elif distance > minDistance + EPSILON:
+                    counter = counter + 1
+                if counter == 2: # Stop if two intersections haven been found.
+                    break;
 
     return [intersect, minDistance, minPoint]
 
@@ -308,17 +317,22 @@ def intersectLineBoxInOut(line, box):
     for i in range(len(box.triangles)):
         [intersect, distance, point] = intersectLineTriangle(line, box.triangles[i])
         if intersect:
-            if distance < minDistance:
+            if counter == 0:
                 minDistance = distance
                 minPoint = point
-            if distance > maxDistance:
                 maxDistance = distance
                 maxPoint = point
-            if minDistance != maxDistance:
                 counter = counter + 1
-            elif counter == 0:
-                counter = counter + 1
-            if counter == 2: # Stop if two intersections haven been found.
-                break;
+            else:
+                if distance < minDistance- EPSILON:
+                    minDistance = distance
+                    minPoint = point
+                    counter = counter + 1
+                if distance > maxDistance + EPSILON:
+                    maxDistance = distance
+                    maxPoint = point
+                    counter = counter + 1
+                if counter == 2: # Stop if two intersections haven been found.
+                    break;
 
     return [intersect, minDistance, maxDistance, minPoint, maxPoint]

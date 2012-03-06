@@ -1,7 +1,8 @@
 #ifndef __Collimator__
 #define __Collimator__
 
-#include "Primitives.cl"
+#include "OpenCL/Primitives.cl"
+#include "OpenCL/Settings.cl"
 
 // Data types
 typedef struct SimpleCollimator {
@@ -16,7 +17,7 @@ typedef struct FlatCollimator {
 	float4 ydir;
 	float absorptionCoeff;
 	int numberOfLeaves;
-	Rectangle leaves[40];
+	Rectangle leaves[NUMBER_OF_LEAVES];
 } __attribute__((packed)) FlatCollimator;
 
 typedef struct BBoxCollimator {
@@ -26,7 +27,7 @@ typedef struct BBoxCollimator {
 	float4 ydir;
 	float absorptionCoeff;
 	int numberOfLeaves;
-	BBox leaves[40];
+	BBox leaves[NUMBER_OF_LEAVES];
 } __attribute__((packed)) BBoxCollimator;
 
 typedef struct BoxCollimator {
@@ -36,7 +37,7 @@ typedef struct BoxCollimator {
 	float4 ydir;
 	float absorptionCoeff;
 	int numberOfLeaves;
-	Box leaves[40];
+	Box leaves[NUMBER_OF_LEAVES];
 } __attribute__((packed)) BoxCollimator;
 
 typedef struct Collimator {
@@ -48,10 +49,14 @@ typedef struct Collimator {
 	float height;
 	float leafWidth;
 	int numberOfLeaves;
-	float leafPositions[40];
-	FlatCollimator flatCollimator;
-	BBoxCollimator bboxCollimator;
-	BoxCollimator boxCollimator;
+	float leafPositions[NUMBER_OF_LEAVES];
+	#if MODE == 0
+		FlatCollimator flatCollimator;
+	#elif MODE == 1
+		BBoxCollimator bboxCollimator;
+	#elif MODE == 2
+		BoxCollimator boxCollimator;
+	#endif
 } __attribute__((packed)) Collimator;
 
 // Collimator generation

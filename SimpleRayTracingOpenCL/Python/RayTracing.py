@@ -6,6 +6,7 @@ import sys
 from OpenCLTypes import *
 from Python.Collimator import *
 from Python.Primitives import *
+from Python.Settings import MODE
 
 ###################### Class definitions ######################
 
@@ -24,15 +25,16 @@ class Scene(Structure):
                 ("fluenceMap", FluenceMap)]
 
 class Render(Structure):
-    _fields_ = [("flx", c_int),
-                ("fly", c_int),
+    _fields_ = [#("flx", c_int),
+                #("fly", c_int),
                 ("xstep", c_float),
                 ("ystep", c_float),
                 ("xoffset", c_float),
                 ("yoffset", c_float),
-                ("lsamples", c_int),
-                ("lstep", c_float),
-                ("mode", c_int)]
+                #("lsamples", c_int),
+                ("lstep", c_float)#,
+                #("mode", c_int)
+                ]
 
 def intersectLineSimpleRaySourceRectangle(line, raySource):
     return intersectLineRectangle(line, raySource.rectangle)
@@ -52,21 +54,21 @@ def firstHitLeaf(scene, render, ray, collimator):
         intersectTmp = False
         intersectionDistanceTmp = float("inf")
         intersectionPointTmp = None
-        if render.mode == 0:
+        if MODE == 0:
             [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineFlatCollimatorLeaf(ray, collimator.leaves[i])
-        elif render.mode == 1:
+        elif MODE == 1:
             [intersectTmp, intersectionDistanceInTmp, intersectionDistanceOutTmp, intersectionPointInTmp, intersectionPointOutTmp] = intersectLineBBoxCollimatorLeaf(ray, collimator.leaves[i])
             intersectionDistanceTmp = intersectionDistanceInTmp
-        elif render.mode == 2:
+        elif MODE == 2:
             [intersectTmp, intersectionDistanceInTmp, intersectionDistanceOutTmp, intersectionPointInTmp, intersectionPointOutTmp] = intersectLineBoxCollimatorLeaf(ray, collimator.leaves[i])
             intersectionDistanceTmp = intersectionDistanceInTmp
 
         if intersectTmp == True and intersectionDistanceTmp < minDistance:
             leafIndex = i
             minDistance = intersectionDistanceTmp
-            if render.mode == 0:
+            if MODE == 0:
                 intersectionPoint = intersectionPointTmp
-            elif render.mode == 1 or render.mode == 2:
+            elif MODE == 1 or MODE == 2:
                 thickness = intersectionDistanceOutTmp - intersectionDistanceInTmp
                 intersectionPoint = intersectionPointOutTmp
 
@@ -79,6 +81,7 @@ def firstHitCollimator(scene, render, ray, collimators):
     intersect = False
     minDistance = float("inf")
     intersectionPoint = None
+    bbOutDistance = None
     intensityCoeff = 1
     collimatorIndex = -1
     for i in range(scene.collimators):
@@ -86,39 +89,47 @@ def firstHitCollimator(scene, render, ray, collimators):
         intersectTmp = False
         intersectionDistanceTmp = float("inf")
         intersectionPointTmp = None
-        if render.mode == 0:
-            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineBBox(ray, collimators[i].flatCollimator.boundingBox)
-        elif render.mode == 1:
-            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineBBox(ray, collimators[i].bboxCollimator.boundingBox)
-        elif render.mode == 2:
-            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineBBox(ray, collimators[i].boxCollimator.boundingBox)
+        intersectionDistanceOutTmp = float("inf")
+        intersectionPointOutTmp = None
+        if MODE == 0:
+            [intersectTmp, intersectionDistanceTmp, intersectionDistanceOutTmp, intersectionPointTmp, intersectionPointOutTmp] = intersectLineBBoxInOut(ray, collimators[i].flatCollimator.boundingBox)
+        elif MODE == 1:
+            [intersectTmp, intersectionDistanceTmp, intersectionDistanceOutTmp, intersectionPointTmp, intersectionPointOutTmp] = intersectLineBBoxInOut(ray, collimators[i].bboxCollimator.boundingBox)
+        elif MODE == 2:
+            [intersectTmp, intersectionDistanceTmp, intersectionDistanceOutTmp, intersectionPointTmp, intersectionPointOutTmp] = intersectLineBBoxInOut(ray, collimators[i].boxCollimator.boundingBox)
 
         if intersectTmp == True and intersectionDistanceTmp < minDistance:
             collimatorIndex = i
             minDistance = intersectionDistanceTmp
+            bbOutDistance = intersectionDistanceOutTmp
+            intersectionPoint = intersectionPointOutTmp
 
     if collimatorIndex != -1:
         thickness = 0
-        if render.mode == 0:
+        if MODE == 0:
             [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, ray, collimators[collimatorIndex].flatCollimator)
-        elif render.mode == 1:
+        elif MODE == 1:
             [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, ray, collimators[collimatorIndex].bboxCollimator)
-        elif render.mode == 2:
+        elif MODE == 2:
             [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, ray, collimators[collimatorIndex].boxCollimator)
         while intersectTmp:
             intersect = True
             minDistance = intersectionDistanceTmp
             intersectionPoint = intersectionPointTmp
-            if render.mode == 0:
+            if MODE == 0:
                 thickness = collimators[collimatorIndex].height
             intensityCoeff *= exp(-collimators[collimatorIndex].absorptionCoeff*thickness)
             newRay = Line(intersectionPointTmp, ray.direction)
-            if render.mode == 0:
+            if MODE == 0:
                 [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, newRay, collimators[collimatorIndex].flatCollimator)
-            elif render.mode == 1:
+            elif MODE == 1:
                 [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, newRay, collimators[collimatorIndex].bboxCollimator)
-            elif render.mode == 2:
+            elif MODE == 2:
                 [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, newRay, collimators[collimatorIndex].boxCollimator)
+
+        if (intersect == False):
+            intersect = True
+            minDistance = bbOutDistance
 
     return [intersect, minDistance, intersectionPoint, intensityCoeff]
 
@@ -139,53 +150,56 @@ def traceRayFirstHit(scene, render, ray, collimators):
     else:
         return 0
 
-def calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug):
-    for fi in range(render.flx):
-        print fi
-        for fj in range(render.fly):
-            rayOrigin = float4(scene.fluenceMap.rectangle.p0.x + fi*render.xstep + render.xoffset, 
+def calcFluenceElement(scene, render, collimators, fluency_data, fi, fj, debug):
+    rayOrigin = float4(scene.fluenceMap.rectangle.p0.x + fi*render.xstep + render.xoffset, 
                                scene.fluenceMap.rectangle.p0.y + fj*render.ystep + render.yoffset,
                                scene.fluenceMap.rectangle.p0.z, 0)
 
-            v0 = float4(scene.raySource.disc.origin.x - scene.raySource.disc.radius, 
-                        scene.raySource.disc.origin.y, 
-                        scene.raySource.disc.origin.z,
-                        scene.raySource.disc.origin.w) - rayOrigin
-            v1 = float4(scene.raySource.disc.origin.x, 
-                        scene.raySource.disc.origin.y - scene.raySource.disc.radius, 
-                        scene.raySource.disc.origin.z,
-                        scene.raySource.disc.origin.w) - rayOrigin
-            vi = float4(v0.x + scene.raySource.disc.radius*2, v0.y, v0.z, v0.w) - rayOrigin
-            vj = float4(v1.x, v1.y + scene.raySource.disc.radius*2, v1.z, v1.w) - rayOrigin
-            anglei = acos(dot(normalize(v0),normalize(vi)))
-            anglej = acos(dot(normalize(v1),normalize(vj)))
+    v0 = float4(scene.raySource.disc.origin.x - scene.raySource.disc.radius, 
+                scene.raySource.disc.origin.y, 
+                scene.raySource.disc.origin.z,
+                scene.raySource.disc.origin.w) - rayOrigin
+    v1 = float4(scene.raySource.disc.origin.x, 
+                scene.raySource.disc.origin.y - scene.raySource.disc.radius, 
+                scene.raySource.disc.origin.z,
+                scene.raySource.disc.origin.w) - rayOrigin
+    vi = float4(v0.x + scene.raySource.disc.radius*2, v0.y, v0.z, v0.w) - rayOrigin
+    vj = float4(v1.x, v1.y + scene.raySource.disc.radius*2, v1.z, v1.w) - rayOrigin
+    anglei = acos(dot(normalize(v0),normalize(vi)))
+    anglej = acos(dot(normalize(v1),normalize(vj)))
 
-            ratio = anglei*anglej/pi*2
+    ratio = anglei*anglej/pi*2
 
-            for li in range(render.lsamples):
-                for lj in range(render.lsamples):
-                    lPoint =  float4(scene.raySource.disc.origin.x - scene.raySource.disc.radius + li*render.lstep, 
-                                     scene.raySource.disc.origin.y - scene.raySource.disc.radius + lj*render.lstep, 
-                                     scene.raySource.disc.origin.z,
-                                     scene.raySource.disc.origin.w)
-                    rayDirection = lPoint - rayOrigin
+    for li in range(LSAMPLES):
+        for lj in range(LSAMPLES):
+            lPoint =  float4(scene.raySource.disc.origin.x - scene.raySource.disc.radius + li*render.lstep, 
+                             scene.raySource.disc.origin.y - scene.raySource.disc.radius + lj*render.lstep, 
+                             scene.raySource.disc.origin.z,
+                             scene.raySource.disc.origin.w)
+            rayDirection = lPoint - rayOrigin
 
-                    ray = Line(rayOrigin, normalize(rayDirection))
+            ray = Line(rayOrigin, normalize(rayDirection))
 
-                    fluency_data[fi][fj] += traceRayFirstHit(scene, render, ray, collimators)*ratio
+            fluency_data[fi][fj] += traceRayFirstHit(scene, render, ray, collimators)*ratio
+
+def calcAllFluenceElements(scene, render, collimators, fluency_data, debug):
+    for fi in range(render.flx):
+        print fi
+        for fj in range(render.fly):
+            calcFluenceElement(scene, render, collimators, fluency_data, fi, fj, debug)
 
 def init(scene, render, collimators):
-    if render.mode == 0:
+    if MODE == 0:
         for col in collimators:
             col.flatCollimator = createFlatCollimator(col)
-    elif render.mode == 1:
+    elif MODE == 1:
         for col in collimators:
             col.bboxCollimator = createBBoxCollimator(col)
-    elif render.mode == 2:
+    elif MODE == 2:
         for col in collimators:
             col.boxCollimator = createBoxCollimator(col)
     else:
         print "Undefined mode"
 
 def drawScene(scene, render, collimators, fluency_data, debug):
-    calcFluenceLightAllAngles(scene, render, collimators, fluency_data, debug)
+    calcAllFluenceElements(scene, render, collimators, fluency_data, debug)

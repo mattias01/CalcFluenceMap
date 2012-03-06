@@ -1,6 +1,7 @@
 from ctypes import *
 from OpenCLTypes import *
 from Python.Primitives import *
+from Python.Settings import MODE, NUMBER_OF_LEAVES
 
 ###################### Class definitions ######################
 
@@ -15,24 +16,11 @@ class FlatCollimator(Structure):
                 ("ydir", float4),
                 ("absorptionCoeff", c_float),
                 ("numberOfLeaves", c_int),
-                ("leaves", Rectangle * 40)]
+                ("leaves", Rectangle * NUMBER_OF_LEAVES)]
 
     def getVertices(self):
         list = []
         for i in range(self.numberOfLeaves):
-            #leaf = self.leaves[i]
-            #t0p0 = (leaf.p0.x, leaf.p0.y, leaf.p0.z)
-            #t0p1 = (leaf.p1.x, leaf.p1.y, leaf.p1.z)
-            #t0p2 = (leaf.p2.x, leaf.p2.y, leaf.p2.z)
-            #t1p0 = (leaf.p0.x, leaf.p0.y, leaf.p0.z)
-            #t1p1 = (leaf.p2.x, leaf.p2.y, leaf.p2.z)
-            #t1p2 = (leaf.p3.x, leaf.p3.y, leaf.p3.z)
-            #list.append(t0p0)
-            #list.append(t0p1)
-            #list.append(t0p2)
-            #list.append(t1p0)
-            #list.append(t1p1)
-            #list.append(t1p2)
             list.extend(self.leaves[i].getVertices())
         return list
 
@@ -43,7 +31,7 @@ class BBoxCollimator(Structure):
                 ("ydir", float4),
                 ("absorptionCoeff", c_float),
                 ("numberOfLeaves", c_int),
-                ("leaves", BBox * 40)]
+                ("leaves", BBox * NUMBER_OF_LEAVES)]
 
     def getVertices(self):
         list = []
@@ -58,7 +46,7 @@ class BoxCollimator(Structure):
                 ("ydir", float4),
                 ("absorptionCoeff", c_float),
                 ("numberOfLeaves", c_int),
-                ("leaves", Box * 40)]
+                ("leaves", Box * NUMBER_OF_LEAVES)]
 
     def getVertices(self):
         list = []
@@ -66,7 +54,17 @@ class BoxCollimator(Structure):
             list.extend(self.leaves[i].getVertices())
         return list
 
+#lambda selector: ("flatCollimator", FlatCollimator) if MODE == 0 ("bboxCollimator", BBoxCollimator) else MODE == 1
+
 class Collimator(Structure):
+    def select(mode):
+        if mode == 0:
+            return ("flatCollimator", FlatCollimator)
+        elif mode == 1:
+            return ("bboxCollimator", BBoxCollimator)
+        elif mode ==2:
+            return ("boxCollimator", BoxCollimator)
+
     _fields_ = [("boundingBox", BBox),
                 ("position", float4),
                 ("xdir", float4),
@@ -75,10 +73,11 @@ class Collimator(Structure):
                 ("height", c_float),
                 ("width", c_float),
                 ("numberOfLeaves", c_int),
-                ("leafPositions", c_float * 40),
-                ("flatCollimator", FlatCollimator),
-                ("bboxCollimator", BBoxCollimator),
-                ("boxCollimator", BoxCollimator)]
+                ("leafPositions", c_float * NUMBER_OF_LEAVES),
+                #("flatCollimator", FlatCollimator),
+                #("bboxCollimator", BBoxCollimator),
+                #("boxCollimator", BoxCollimator))]
+                select(MODE)]
 
 ###################### Collimator generation ######################
 
@@ -104,7 +103,7 @@ def calculateCollimatorBoundingBox(collimator):
     return boundingBox(p0, p1, p2, p3, p4, p5, p6, p7)
 
 def createRectangles(position, xdir, ydir, rectangleWidth, numberOfRect, rectangleLength):
-    rectangle_array = Rectangle * 40
+    rectangle_array = Rectangle * NUMBER_OF_LEAVES
     rectangles = rectangle_array()
     x = normalize(xdir)
     y = normalize(ydir)*rectangleWidth
@@ -114,7 +113,7 @@ def createRectangles(position, xdir, ydir, rectangleWidth, numberOfRect, rectang
     return rectangles
 
 def createBBoxes(position, xdir, ydir, boxHeight, boxWidth, numberOfBoxes, boxLength):
-    box_array = BBox * 40
+    box_array = BBox * NUMBER_OF_LEAVES
     boxes = box_array()
     x = normalize(xdir)
     y = normalize(ydir)*boxWidth
@@ -126,7 +125,7 @@ def createBBoxes(position, xdir, ydir, boxHeight, boxWidth, numberOfBoxes, boxLe
     return boxes
 
 def createBoxes(position, xdir, ydir, height, width, numberOfBoxes, boxLength):
-    box_array = Box * 40
+    box_array = Box * NUMBER_OF_LEAVES
     boxes = box_array()
     #topBoxWidth = abs(position.z*0.4)/numberOfBoxes
     topBoxWidth = width/numberOfBoxes

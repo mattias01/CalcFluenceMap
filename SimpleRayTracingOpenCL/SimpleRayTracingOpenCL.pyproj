@@ -30,11 +30,13 @@
     <Compile Include="Python\Primitives.py" />
     <Compile Include="Python\PrimitivesTest.py" />
     <Compile Include="Python\RayTracing.py" />
+    <Compile Include="Python\Settings.py" />
     <Compile Include="Python\__init__.py" />
     <Compile Include="SimpleRayTracingOpenCL.py" />
     <Compile Include="Test.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Activity1.nvact" />
     <Content Include="OpenCL\Collimator.cl" />
     <Content Include="OpenCL\CollimatorTest.cl" />
     <Content Include="OpenCL\Misc.cl" />
@@ -42,6 +44,7 @@
     <Content Include="OpenCL\PrimitivesTest.cl" />
     <Content Include="OpenCL\RayTracing.cl" />
     <Content Include="OpenCL\RayTracingTests.cl" />
+    <Content Include="OpenCL\Settings.cl" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="OpenCL" />

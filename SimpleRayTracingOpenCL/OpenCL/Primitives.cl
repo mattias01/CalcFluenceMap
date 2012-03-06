@@ -1,7 +1,7 @@
 #ifndef __Primitives__
 #define __Primitives__
 
-#define EPSILON 0.000001
+#include "OpenCL/Settings.cl"
 
 // Data types
 typedef struct Line {

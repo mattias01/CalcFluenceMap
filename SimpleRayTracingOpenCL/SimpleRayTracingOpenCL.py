@@ -5,16 +5,18 @@ import matplotlib.patches as patches
 from matplotlib.path import Path
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import pyopencl as cl
 import struct
 from sys import getsizeof
-from time import time
+from time import time, sleep
 import visual as vs
 
 from OpenCLUtility import OpenCLUtility as oclu
 from OpenCLTypes import *
 from Python.RayTracing import *
 from Test import *
+from Python.Settings import *
 
 print 'Start SimpleRayTracingOpenCL'
 
@@ -31,15 +33,19 @@ elif run == "2":
 
 # Init OpenCL
 if openCL:
-    ctx = cl.create_some_context()
+    #ctx = cl.create_some_context()
+    os.environ["PYOPENCL_COMPILER_OUTPUT"] = "1"
+    ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
     queue = cl.CommandQueue(ctx)
 
 # Run tests
+"""
 if python:
     np.seterr(divide='ignore') # Disable warning on division by zero.
     testPython()
 if openCL:
     testOpenCL(ctx, queue)
+    """
 
 # Build scene objects
 rs = SimpleRaySourceDisc(Disc(float4(0,0,0,0), float4(0,0,1,0), 1))
@@ -97,23 +103,24 @@ fm = FluenceMap(Rectangle(float4(-30,-30,-100,0), float4(30,-30,-100,0), float4(
 scene = Scene(rs,len(collimators),fm)
 
 # Settings
-flx = 128
-fly = 128
-xstep = (0.0 + length(scene.fluenceMap.rectangle.p1 - scene.fluenceMap.rectangle.p0))/flx # Length in x / x resolution
-ystep = (0.0 + length(scene.fluenceMap.rectangle.p3 - scene.fluenceMap.rectangle.p0))/fly # Length in y / y resolution
+#flx = 128
+#fly = 128
+xstep = (0.0 + length(scene.fluenceMap.rectangle.p1 - scene.fluenceMap.rectangle.p0))/FLX # Length in x / x resolution
+ystep = (0.0 + length(scene.fluenceMap.rectangle.p3 - scene.fluenceMap.rectangle.p0))/FLX # Length in y / y resolution
 xoffset = xstep/2.0
 yoffset = ystep/2.0
-lsamples = 10
-lstep = scene.raySource.disc.radius*2/(lsamples-1)
-mode = 2
-render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep,mode)
+#lsamples = 10
+lstep = scene.raySource.disc.radius*2/(LSAMPLES-1)
+#mode = 0
+#render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep,mode)
+render = Render(xstep,ystep,xoffset,yoffset,lstep)
 
 init(scene, render, collimators) # Init Collimator
 
 if python:
-    fluence_dataPython = numpy.zeros(shape=(flx,fly), dtype=numpy.float32)
+    fluence_dataPython = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
 if openCL:
-    fluence_dataOpenCL = numpy.zeros(shape=(flx,fly), dtype=numpy.float32)
+    fluence_dataOpenCL = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
 
 # Run in Python
 if python:
@@ -122,14 +129,14 @@ if python:
     drawScene(scene, render, collimators, fluence_dataPython, debugPython)
     timePython = time()-time1
 
-    samplesPerSecondPython = flx*fly*lsamples*lsamples/timePython
+    samplesPerSecondPython = FLX*FLY*LSAMPLES*LSAMPLES/timePython
     print "Time Python: ", timePython, " Samples per second: ", samplesPerSecondPython
 
 # Run in OpenCL
 if openCL:
     time1 = time()
     debugOpenCL = Debug()
-    program = oclu.loadProgram(ctx, "OpenCL/RayTracing.cl")
+    program = oclu.loadProgram(ctx, "OpenCL/RayTracing.cl", "-cl-nv-verbose " + settingsString())
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
     render_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=render)
@@ -137,14 +144,16 @@ if openCL:
     fluence_dataOpenCL_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=fluence_dataOpenCL)
     debugOpenCL_buf = cl.Buffer(ctx, mf.WRITE_ONLY, sizeof(debugOpenCL))
     
-    program.drawScene(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, collimators_buf, debugOpenCL_buf).wait()
-    cl.enqueue_read_buffer(queue, fluence_dataOpenCL_buf, fluence_dataOpenCL).wait()
+    program.drawScene(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, collimators_buf, debugOpenCL_buf)
+    cl.enqueue_read_buffer(queue, fluence_dataOpenCL_buf, fluence_dataOpenCL)
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
     timeOpenCL = time()-time1
 
     print timeOpenCL
-    samplesPerSecondOpenCL = flx*fly*lsamples*lsamples/timeOpenCL
+    samplesPerSecondOpenCL = FLX*FLY*LSAMPLES*LSAMPLES/timeOpenCL
     print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
+
+
 
 # Show plots
 rspatch = patches.Circle((scene.raySource.disc.origin.y, scene.raySource.disc.origin.x), 
@@ -174,6 +183,7 @@ if openCL:
     plt.title("OpenCL " + "Time: " + str(timeOpenCL) + " Samples per second: " + str(samplesPerSecondOpenCL))
     plt.show()
 
+"""
 # Visual python
 disp = vs.display()
 #disp.autocenter = True
@@ -186,11 +196,11 @@ disp.range = (30, 30, -100)
 # Collimators
 for i in range(len(collimators)):
     fr = vs.frame()
-    if render.mode == 0:
+    if MODE == 0:
         f = vs.faces(frame = fr, pos = collimators[i].flatCollimator.getVertices())
-    elif render.mode == 1:
+    elif MODE == 1:
         f = vs.faces(frame = fr, pos = collimators[i].bboxCollimator.getVertices())
-    elif render.mode == 2:
+    elif MODE == 2:
         f = vs.faces(frame = fr, pos = collimators[i].boxCollimator.getVertices())
         #bb = vs.faces(frame = fr, pos = bboxToBox(collimators[i].boundingBox).getVertices())
         #bb.make_normals()
@@ -210,3 +220,4 @@ f.make_twosided()
 vs.cylinder(pos=scene.raySource.disc.origin.get3DTuple(), axis=scene.raySource.disc.normal.get3DTuple(), radius=scene.raySource.disc.radius, color=vs.color.red, opacity=0.5)
 
 #fr.rotate (angle = -pi/2, axis = (1.0, 1.0, 0.0))
+"""
