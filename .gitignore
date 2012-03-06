@@ -26,3 +26,9 @@ obj/
 _ReSharper*/
 [Tt]est[Rr]esult*
 *.pyc
+*.ipch
+*.sdf
+*.pyperf
+*.csv
+*.cvp
+*.vsp
