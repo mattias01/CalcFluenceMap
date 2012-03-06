@@ -23,9 +23,9 @@ typedef struct Scene {
 } __attribute((packed)) Scene;
 
 typedef struct Render {
-	//int flx, fly;
+	int flx, fly;
 	float xstep, ystep, xoffset, yoffset;
-	//int lsamples;
+	int lsamples;
 	float lstep;
 	//int mode;
 } __attribute((packed)) Render;
@@ -57,24 +57,18 @@ void firstHitLeaf(__constant const Scene *s, __constant const Render *render, co
 		float4 ipTmp;
 		float thicknessTmp;
 		#if MODE == 0
-		//if (render->mode == 0) {
 			intersectLineFlatCollimatorLeaf(r, &(col.flatCollimator.leaves[i]), &intersectTmp, &distanceTmp, &ipTmp);
 			thicknessTmp = col.height;
-		//}
 		#elif MODE == 1
-		//else if (render->mode == 1) {
 			float4 ipInTmp;
 			float distanceOutTmp;
 			intersectLineBBoxCollimatorLeaf(r, &(col.bboxCollimator.leaves[i]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 			thicknessTmp = distanceOutTmp - distanceTmp;
-		//}
 		#elif MODE == 2
-		//else if (render->mode == 2) {
 			float4 ipInTmp;
 			float distanceOutTmp;
 			intersectLineBoxCollimatorLeaf(r, &(col.boxCollimator.leaves[i]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 			thicknessTmp = distanceOutTmp - distanceTmp;
-		//}
 		#endif
 
 		if (intersectTmp && (distanceTmp < minDistance)) {
@@ -107,17 +101,11 @@ void firstHitCollimator(__constant const Scene *s, __constant const Render *rend
 		float distanceTmpOut;
 		Collimator collimator = collimators[i];
 		#if MODE == 0
-		//if (render->mode == 0) {
 			intersectLineBBoxInOut(r, &(collimator.flatCollimator.boundingBox), &intersectTmp, &distanceTmp, &distanceTmpOut, &ipTmpCollimatorBB, &ipTmpCollimatorBBOut);
-		//}
 		#elif MODE == 1
-		//else if (render->mode == 1) {
 			intersectLineBBoxInOut(r, &(collimator.bboxCollimator.boundingBox), &intersectTmp, &distanceTmp, &distanceTmpOut, &ipTmpCollimatorBB, &ipTmpCollimatorBBOut);
-		//}
 		#elif MODE == 2
-		//else if (render->mode == 2) {
 			intersectLineBBoxInOut(r, &(collimator.boxCollimator.boundingBox), &intersectTmp, &distanceTmp, &distanceTmpOut, &ipTmpCollimatorBB, &ipTmpCollimatorBBOut);
-		//}
 		#endif
 
 		if (intersectTmp && (distanceTmp < minDistance)) {
@@ -140,18 +128,16 @@ void firstHitCollimator(__constant const Scene *s, __constant const Render *rend
 			*distance = distanceTmp; // Not used after.
 			*intensityCoeff *= exp(-collimators[collimatorIndex].absorptionCoeff*thickness);
 			#if MODE == 0
-			//if (render->mode == 0) { // One leaf hit. Continue ray after collimator because leaves don't have thickness.
+			// One leaf hit. Continue ray after collimator because leaves don't have thickness.
 				*ip = ipTmpLeaf;
 				intersectTmp = false;
-			//}
 			#elif MODE == 1 || MODE == 2
-			//else if (render->mode == 1 || render->mode == 2) { // One ray can hit several leaves.
+			// One ray can hit several leaves.
 				*ip = ipTmpLeaf;
 				Line newRay = {
 					.origin = ipTmpLeaf,
 					.direction = r->direction};
 				firstHitLeaf(s, render, &newRay, &collimators[collimatorIndex], &intersectTmp, &distanceTmp, &ipTmpLeaf, &thickness, debug);
-			//}
 			#endif
 		}
 		if (*intersect == false) { // Did not hit any leaves, but hit bounding box
@@ -228,8 +214,8 @@ void calculateIntensityDecreaseWithDistance(__constant const Scene *scene, const
 
 // Integration over the light source is done as if the rays where cast from a pixel straight under the origin of the light source. The sampling is uniform only from that point.
 void flatLightSourceSampling(__constant const Scene *scene, __constant const Render *render, __global const Collimator *collimators, const float4 *rayOrigin, float *fluenceSum, __global Debug *debug) {
-	for (int li = 0; li < LSAMPLES; li++) {
-		for (int lj = 0; lj < LSAMPLES; lj++) {
+	for (int li = 0; li < render->lsamples; li++) {
+		for (int lj = 0; lj < render->lsamples; lj++) {
 			float4 lPoint =  (float4) (scene->raySource.disc.origin.x - scene->raySource.disc.radius + li*render->lstep, 
 									   scene->raySource.disc.origin.y - scene->raySource.disc.radius + lj*render->lstep, 
                                        scene->raySource.disc.origin.z,
@@ -274,13 +260,13 @@ void uniformLightSourceSampling(__constant const Scene *scene, __constant const 
 	vj1 = length(vj0)*normalize(vj1);
 	float4 idir = (*rayOrigin + vi1) - (*rayOrigin + vi0);
 	float4 jdir = (*rayOrigin + vj1) - (*rayOrigin + vj0);
-	float istep = length(idir)/(LSAMPLES-1);
-	float jstep = length(jdir)/(LSAMPLES-1);
+	float istep = length(idir)/(render->lsamples-1);
+	float jstep = length(jdir)/(render->lsamples-1);
 	
 	float4 corner = (*rayOrigin + vi0) - normalize(jdir)*length(jdir)/2;
 
-	for (int li = 0; li < LSAMPLES; li++) {
-		for (int lj = 0; lj < LSAMPLES; lj++) {
+	for (int li = 0; li < render->lsamples; li++) {
+		for (int lj = 0; lj < render->lsamples; lj++) {
 			float4 lPoint =  corner + li*istep*idir + lj*jstep*jdir;
 			float4 rayDirection = lPoint - *rayOrigin;
 
@@ -309,7 +295,7 @@ void calcFluenceElement(__constant const Scene *scene, __constant const Render *
 	float fluenceSum = 0;
 	//flatLightSourceSampling(scene, render, collimators, &rayOrigin, &fluenceSum, debug);
 	uniformLightSourceSampling(scene, render, collimators, &rayOrigin, &fluenceSum, debug);
-	fluence_data[i*FLX+j] = fluenceSum*distanceFactor;
+	fluence_data[i*render->flx+j] = fluenceSum*distanceFactor;
 }
 
 void initCollimators(__constant const Scene *scene, __constant const Render *render, __global const Collimator *collimators, Collimator *collimators_new) {
@@ -327,14 +313,12 @@ void initCollimators(__constant const Scene *scene, __constant const Render *ren
 	}
 	// Copy simplified model according to mode.
 	#if MODE == 0
-	//if (render->mode == 0) { 
 		for (int i = 0; i < scene->collimators; i++) {
 			FlatCollimator flatCollimator;
 			Collimator col = collimators[i]; // Copy from constant to private memory.
 			createFlatCollimator(&col, &flatCollimator);
 			collimators_new[i].flatCollimator = flatCollimator;
 		}
-	//}
 	#endif
 }
 

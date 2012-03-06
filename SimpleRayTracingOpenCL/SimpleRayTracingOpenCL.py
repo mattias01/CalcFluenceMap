@@ -39,13 +39,12 @@ if openCL:
     queue = cl.CommandQueue(ctx)
 
 # Run tests
-"""
+
 if python:
     np.seterr(divide='ignore') # Disable warning on division by zero.
     testPython()
 if openCL:
     testOpenCL(ctx, queue)
-    """
 
 # Build scene objects
 rs = SimpleRaySourceDisc(Disc(float4(0,0,0,0), float4(0,0,1,0), 1))
@@ -103,17 +102,17 @@ fm = FluenceMap(Rectangle(float4(-30,-30,-100,0), float4(30,-30,-100,0), float4(
 scene = Scene(rs,len(collimators),fm)
 
 # Settings
-#flx = 128
-#fly = 128
+flx = FLX
+fly = FLY
 xstep = (0.0 + length(scene.fluenceMap.rectangle.p1 - scene.fluenceMap.rectangle.p0))/FLX # Length in x / x resolution
-ystep = (0.0 + length(scene.fluenceMap.rectangle.p3 - scene.fluenceMap.rectangle.p0))/FLX # Length in y / y resolution
+ystep = (0.0 + length(scene.fluenceMap.rectangle.p3 - scene.fluenceMap.rectangle.p0))/FLY # Length in y / y resolution
 xoffset = xstep/2.0
 yoffset = ystep/2.0
-#lsamples = 10
+lsamples = LSAMPLES
 lstep = scene.raySource.disc.radius*2/(LSAMPLES-1)
 #mode = 0
-#render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep,mode)
-render = Render(xstep,ystep,xoffset,yoffset,lstep)
+render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep)
+#render = Render(xstep,ystep,xoffset,yoffset,lstep)
 
 init(scene, render, collimators) # Init Collimator
 

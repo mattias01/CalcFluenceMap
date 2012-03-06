@@ -25,13 +25,13 @@ class Scene(Structure):
                 ("fluenceMap", FluenceMap)]
 
 class Render(Structure):
-    _fields_ = [#("flx", c_int),
-                #("fly", c_int),
+    _fields_ = [("flx", c_int),
+                ("fly", c_int),
                 ("xstep", c_float),
                 ("ystep", c_float),
                 ("xoffset", c_float),
                 ("yoffset", c_float),
-                #("lsamples", c_int),
+                ("lsamples", c_int),
                 ("lstep", c_float)#,
                 #("mode", c_int)
                 ]
