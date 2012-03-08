@@ -21,7 +21,7 @@ from Python.Settings import *
 print 'Start SimpleRayTracingOpenCL'
 
 # Select execution environment (Python, OpenCl or both)
-run = raw_input("Choose environment:\n0: OpenCL, 1: Python, 2: Both\n[0]:")
+run = 0#raw_input("Choose environment:\n0: OpenCL, 1: Python, 2: Both\n[0]:")
 
 python = False
 openCL = True
@@ -94,7 +94,7 @@ jaw2.numberOfLeaves = 1
 jaw2.leafPositions = (10,)
 jaw2.boundingBox = calculateCollimatorBoundingBox(jaw2)
 
-collimator_array = Collimator * 4
+collimator_array = Collimator * NUMBER_OF_COLLIMATORS
 #collimators = collimator_array(col1)
 collimators = collimator_array(jaw1, jaw2, col1, col2)
 
@@ -133,17 +133,17 @@ if python:
 
 # Run in OpenCL
 if openCL:
-    time1 = time()
     debugOpenCL = Debug()
-    program = oclu.loadProgram(ctx, "OpenCL/RayTracing.cl", "-cl-nv-verbose " + settingsString())
+    program = oclu.loadProgram(ctx, "OpenCL/RayTracingGPU.cl", "-cl-nv-verbose " + settingsString())
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
     render_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=render)
     collimators_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=collimators)
     fluence_dataOpenCL_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=fluence_dataOpenCL)
     debugOpenCL_buf = cl.Buffer(ctx, mf.WRITE_ONLY, sizeof(debugOpenCL))
-    
-    program.drawScene(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, collimators_buf, debugOpenCL_buf)
+
+    time1 = time()
+    program.drawScene(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, collimators_buf, debugOpenCL_buf).wait()
     cl.enqueue_read_buffer(queue, fluence_dataOpenCL_buf, fluence_dataOpenCL)
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
     timeOpenCL = time()-time1
