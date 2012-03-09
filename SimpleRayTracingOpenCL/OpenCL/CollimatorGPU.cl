@@ -18,7 +18,7 @@ typedef struct FlatCollimator {
 	float4 ydir;
 	float absorptionCoeff;
 	int numberOfLeaves;
-	Triangle leaves[NUMBER_OF_LEAVES * 2];
+	//Triangle leaves[NUMBER_OF_LEAVES * 2];
 } __attribute__((packed)) FlatCollimator;
 
 typedef struct BBoxCollimator {
@@ -28,7 +28,7 @@ typedef struct BBoxCollimator {
 	float4 ydir;
 	float absorptionCoeff;
 	int numberOfLeaves;
-	BBox leaves[NUMBER_OF_LEAVES];
+	//BBox leaves[NUMBER_OF_LEAVES];
 } __attribute__((packed)) BBoxCollimator;
 
 typedef struct BoxCollimator {
@@ -38,7 +38,7 @@ typedef struct BoxCollimator {
 	float4 ydir;
 	float absorptionCoeff;
 	int numberOfLeaves;
-	Box leaves[NUMBER_OF_LEAVES];
+	//Box leaves[NUMBER_OF_LEAVES];
 } __attribute__((packed)) BoxCollimator;
 
 typedef struct Collimator {
@@ -68,7 +68,7 @@ typedef struct FlatCollimator {
 	float4 ydir[NUMBER_OF_COLLIMATORS];
 	float absorptionCoeff[NUMBER_OF_COLLIMATORS];
 	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
-	Triangle leaves[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES * 2];
+	//Triangle leaves[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES * 2];
 } __attribute__((packed)) FlatCollimator;
 
 typedef struct BBoxCollimator {
@@ -78,7 +78,7 @@ typedef struct BBoxCollimator {
 	float4 ydir[NUMBER_OF_COLLIMATORS];
 	float absorptionCoeff[NUMBER_OF_COLLIMATORS];
 	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
-	BBox leaves[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES];
+	//BBox leaves[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES];
 } __attribute__((packed)) BBoxCollimator;
 
 typedef struct BoxCollimator {
@@ -88,7 +88,7 @@ typedef struct BoxCollimator {
 	float4 ydir[NUMBER_OF_COLLIMATORS];
 	float absorptionCoeff[NUMBER_OF_COLLIMATORS];
 	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
-	Box leaves[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES];
+	//Box leaves[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES];
 } __attribute__((packed)) BoxCollimator;
 
 typedef struct Collimator {
@@ -186,9 +186,9 @@ void intersectLineFlatCollimatorLeaf(const Line *l, __global const Triangle *t1,
 }
 
 void intersectLineBBoxCollimatorLeaf(const Line *l, __global const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
-	//BBox bbox = *b;
-	//intersectLineBBoxInOut(l, &bbox, intersect, inDistance, outDistance, inIp, outIp);
-	intersectLineBBoxInOut(l, b, intersect, inDistance, outDistance, inIp, outIp);
+	BBox bbox = *b;
+	intersectLineBBoxInOut(l, &bbox, intersect, inDistance, outDistance, inIp, outIp);
+	//intersectLineBBoxInOut(l, b, intersect, inDistance, outDistance, inIp, outIp);
 }
 
 void intersectLineBoxCollimatorLeaf(const Line *l, __global const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {

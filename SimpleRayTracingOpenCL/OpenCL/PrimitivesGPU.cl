@@ -480,10 +480,10 @@ void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float *dis
 }
 
 // Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
-void intersectLineBBox(const Line *l, __global const BBox *bb, bool *intersect, float *distance, float4 *ip)
+void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *distance, float4 *ip)
 {
-	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
-	BBox *b = &bbox;
+	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	//BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	if (l->direction.x >= 0) {
         tmin = (b->min.x - l->origin.x) / l->direction.x;
@@ -546,10 +546,10 @@ void intersectLineBBox(const Line *l, __global const BBox *bb, bool *intersect, 
 }
 
 // Registers: 6.
-void intersectLineBBoxInOut(const Line *l, __global const BBox *bb, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+void intersectLineBBoxInOut(const Line *l, const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
-	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
-	BBox *b = &bbox;
+	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	//BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	if (l->direction.x >= 0) {
         tmin = (b->min.x - l->origin.x) / l->direction.x;

@@ -118,7 +118,8 @@ render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep)
 leaves = []
 init(scene, render, collimators, leaves) # Init Collimator
 
-leaf_array = float4 * len(leaves)
+leaf_array_type = float4 * len(leaves)
+leaf_array = leaf_array_type()
 for i in range(len(leaves)):
     leaf_array[i] = leaves[i]
 
