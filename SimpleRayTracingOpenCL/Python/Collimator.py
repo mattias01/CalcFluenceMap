@@ -1,7 +1,7 @@
 from ctypes import *
 from OpenCLTypes import *
 from Python.Primitives import *
-from Python.Settings import MODE, NUMBER_OF_LEAVES
+from Python.Settings import MODE, NUMBER_OF_COLLIMATORS, NUMBER_OF_LEAVES, SOA
 
 ###################### Class definitions ######################
 
@@ -16,11 +16,13 @@ class FlatCollimator(Structure):
                 ("ydir", float4),
                 ("absorptionCoeff", c_float),
                 ("numberOfLeaves", c_int),
-                ("leaves", Rectangle * NUMBER_OF_LEAVES)]
+                ("leafDataLength", c_int)]
+                #("leaves", Rectangle * NUMBER_OF_LEAVES)]
+                #("leaves", Triangle * (2 * NUMBER_OF_LEAVES))]
 
     def getVertices(self):
         list = []
-        for i in range(self.numberOfLeaves):
+        for i in range(self.numberOfLeaves*2):
             list.extend(self.leaves[i].getVertices())
         return list
 
@@ -31,7 +33,8 @@ class BBoxCollimator(Structure):
                 ("ydir", float4),
                 ("absorptionCoeff", c_float),
                 ("numberOfLeaves", c_int),
-                ("leaves", BBox * NUMBER_OF_LEAVES)]
+                ("leafDataLength", c_int)]
+                #("leaves", BBox * NUMBER_OF_LEAVES)]
 
     def getVertices(self):
         list = []
@@ -46,7 +49,8 @@ class BoxCollimator(Structure):
                 ("ydir", float4),
                 ("absorptionCoeff", c_float),
                 ("numberOfLeaves", c_int),
-                ("leaves", Box * NUMBER_OF_LEAVES)]
+                ("leafDataLength", c_int)]
+                #("leaves", Box * NUMBER_OF_LEAVES)]
 
     def getVertices(self):
         list = []
@@ -54,10 +58,8 @@ class BoxCollimator(Structure):
             list.extend(self.leaves[i].getVertices())
         return list
 
-#lambda selector: ("flatCollimator", FlatCollimator) if MODE == 0 ("bboxCollimator", BBoxCollimator) else MODE == 1
-
 class Collimator(Structure):
-    def select(mode):
+    def selectMode(mode):
         if mode == 0:
             return ("flatCollimator", FlatCollimator)
         elif mode == 1:
@@ -77,7 +79,162 @@ class Collimator(Structure):
                 #("flatCollimator", FlatCollimator),
                 #("bboxCollimator", BBoxCollimator),
                 #("boxCollimator", BoxCollimator))]
-                select(MODE)]
+                selectMode(MODE)]
+
+class FlatCollimatorSoA(Structure):
+    _fields_ = [("boundingBox", BBox * NUMBER_OF_COLLIMATORS),
+                ("position", float4 * NUMBER_OF_COLLIMATORS),
+                ("xdir", float4 * NUMBER_OF_COLLIMATORS),
+                ("ydir", float4 * NUMBER_OF_COLLIMATORS),
+                ("absorptionCoeff", c_float * NUMBER_OF_COLLIMATORS),
+                ("numberOfLeaves", c_int * NUMBER_OF_COLLIMATORS),
+                ("leafDataLength", c_int * NUMBER_OF_COLLIMATORS)]
+                #("leaves", Rectangle * NUMBER_OF_LEAVES)]
+                #("leaves", Triangle * (2 * NUMBER_OF_LEAVES) * NUMBER_OF_COLLIMATORS)]
+
+    def getVertices(self):
+        list = []
+        for i in range(self.numberOfLeaves*2):
+            list.extend(self.leaves[i].getVertices())
+        return list
+
+class BBoxCollimatorSoA(Structure):
+    _fields_ = [("boundingBox", BBox * NUMBER_OF_COLLIMATORS),
+                ("position", float4 * NUMBER_OF_COLLIMATORS),
+                ("xdir", float4 * NUMBER_OF_COLLIMATORS),
+                ("ydir", float4 * NUMBER_OF_COLLIMATORS),
+                ("absorptionCoeff", c_float * NUMBER_OF_COLLIMATORS),
+                ("numberOfLeaves", c_int * NUMBER_OF_COLLIMATORS),
+                ("leafDataLength", c_int * NUMBER_OF_COLLIMATORS)]
+                #("leaves", BBox * NUMBER_OF_LEAVES * NUMBER_OF_COLLIMATORS)]
+
+    def getVertices(self):
+        list = []
+        for i in range(self.numberOfLeaves):
+            list.extend(self.leaves[i].getVertices())
+        return list
+
+class BoxCollimatorSoA(Structure):
+    _fields_ = [("boundingBox", BBox * NUMBER_OF_COLLIMATORS),
+                ("position", float4 * NUMBER_OF_COLLIMATORS),
+                ("xdir", float4 * NUMBER_OF_COLLIMATORS),
+                ("ydir", float4 * NUMBER_OF_COLLIMATORS),
+                ("absorptionCoeff", c_float * NUMBER_OF_COLLIMATORS),
+                ("numberOfLeaves", c_int * NUMBER_OF_COLLIMATORS),
+                ("leafDataLength", c_int * NUMBER_OF_COLLIMATORS)]
+                #("leaves", Box * NUMBER_OF_LEAVES * NUMBER_OF_COLLIMATORS)]
+
+    def getVertices(self):
+        list = []
+        for i in range(self.numberOfLeaves):
+            list.extend(self.leaves[i].getVertices())
+        return list
+
+class CollimatorSoA(Structure):
+    def selectMode(mode):
+        if mode == 0:
+            return ("flatCollimator", FlatCollimatorSoA)
+        elif mode == 1:
+            return ("bboxCollimator", BBoxCollimatorSoA)
+        elif mode ==2:
+            return ("boxCollimator", BoxCollimatorSoA)
+
+    _fields_ = [("boundingBox", BBox * NUMBER_OF_COLLIMATORS),
+                ("position", float4 * NUMBER_OF_COLLIMATORS),
+                ("xdir", float4 * NUMBER_OF_COLLIMATORS),
+                ("ydir", float4 * NUMBER_OF_COLLIMATORS),
+                ("absorptionCoeff", c_float * NUMBER_OF_COLLIMATORS),
+                ("height", c_float * NUMBER_OF_COLLIMATORS),
+                ("width", c_float * NUMBER_OF_COLLIMATORS),
+                ("numberOfLeaves", c_int * NUMBER_OF_COLLIMATORS),
+                ("leafPositions", c_float * NUMBER_OF_LEAVES * NUMBER_OF_COLLIMATORS),
+                #("flatCollimator", FlatCollimator),
+                #("bboxCollimator", BBoxCollimator),
+                #("boxCollimator", BoxCollimator))]
+                selectMode(MODE)]
+
+###################### Other stuff ################################
+
+def CollimatorAoStoSoA(collimator_array):
+    csoa = CollimatorSoA()
+    for i in range(NUMBER_OF_COLLIMATORS):
+        csoa.boundingBox[i] = collimator_array[i].boundingBox
+        csoa.position[i] = collimator_array[i].position
+        csoa.xdir[i] = collimator_array[i].xdir
+        csoa.ydir[i] = collimator_array[i].ydir
+        csoa.absorptionCoeff[i] = collimator_array[i].absorptionCoeff
+        csoa.height[i] = collimator_array[i].height
+        csoa.width[i] = collimator_array[i].width
+        csoa.numberOfLeaves[i] = collimator_array[i].numberOfLeaves
+        csoa.leafPositions[i] = collimator_array[i].leafPositions
+        if MODE == 0:
+            csoa.flatCollimator.boundingBox[i] = collimator_array[i].flatCollimator.boundingBox
+            csoa.flatCollimator.position[i] = collimator_array[i].flatCollimator.position
+            csoa.flatCollimator.xdir[i] = collimator_array[i].flatCollimator.xdir
+            csoa.flatCollimator.ydir[i] = collimator_array[i].flatCollimator.ydir
+            csoa.flatCollimator.absorptionCoeff[i] = collimator_array[i].flatCollimator.absorptionCoeff
+            csoa.flatCollimator.numberOfLeaves[i] = collimator_array[i].flatCollimator.numberOfLeaves
+            #csoa.flatCollimator.leaves[i] = collimator_array[i].flatCollimator.leaves
+        elif MODE == 1:
+            csoa.bboxCollimator.boundingBox[i] = collimator_array[i].bboxCollimator.boundingBox
+            csoa.bboxCollimator.position[i] = collimator_array[i].bboxCollimator.position
+            csoa.bboxCollimator.xdir[i] = collimator_array[i].bboxCollimator.xdir
+            csoa.bboxCollimator.ydir[i] = collimator_array[i].bboxCollimator.ydir
+            csoa.bboxCollimator.absorptionCoeff[i] = collimator_array[i].bboxCollimator.absorptionCoeff
+            csoa.bboxCollimator.numberOfLeaves[i] = collimator_array[i].bboxCollimator.numberOfLeaves
+            #csoa.bboxCollimator.leaves[i] = collimator_array[i].bboxCollimator.leaves
+        elif MODE ==2:
+            csoa.boxCollimator.boundingBox[i] = collimator_array[i].boxCollimator.boundingBox
+            csoa.boxCollimator.position[i] = collimator_array[i].boxCollimator.position
+            csoa.boxCollimator.xdir[i] = collimator_array[i].boxCollimator.xdir
+            csoa.boxCollimator.ydir[i] = collimator_array[i].boxCollimator.ydir
+            csoa.boxCollimator.absorptionCoeff[i] = collimator_array[i].boxCollimator.absorptionCoeff
+            csoa.boxCollimator.numberOfLeaves[i] = collimator_array[i].boxCollimator.numberOfLeaves
+            #csoa.boxCollimator.leaves[i] = collimator_array[i].boxCollimator.leaves
+    return csoa
+
+#Prepare float4 array from collimator leaf data.
+def float4ArrayFromCollimators(collimators):
+    leaf_array_length = 0
+    for i in range(len(collimators)):
+        if MODE == 0:
+            leaf_array_length += collimators[i].flatCollimator.numberOfLeaves * collimators[i].flatCollimator.leafDataLength
+        elif MODE == 1:
+            leaf_array_length += collimators[i].bboxCollimator.numberOfLeaves * collimators[i].bboxCollimator.leafDataLength
+        elif MODE == 2:
+            leaf_array_length += collimators[i].boxCollimator.numberOfLeaves * collimators[i].boxCollimator.leafDataLength
+
+    leaf_array = float4 * leaf_array_length
+
+    leaf_array_position = 0;
+    for i in range(len(collimators)):
+        for j in range(collimators[i].numberOfLeaves):
+            if MODE == 0:
+                leaf_array[leaf_array_position + 0] = collimators[i].flatCollimator.leaves[j].p0
+                leaf_array[leaf_array_position + 1] = collimators[i].flatCollimator.leaves[j].p1
+                leaf_array[leaf_array_position + 2] = collimators[i].flatCollimator.leaves[j].p2
+                leaf_array[leaf_array_position + 3] = collimators[i].flatCollimator.leaves[j+1].p0
+                leaf_array[leaf_array_position + 4] = collimators[i].flatCollimator.leaves[j+1].p1
+                leaf_array[leaf_array_position + 5] = collimators[i].flatCollimator.leaves[j+1].p2
+                leaf_array_position += 2 * 3
+            elif MODE == 1:
+                leaf_array[leaf_array_position + 0] = collimators[i].bboxCollimator.leaves[j].min
+                leaf_array[leaf_array_position + 1] = collimators[i].bboxCollimator.leaves[j].max
+                leaf_array_position += 2
+            elif MODE == 2:
+                for k in range(collimators[i].boxCollimator.leaves[j].triangles):
+                    leaf_array[leaf_array_position + k*3 + 0] = collimators[i].boxCollimator.leaves[j].triangles[k].p0
+                    leaf_array[leaf_array_position + k*3 + 1] = collimators[i].boxCollimator.leaves[j].triangles[k].p1
+                    leaf_array[leaf_array_position + k*3 + 2] = collimators[i].boxCollimator.leaves[j].triangles[k].p2
+                leaf_array_position += 12 * 3
+    
+    return leaf_array
+
+def createfloat4List(obj_list):
+    list = []
+    for x in obj_list:
+        list.extend(x.getfloat4List())
+    return list
 
 ###################### Collimator generation ######################
 
@@ -102,6 +259,19 @@ def calculateCollimatorBoundingBox(collimator):
 
     return boundingBox(p0, p1, p2, p3, p4, p5, p6, p7)
 
+def createRectangleTriangles(position, xdir, ydir, rectangleWidth, numberOfRect, rectangleLength):
+    #rectangle_array = Rectangle * NUMBER_OF_LEAVES
+    rectangle_array = Triangle * (2 * NUMBER_OF_LEAVES)
+    rectangles = rectangle_array()
+    x = normalize(xdir)
+    y = normalize(ydir)*rectangleWidth
+    for i in range(numberOfRect):
+        #rectangles[i] = Rectangle(position + y*i, position + y*(i+1), position + x*rectangleLength[i] + y*(i+1), position + y*i + x*rectangleLength[i])
+        rectangle = Rectangle(position + y*i, position + y*(i+1), position + x*rectangleLength[i] + y*(i+1), position + y*i + x*rectangleLength[i])
+        rectangles[i*2] = Triangle(rectangle.p0, rectangle.p1, rectangle.p2)
+        rectangles[i*2 +1] = Triangle(rectangle.p2, rectangle.p3, rectangle.p0)
+    return rectangles
+
 def createRectangles(position, xdir, ydir, rectangleWidth, numberOfRect, rectangleLength):
     rectangle_array = Rectangle * NUMBER_OF_LEAVES
     rectangles = rectangle_array()
@@ -109,7 +279,7 @@ def createRectangles(position, xdir, ydir, rectangleWidth, numberOfRect, rectang
     y = normalize(ydir)*rectangleWidth
     for i in range(numberOfRect):
         rectangles[i] = Rectangle(position + y*i, position + y*(i+1), position + x*rectangleLength[i] + y*(i+1), position + y*i + x*rectangleLength[i])
-    
+
     return rectangles
 
 def createBBoxes(position, xdir, ydir, boxHeight, boxWidth, numberOfBoxes, boxLength):
@@ -154,7 +324,7 @@ def createBoxes(position, xdir, ydir, height, width, numberOfBoxes, boxLength):
 def createFlatCollimator(collimator):
     plane = Plane(collimator.position, cross(collimator.xdir, collimator.ydir)) # Plane perpendicular to xdir and ydir.
     bbox = BBox(projectPointOntoPlane(collimator.boundingBox.min, plane), projectPointOntoPlane(collimator.boundingBox.max, plane))
-    leaves = createRectangles(collimator.position, collimator.xdir, collimator.ydir, collimator.width/collimator.numberOfLeaves, collimator.numberOfLeaves, collimator.leafPositions)
+    leaves = createRectangleTriangles(collimator.position, collimator.xdir, collimator.ydir, collimator.width/collimator.numberOfLeaves, collimator.numberOfLeaves, collimator.leafPositions)
     fc = FlatCollimator()
     fc.boundingBox = bbox
     fc.position = collimator.position
@@ -162,8 +332,9 @@ def createFlatCollimator(collimator):
     fc.ydir = collimator.ydir
     fc.absorptionCoeff = collimator.absorptionCoeff
     fc.numberOfLeaves = collimator.numberOfLeaves
-    fc.leaves = leaves
-    return fc
+    fc.leafDataLength = 2 * 3
+    #fc.leaves = leaves
+    return [fc, createfloat4List(leaves)]
 
 def createBBoxCollimator(collimator):
     bboxes = createBBoxes(collimator.position, collimator.xdir, collimator.ydir, collimator.height, collimator.width/collimator.numberOfLeaves, collimator.numberOfLeaves, collimator.leafPositions)
@@ -174,8 +345,9 @@ def createBBoxCollimator(collimator):
     bc.ydir = collimator.ydir
     bc.absorptionCoeff = collimator.absorptionCoeff
     bc.numberOfLeaves = collimator.numberOfLeaves
-    bc.leaves = bboxes
-    return bc
+    bc.leafDataLength = 2
+    #bc.leaves = bboxes
+    return [bc, createfloat4List(bboxes)]
 
 def createBoxCollimator(collimator):
     [boxes, bbox] = createBoxes(collimator.position, collimator.xdir, collimator.ydir, collimator.height, collimator.width, collimator.numberOfLeaves, collimator.leafPositions)
@@ -187,8 +359,9 @@ def createBoxCollimator(collimator):
     bc.ydir = collimator.ydir
     bc.absorptionCoeff = collimator.absorptionCoeff
     bc.numberOfLeaves = collimator.numberOfLeaves
-    bc.leaves = boxes
-    return bc
+    bc.leafDataLength = 12 * 3
+    #bc.leaves = boxes
+    return [bc, createfloat4List(boxes)]
 
 ###################### Intersection calculations ######################
 
@@ -199,8 +372,12 @@ def intersectLineSimpleCollimator(line, collimator):
 
     return [intersect, intersectionDistance, intersectionPoint]
 
-def intersectLineFlatCollimatorLeaf(line, leaf):
-    return intersectLineRectangle(line, leaf)
+def intersectLineFlatCollimatorLeaf(line, leaf1, leaf2):
+    [intersect, intersectionDistance, intersectionPoint] = intersectLineTriangle(line, leaf1) # Test the first triangle
+    if intersect == False:
+        [intersect, intersectionDistance, intersectionPoint] = intersectLineTriangle(line, leaf2) # Test the other triangle
+    
+    return [intersect, intersectionDistance, intersectionPoint]
 
 def intersectLineBBoxCollimatorLeaf(line, leaf):
     return intersectLineBBoxInOut(line, leaf)

@@ -14,6 +14,7 @@ import visual as vs
 
 from OpenCLUtility import OpenCLUtility as oclu
 from OpenCLTypes import *
+from Python.Collimator import CollimatorAoStoSoA, float4ArrayFromCollimators
 from Python.RayTracing import *
 from Test import *
 from Python.Settings import *
@@ -43,8 +44,8 @@ if openCL:
 if python:
     np.seterr(divide='ignore') # Disable warning on division by zero.
     testPython()
-if openCL:
-    testOpenCL(ctx, queue)
+#if openCL:
+    #testOpenCL(ctx, queue)
 
 # Build scene objects
 rs = SimpleRaySourceDisc(Disc(float4(0,0,0,0), float4(0,0,1,0), 1))
@@ -99,7 +100,7 @@ collimator_array = Collimator * NUMBER_OF_COLLIMATORS
 collimators = collimator_array(jaw1, jaw2, col1, col2)
 
 fm = FluenceMap(Rectangle(float4(-30,-30,-100,0), float4(30,-30,-100,0), float4(30,30,-100,0), float4(-30,30,-100,0)))
-scene = Scene(rs,len(collimators),fm)
+scene = Scene(rs,len(collimators), collimators, fm)
 
 # Settings
 flx = FLX
@@ -114,12 +115,21 @@ lstep = scene.raySource.disc.radius*2/(LSAMPLES-1)
 render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep)
 #render = Render(xstep,ystep,xoffset,yoffset,lstep)
 
-init(scene, render, collimators) # Init Collimator
+leaves = []
+init(scene, render, collimators, leaves) # Init Collimator
+
+leaf_array = float4 * len(leaves)
+for i in range(len(leaves)):
+    leaf_array[i] = leaves[i]
+
+if (SOA == 1):
+    collimators = CollimatorAoStoSoA(collimators)
 
 if python:
     fluence_dataPython = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
 if openCL:
     fluence_dataOpenCL = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
+    intensities = numpy.zeros(shape=(FLX,FLY,LSAMPLES*LSAMPLES), dtype=numpy.float32)
 
 # Run in Python
 if python:
@@ -138,20 +148,25 @@ if openCL:
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
     render_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=render)
-    collimators_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=collimators)
-    fluence_dataOpenCL_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=fluence_dataOpenCL)
+    leaf_array_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=leaf_array)
+    intensities_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.ALLOC_HOST_PTR, size=intensities.nbytes)
+    fluence_dataOpenCL_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.ALLOC_HOST_PTR, size=fluence_dataOpenCL.nbytes)
     debugOpenCL_buf = cl.Buffer(ctx, mf.WRITE_ONLY, sizeof(debugOpenCL))
 
     time1 = time()
-    program.drawScene(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, collimators_buf, debugOpenCL_buf).wait()
+    program.flatLightSourceSampling(queue, intensities.shape, None, scene_buf, render_buf,  leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
+    time2 = time()
+    program.calculateIntensityDecreaseWithDistance(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
+    time3 = time()
+    program.calcFluenceElement(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, intensities_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
+    time4 = time()
     cl.enqueue_read_buffer(queue, fluence_dataOpenCL_buf, fluence_dataOpenCL)
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
     timeOpenCL = time()-time1
 
-    print timeOpenCL
+    print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
     samplesPerSecondOpenCL = FLX*FLY*LSAMPLES*LSAMPLES/timeOpenCL
     print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
-
 
 
 # Show plots
@@ -201,7 +216,7 @@ for i in range(len(collimators)):
         f = vs.faces(frame = fr, pos = collimators[i].bboxCollimator.getVertices())
     elif MODE == 2:
         f = vs.faces(frame = fr, pos = collimators[i].boxCollimator.getVertices())
-        #bb = vs.faces(frame = fr, pos = bboxToBox(collimators[i].boundingBox).getVertices())
+        #bb = vs.faces(frame = fr, pos = bboxToBox(collimators[i].boxCollimator.boundingBox).getVertices())
         #bb.make_normals()
         #bb.color = vs.color.blue
     f.color = vs.color.orange

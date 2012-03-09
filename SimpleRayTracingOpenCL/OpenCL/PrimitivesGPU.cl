@@ -125,7 +125,7 @@ void intersectLinePlane(const Line *l, const Plane *p, bool *intersect, float *d
 
 #if LINE_TRIANGLE_INTERSECTION_ALGORITHM == 0 // SoftSurfer, modified MT
 // SoftSurfer.com, modified MT. Registers: 32 + 1.
-void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, float *distance, float4 *ip)
+void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
 	float4 u = t->p1 - t->p0;
     float4 v = t->p2 - t->p0;
@@ -164,7 +164,7 @@ void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, fl
 
 #elif LINE_TRIANGLE_INTERSECTION_ALGORITHM == 1 // Orig. MT
 // Möller/Trombore 97. Registers 24.
-void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, float *distance, float4 *ip)
+void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
 	float4 edge1, edge2, tvec, pvec, qvec;
 	float det, inv_det;
@@ -219,7 +219,7 @@ void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, fl
 #elif LINE_TRIANGLE_INTERSECTION_ALGORITHM == 2 // MT2
 /* code rewritten to do tests on the sign of the determinant */
 /* the division is at the end in the code */   
-void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, float *distance, float4 *ip)
+void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
 	float4 edge1, edge2, tvec, pvec, qvec;
 	float det, inv_det;
@@ -298,7 +298,7 @@ void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, fl
 #elif LINE_TRIANGLE_INTERSECTION_ALGORITHM == 3 // MT3
 /* code rewritten to do tests on the sign of the determinant */
 /* the division is before the test of the sign of the det    */
-void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, float *distance, float4 *ip)
+void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
 	float4 edge1, edge2, tvec, pvec, qvec;
 	float det, inv_det;
@@ -375,7 +375,7 @@ void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, fl
 /* code rewritten to do tests on the sign of the determinant */
 /* the division is before the test of the sign of the det    */
 /* and one CROSS has been moved out from the if-else if-else */
-void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, float *distance, float4 *ip)
+void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
 	float4 edge1, edge2, tvec, pvec, qvec;
 	float det, inv_det;
@@ -443,23 +443,22 @@ void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, fl
 #endif // LINE_TRIANGLE_INTERSECTION_ALGORITHM
 
 // Registers: 24 + 33.
-void intersectLineRectangle(const Line *l, const Rectangle *s, bool *intersect, float *distance, float4 *ip)
+/*void intersectLineRectangle(const Line *l, __global const Rectangle *s, bool *intersect, float *distance, float4 *ip)
 {
 	Triangle t1 = {
 		.p0 = s->p0,
 		.p1 = s->p1,
 		.p2 = s->p2};
-	Triangle t2 = {
-		.p0 = s->p2,
-		.p1 = s->p3,
-		.p2 = s->p0};
-
-	intersectLineTriangle(l, &t1, intersect, distance, ip);
-
+	
+	intersectLineTrianglePrivate(l, &t1, intersect, distance, ip);
 	if (!(*intersect)) { // Try to find intersection in second triangle
-		intersectLineTriangle(l, &t2, intersect, distance, ip);
+		Triangle t2 = {
+			.p0 = s->p2,
+			.p1 = s->p3,
+			.p2 = s->p0};
+		intersectLineTrianglePrivate(l, &t2, intersect, distance, ip);
 	}
-}
+}*/
 
 // Registers: 8 + 33 + 4.
 void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float *distance, float4 *ip)
@@ -481,8 +480,10 @@ void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float *dis
 }
 
 // Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
-void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *distance, float4 *ip)
+void intersectLineBBox(const Line *l, __global const BBox *bb, bool *intersect, float *distance, float4 *ip)
 {
+	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	if (l->direction.x >= 0) {
         tmin = (b->min.x - l->origin.x) / l->direction.x;
@@ -545,8 +546,10 @@ void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *dis
 }
 
 // Registers: 6.
-void intersectLineBBoxInOut(const Line *l, const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+void intersectLineBBoxInOut(const Line *l, __global const BBox *bb, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
+	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	if (l->direction.x >= 0) {
         tmin = (b->min.x - l->origin.x) / l->direction.x;
@@ -616,7 +619,7 @@ void intersectLineBBoxInOut(const Line *l, const BBox *b, bool *intersect, float
 }
 
 // Registers 7 + 33.
-void intersectLineBox(const Line *l, const Box *b, bool *intersect, float *distance, float4 *ip) {
+void intersectLineBox(const Line *l, __global const Box *b, bool *intersect, float *distance, float4 *ip) {
 	int counter = 0;
 	*intersect = false;
 	bool intersectTmp;
@@ -649,7 +652,7 @@ void intersectLineBox(const Line *l, const Box *b, bool *intersect, float *dista
 }
 
 // Registers 7 + 33.
-void intersectLineBoxInOut(const Line *l, const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
+void intersectLineBoxInOut(const Line *l, __global const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
 	int counter = 0;
 	*intersect = false;
 	bool intersectTmp;

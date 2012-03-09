@@ -24,6 +24,9 @@ class Triangle(Structure):
     def getVertices(self):
         return [self.p0.get3DTuple(), self.p1.get3DTuple(), self.p2.get3DTuple()]
 
+    def getfloat4List(self):
+        return [self.p0, self.p1, self.p2]
+
 # Rectangle class
 # Points assigned anti-clockwise
 class Rectangle(Structure):
@@ -51,6 +54,9 @@ class BBox(Structure):
     def getVertices(self):
         return bboxToBox(self).getVertices()
 
+    def getfloat4List(self):
+        return [min, max]
+
 class Box(Structure):
     _fields_ = [("triangles", Triangle * 12)]
 
@@ -58,6 +64,12 @@ class Box(Structure):
         list = []
         for i in range(len(self.triangles)):
             list.extend(self.triangles[i].getVertices())
+        return list
+
+    def getfloat4List(self):
+        list = []
+        for i in range(len(self.triangles)):
+            list.extend(self.triangles[i].getfloat4List())
         return list
 
 ###################### Other calculations ######################

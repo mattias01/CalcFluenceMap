@@ -6,7 +6,7 @@ import sys
 from OpenCLTypes import *
 from Python.Collimator import *
 from Python.Primitives import *
-from Python.Settings import MODE
+from Python.Settings import MODE, NUMBER_OF_COLLIMATORS, SOA
 
 ###################### Class definitions ######################
 
@@ -21,7 +21,8 @@ class FluenceMap(Structure):
 
 class Scene(Structure):
     _fields_ = [("raySource", SimpleRaySourceDisc),
-                ("collimators", c_int),
+                ("numberOfCollimators", c_int),
+                ("collimators", Collimator * NUMBER_OF_COLLIMATORS),
                 ("fluenceMap", FluenceMap)]
 
 class Render(Structure):
@@ -55,7 +56,7 @@ def firstHitLeaf(scene, render, ray, collimator):
         intersectionDistanceTmp = float("inf")
         intersectionPointTmp = None
         if MODE == 0:
-            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineFlatCollimatorLeaf(ray, collimator.leaves[i])
+            [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineFlatCollimatorLeaf(ray, collimator.leaves[i*2], collimator.leaves[i*2 + 1])
         elif MODE == 1:
             [intersectTmp, intersectionDistanceInTmp, intersectionDistanceOutTmp, intersectionPointInTmp, intersectionPointOutTmp] = intersectLineBBoxCollimatorLeaf(ray, collimator.leaves[i])
             intersectionDistanceTmp = intersectionDistanceInTmp
@@ -188,18 +189,19 @@ def calcAllFluenceElements(scene, render, collimators, fluency_data, debug):
         for fj in range(render.fly):
             calcFluenceElement(scene, render, collimators, fluency_data, fi, fj, debug)
 
-def init(scene, render, collimators):
-    if MODE == 0:
-        for col in collimators:
-            col.flatCollimator = createFlatCollimator(col)
-    elif MODE == 1:
-        for col in collimators:
-            col.bboxCollimator = createBBoxCollimator(col)
-    elif MODE == 2:
-        for col in collimators:
-            col.boxCollimator = createBoxCollimator(col)
-    else:
-        print "Undefined mode"
+def init(scene, render, collimators, leaf_array):
+    for col in collimators:
+        leaves = []
+        if MODE == 0:
+            [col.flatCollimatorm, leaves] = createFlatCollimator(col)
+        elif MODE == 1:
+            [col.bboxCollimator, leaves] = createBBoxCollimator(col)
+        elif MODE == 2:
+            [col.boxCollimator, leaves] = createBoxCollimator(col)
+        else:
+            print "Undefined mode"
+        leaf_array.extend(leaves)
+
 
 def drawScene(scene, render, collimators, fluency_data, debug):
     calcAllFluenceElements(scene, render, collimators, fluency_data, debug)
