@@ -6,10 +6,21 @@ NUMBER_OF_LEAVES = 40
 FLX = 256
 FLY = 256
 LSAMPLES = 10
-MODE = 1
+MODE = 2
 NUMBER_OF_COLLIMATORS = 4
 LINE_TRIANGLE_INTERSECTION_ALGORITHM = 1 # SS, MT, MT2, MT3, MT4 (does not work)
-SOA = 0
+SOA = 1
+
+# Work group sizes
+WG_LIGHT_SAMPLING_X = 1
+WG_LIGHT_SAMPLING_Y = 16
+WG_LIGHT_SAMPLING_Z = 4
+
+# Run settings
+OPENCL = 1
+PYTHON = 0
+SHOW_PLOT = 1
+SHOW_3D_SCENE = 0
 
 # Returns a string with all the settings as compiler arguments that can be passed to the OpenCL compiler to define macros.
 def settingsString():

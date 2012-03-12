@@ -198,9 +198,9 @@ void intersectLineFlatCollimatorLeaf(const Line *l, __global const Triangle *t1,
 }
 
 void intersectLineBBoxCollimatorLeaf(const Line *l, __global const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
-	BBox bbox = *b;
-	intersectLineBBoxInOut(l, &bbox, intersect, inDistance, outDistance, inIp, outIp);
-	//intersectLineBBoxInOut(l, b, intersect, inDistance, outDistance, inIp, outIp);
+	//BBox bbox = *b;
+	//intersectLineBBoxInOut(l, &bbox, intersect, inDistance, outDistance, inIp, outIp);
+	intersectLineBBoxInOutColLeaf(l, b, intersect, inDistance, outDistance, inIp, outIp);
 }
 
 void intersectLineBoxCollimatorLeaf(const Line *l, __global const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {

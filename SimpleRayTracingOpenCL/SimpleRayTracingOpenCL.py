@@ -22,18 +22,18 @@ from Python.Settings import *
 print 'Start SimpleRayTracingOpenCL'
 
 # Select execution environment (Python, OpenCl or both)
-run = 0#raw_input("Choose environment:\n0: OpenCL, 1: Python, 2: Both\n[0]:")
+"""run = 0#raw_input("Choose environment:\n0: OpenCL, 1: Python, 2: Both\n[0]:")
 
-python = False
-openCL = True
+PYTHON = 0
+OPENCL = 1
 if run == "1":
-    python = True
-    openCL = False
+    PYTHON = 1
+    OPENCL = 0
 elif run == "2":
-    python = True
+    PYTHON = 1"""
 
 # Init OpenCL
-if openCL:
+if OPENCL == 1:
     #ctx = cl.create_some_context()
     os.environ["PYOPENCL_COMPILER_OUTPUT"] = "1"
     ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
@@ -41,7 +41,7 @@ if openCL:
 
 # Run tests
 
-if python:
+if PYTHON == 1:
     np.seterr(divide='ignore') # Disable warning on division by zero.
     testPython()
 #if openCL:
@@ -125,14 +125,14 @@ lstep = scene.raySource.disc.radius*2/(LSAMPLES-1)
 render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep)
 #render = Render(xstep,ystep,xoffset,yoffset,lstep)
 
-if python:
+if PYTHON == 1:
     fluence_dataPython = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
-if openCL:
+if OPENCL == 1:
     fluence_dataOpenCL = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
     intensities = numpy.zeros(shape=(FLX,FLY,LSAMPLES*LSAMPLES), dtype=numpy.float32)
 
 # Run in Python
-if python:
+if PYTHON == 1:
     time1 = time()
     debugPython = Debug()
     drawScene(scene, render, collimators, fluence_dataPython, debugPython)
@@ -142,7 +142,7 @@ if python:
     print "Time Python: ", timePython, " Samples per second: ", samplesPerSecondPython
 
 # Run in OpenCL
-if openCL:
+if OPENCL == 1:
     debugOpenCL = Debug()
     program = oclu.loadProgram(ctx, "OpenCL/RayTracingGPU.cl", "-cl-nv-verbose -w " + settingsString())
     mf = cl.mem_flags
@@ -154,7 +154,7 @@ if openCL:
     debugOpenCL_buf = cl.Buffer(ctx, mf.WRITE_ONLY, sizeof(debugOpenCL))
 
     time1 = time()
-    program.flatLightSourceSampling(queue, intensities.shape, None, scene_buf, render_buf,  leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
+    program.flatLightSourceSampling(queue, intensities.shape, (WG_LIGHT_SAMPLING_X, WG_LIGHT_SAMPLING_Y, WG_LIGHT_SAMPLING_Z), scene_buf, render_buf,  leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
     time2 = time()
     program.calculateIntensityDecreaseWithDistance(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
     time3 = time()
@@ -168,70 +168,69 @@ if openCL:
     samplesPerSecondOpenCL = FLX*FLY*LSAMPLES*LSAMPLES/timeOpenCL
     print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
 
-
 # Show plots
-rspatch = patches.Circle((scene.raySource.disc.origin.y, scene.raySource.disc.origin.x), 
-                         scene.raySource.disc.radius, facecolor='none', edgecolor='red', linewidth=1, alpha=0.5)
+if SHOW_PLOT == 1:
+    rspatch = patches.Circle((scene.raySource.disc.origin.y, scene.raySource.disc.origin.x), 
+                             scene.raySource.disc.radius, facecolor='none', edgecolor='red', linewidth=1, alpha=0.5)
 
-# Python
-if python:
-    print fluence_dataPython
-    plt.imshow(fluence_dataPython, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.rectangle.p0.y,
-                                                                               scene.fluenceMap.rectangle.p3.y,
-                                                                               -scene.fluenceMap.rectangle.p0.x,
-                                                                               -scene.fluenceMap.rectangle.p1.x])
+    # Python
+    if PYTHON == 1:
+        print fluence_dataPython
+        plt.imshow(fluence_dataPython, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.rectangle.p0.y,
+                                                                                   scene.fluenceMap.rectangle.p3.y,
+                                                                                   -scene.fluenceMap.rectangle.p0.x,
+                                                                                   -scene.fluenceMap.rectangle.p1.x])
 
-    plt.gca().add_patch(rspatch)
+        plt.gca().add_patch(rspatch)
 
-    plt.title("Python " + "Time: " + str(timePython) + " Samples per second: " + str(samplesPerSecondPython))
-    plt.show()
+        plt.title("Python " + "Time: " + str(timePython) + " Samples per second: " + str(samplesPerSecondPython))
+        plt.show()
 
-# OpenCL
-if openCL:
-    print fluence_dataOpenCL
-    plt.imshow(fluence_dataOpenCL, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.rectangle.p0.y,
-                                                                               scene.fluenceMap.rectangle.p3.y,
-                                                                               -scene.fluenceMap.rectangle.p0.x,
-                                                                               -scene.fluenceMap.rectangle.p1.x])
-    plt.gca().add_patch(rspatch)
-    plt.title("OpenCL " + "Time: " + str(timeOpenCL) + " Samples per second: " + str(samplesPerSecondOpenCL))
-    plt.show()
+    # OpenCL
+    if OPENCL == 1:
+        print fluence_dataOpenCL
+        plt.imshow(fluence_dataOpenCL, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.rectangle.p0.y,
+                                                                                   scene.fluenceMap.rectangle.p3.y,
+                                                                                   -scene.fluenceMap.rectangle.p0.x,
+                                                                                   -scene.fluenceMap.rectangle.p1.x])
+        plt.gca().add_patch(rspatch)
+        plt.title("OpenCL " + "Time: " + str(timeOpenCL) + " Samples per second: " + str(samplesPerSecondOpenCL))
+        plt.show()
 
-"""
-# Visual python
-disp = vs.display()
-#disp.autocenter = True
-disp.userspin = True
-disp.ambient = 0.5
-disp.forward = (0, 0, -1)
-disp.center = (0, 0, -50)
-disp.range = (30, 30, -100)
+if SHOW_3D_SCENE == 1:
+    # Visual python
+    disp = vs.display()
+    #disp.autocenter = True
+    disp.userspin = True
+    disp.ambient = 0.5
+    disp.forward = (0, 0, -1)
+    disp.center = (0, 0, -50)
+    disp.range = (30, 30, -100)
 
-# Collimators
-for i in range(len(collimators)):
+    # Collimators
+    for i in range(len(collimators)):
+        fr = vs.frame()
+        if MODE == 0:
+            f = vs.faces(frame = fr, pos = collimators[i].flatCollimator.getVertices())
+        elif MODE == 1:
+            f = vs.faces(frame = fr, pos = collimators[i].bboxCollimator.getVertices())
+        elif MODE == 2:
+            f = vs.faces(frame = fr, pos = collimators[i].boxCollimator.getVertices())
+            #bb = vs.faces(frame = fr, pos = bboxToBox(collimators[i].boxCollimator.boundingBox).getVertices())
+            #bb.make_normals()
+            #bb.color = vs.color.blue
+        f.color = vs.color.orange
+        f.make_normals()
+
+    # Fluence map
+    #fluence_dataOpenCL *= 255.0/fluence_dataOpenCL.max()
+    #tex = vs.materials.texture(data=fluence_dataOpenCL, mapping="rectangular", interpolate=False)
     fr = vs.frame()
-    if MODE == 0:
-        f = vs.faces(frame = fr, pos = collimators[i].flatCollimator.getVertices())
-    elif MODE == 1:
-        f = vs.faces(frame = fr, pos = collimators[i].bboxCollimator.getVertices())
-    elif MODE == 2:
-        f = vs.faces(frame = fr, pos = collimators[i].boxCollimator.getVertices())
-        #bb = vs.faces(frame = fr, pos = bboxToBox(collimators[i].boxCollimator.boundingBox).getVertices())
-        #bb.make_normals()
-        #bb.color = vs.color.blue
-    f.color = vs.color.orange
+    f = vs.faces(frame=fr, pos=scene.fluenceMap.rectangle.getVertices(), color = vs.color.gray(50))
     f.make_normals()
+    f.make_twosided()
 
-# Fluence map
-#fluence_dataOpenCL *= 255.0/fluence_dataOpenCL.max()
-#tex = vs.materials.texture(data=fluence_dataOpenCL, mapping="rectangular", interpolate=False)
-fr = vs.frame()
-f = vs.faces(frame=fr, pos=scene.fluenceMap.rectangle.getVertices(), color = vs.color.gray(50))
-f.make_normals()
-f.make_twosided()
+    # Ray source
+    vs.cylinder(pos=scene.raySource.disc.origin.get3DTuple(), axis=scene.raySource.disc.normal.get3DTuple(), radius=scene.raySource.disc.radius, color=vs.color.red, opacity=0.5)
 
-# Ray source
-vs.cylinder(pos=scene.raySource.disc.origin.get3DTuple(), axis=scene.raySource.disc.normal.get3DTuple(), radius=scene.raySource.disc.radius, color=vs.color.red, opacity=0.5)
-
-#fr.rotate (angle = -pi/2, axis = (1.0, 1.0, 0.0))
-"""
+    #fr.rotate (angle = -pi/2, axis = (1.0, 1.0, 0.0))

@@ -40,7 +40,6 @@ typedef struct Render {
 void intersectSimpleRaySourceDisc(const Line *l, __constant const SimpleRaySourceDisc *rs, bool *intersect, float *distance, float4 *ip) {
 	Disc d = rs->disc; // Copy from constant memory to private
 	intersectLineDisc(l, &d, intersect, distance, ip);
-	//intersectLineDisc(l, rs, intersect, distance, ip);
 }
 
 // Ray tracing
@@ -58,14 +57,10 @@ void firstHitLeaf(__constant const Scene *s, __constant const Render *render, co
 		float4 ipTmp;
 		float thicknessTmp;
 		#if MODE == 0
-			//Rectangle leaf = collimator->flatCollimator.leaves[i];
-			//intersectLineFlatCollimatorLeaf(r, &leaf, &intersectTmp, &distanceTmp, &ipTmp);
 			#if SOA == 0
-				//intersectLineFlatCollimatorLeaf(r, &(collimators[*collimatorIndex].flatCollimator.leaves[i*2]), &(collimators[*collimatorIndex].flatCollimator.leaves[i*2+1]), &intersectTmp, &distanceTmp, &ipTmp);
 				intersectLineFlatCollimatorLeaf(r, &(leaf_data[s->collimators[*collimatorIndex].flatCollimator.leafArrayOffset + i*s->collimators[*collimatorIndex].flatCollimator.leafArrayStride]), &(leaf_data[s->collimators[*collimatorIndex].flatCollimator.leafArrayOffset + i*s->collimators[*collimatorIndex].flatCollimator.leafArrayStride + 3]), &intersectTmp, &distanceTmp, &ipTmp);
 				thicknessTmp = s->collimators[*collimatorIndex].height;
 			#elif SOA == 1
-				//intersectLineFlatCollimatorLeaf(r, &(collimators->flatCollimator.leaves[*collimatorIndex][i*2]), &(collimators->flatCollimator.leaves[*collimatorIndex][i*2+1]), &intersectTmp, &distanceTmp, &ipTmp);
 				intersectLineFlatCollimatorLeaf(r, &(leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]]), &(leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex] + 3]), &intersectTmp, &distanceTmp, &ipTmp);
 				thicknessTmp = s->collimators.height[*collimatorIndex];
 			#endif
@@ -74,24 +69,16 @@ void firstHitLeaf(__constant const Scene *s, __constant const Render *render, co
 			float distanceOutTmp;
 			#if SOA == 0
 				intersectLineBBoxCollimatorLeaf(r, &(leaf_data[s->collimators[*collimatorIndex].bboxCollimator.leafArrayOffset + i*s->collimators[*collimatorIndex].bboxCollimator.leafArrayStride]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-				//BBox leaf = collimator->bboxCollimator.leaves[i];
-				//intersectLineBBoxCollimatorLeaf(r, &leaf, &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-				//intersectLineBBoxCollimatorLeaf(r, &(collimators[*collimatorIndex].bboxCollimator.leaves[i]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 			#elif SOA == 1
 				intersectLineBBoxCollimatorLeaf(r, &(leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex] + i*s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-				//intersectLineBBoxCollimatorLeaf(r, &(collimators->bboxCollimator.leaves[*collimatorIndex][i]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 			#endif
 			thicknessTmp = distanceOutTmp - distanceTmp;
 		#elif MODE == 2
 			float4 ipInTmp;
 			float distanceOutTmp;
 			#if SOA == 0
-				//Box leaf = collimator->boxCollimator.leaves[i];
-				//intersectLineBoxCollimatorLeaf(r, &leaf, &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-				//intersectLineBoxCollimatorLeaf(r, &(collimators[*collimatorIndex].boxCollimator.leaves[i]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 				intersectLineBoxCollimatorLeaf(r, &(leaf_data[s->collimators[*collimatorIndex].boxCollimator.leafArrayOffset + i*s->collimators[*collimatorIndex].boxCollimator.leafArrayStride]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 			#elif SOA == 1
-				//intersectLineBoxCollimatorLeaf(r, &(collimators->boxCollimator.leaves[*collimatorIndex][i]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 				intersectLineBoxCollimatorLeaf(r, &(leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + i*s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 			#endif
 			thicknessTmp = distanceOutTmp - distanceTmp;
@@ -119,34 +106,21 @@ void firstHitCollimator(__constant const Scene *s, __constant const Render *rend
 		float4 ipTmpCollimatorBBOut;
 		#if MODE == 0
 			#if SOA == 0
-				BBox bbox = s->collimators[i].flatCollimator.boundingBox;
-				intersectLineBBoxInOut(r, &bbox, &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-				//intersectLineBBoxInOut(r, &(s->collimators[i].flatCollimator.boundingBox), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
+				intersectLineBBoxInOut(r, &(s->collimators[i].flatCollimator.boundingBox), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
 			#elif SOA == 1
-				BBox bbox = s->collimators.flatCollimator.boundingBox[i];
-				intersectLineBBoxInOut(r, &bbox, &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-				//intersectLineBBoxInOut(r, &(s->collimators.flatCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-				
+				intersectLineBBoxInOut(r, &(s->collimators.flatCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
 			#endif
 		#elif MODE == 1
 			#if SOA == 0
-				BBox bbox = s->collimators[i].bboxCollimator.boundingBox;
-				intersectLineBBoxInOut(r, &bbox, &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-				//intersectLineBBoxInOut(r, &(s->collimators[i].bboxCollimator.boundingBox), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
+				intersectLineBBoxInOut(r, &(s->collimators[i].bboxCollimator.boundingBox), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
 			#elif SOA == 1
-				BBox bbox = s->collimators.bboxCollimator.boundingBox[i];
-				intersectLineBBoxInOut(r, &bbox, &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-				//intersectLineBBoxInOut(r, &(s->collimators.bboxCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
+				intersectLineBBoxInOut(r, &(s->collimators.bboxCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
 			#endif
 		#elif MODE == 2
 			#if SOA == 0
-				BBox bbox = s->collimators[i].boxCollimator.boundingBox;
-				intersectLineBBoxInOut(r, &bbox, &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-				//intersectLineBBoxInOut(r, &(s->collimators[i].boxCollimator.boundingBox), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
+				intersectLineBBoxInOut(r, &(s->collimators[i].boxCollimator.boundingBox), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
 			#elif SOA == 1
-				BBox bbox = s->collimators.boxCollimator.boundingBox[i];
-				intersectLineBBoxInOut(r, &bbox, &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-				//intersectLineBBoxInOut(r, &(s->collimators.boxCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
+				intersectLineBBoxInOut(r, &(s->collimators.boxCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
 			#endif
 		#endif
 
@@ -346,11 +320,11 @@ __kernel void flatLightSourceSampling(__constant const Scene *scene, __constant 
 	float4 lPoint =  (float4) (scene->raySource.disc.origin.x - scene->raySource.disc.radius + li*render->lstep, 
 							   scene->raySource.disc.origin.y - scene->raySource.disc.radius + lj*render->lstep, 
                                scene->raySource.disc.origin.z, 0);
-	float4 direction = normalize(lPoint - rayOrigin);
+	float4 rayDirection = normalize(lPoint - rayOrigin);
 	
 	Line ray = {
 		.origin = rayOrigin,
-		.direction = direction};
+		.direction = rayDirection};
 
 	float intensity = 1;
 	traceRay(scene, render, &ray, leaf_data, &intensity, debug);

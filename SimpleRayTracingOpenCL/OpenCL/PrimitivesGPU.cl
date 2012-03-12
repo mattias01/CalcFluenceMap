@@ -480,10 +480,10 @@ void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float *dis
 }
 
 // Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
-void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *distance, float4 *ip)
+void intersectLineBBox(const Line *l, __constant const BBox *bb, bool *intersect, float *distance, float4 *ip)
 {
-	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
-	//BBox *b = &bbox;
+	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	if (l->direction.x >= 0) {
         tmin = (b->min.x - l->origin.x) / l->direction.x;
@@ -546,7 +546,146 @@ void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *dis
 }
 
 // Registers: 6.
-void intersectLineBBoxInOut(const Line *l, const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+void intersectLineBBoxInOut(const Line *l, __constant const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+{
+	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	//BBox *b = &bbox;
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	if (l->direction.x >= 0) {
+        tmin = (b->min.x - l->origin.x) / l->direction.x;
+        tmax = (b->max.x - l->origin.x) / l->direction.x;
+	}
+    else {
+        tmin = (b->max.x - l->origin.x) / l->direction.x;
+        tmax = (b->min.x - l->origin.x) / l->direction.x;
+	}
+    if (l->direction.y >= 0) {
+        tymin = (b->min.y - l->origin.y) / l->direction.y;
+        tymax = (b->max.y - l->origin.y) / l->direction.y;
+	}
+    else {
+        tymin = (b->max.y - l->origin.y) / l->direction.y;
+        tymax = (b->min.y - l->origin.y) / l->direction.y;
+	}
+    if ((tmin > tymax) || (tymin > tmax)) {
+		*intersect = false;
+		//*inDistance = NAN;
+		//*outDistance = NAN;
+		//*inIp = (NAN, NAN, NAN, NAN);
+		//*outIp = (NAN, NAN, NAN, NAN);
+        return;
+	}
+    if (tymin > tmin) {
+        tmin = tymin;
+	}
+    if (tymax < tmax) {
+       tmax = tymax;
+	}
+    if (l->direction.z >= 0) {
+        tzmin = (b->min.z - l->origin.z) / l->direction.z;
+        tzmax = (b->max.z - l->origin.z) / l->direction.z;
+	}
+    else {
+        tzmin = (b->max.z - l->origin.z) / l->direction.z;
+        tzmax = (b->min.z - l->origin.z) / l->direction.z;
+	}
+    if ((tmin > tzmax) || (tzmin > tmax)) {
+        *intersect = false;
+		//*inDistance = NAN;
+		//*outDistance = NAN;
+		//*inIp = (NAN, NAN, NAN, NAN);
+		//*outIp = (NAN, NAN, NAN, NAN);
+        return;
+	}
+    if (tzmin > tmin) {
+        tmin = tzmin;
+	}
+    if (tzmax < tmax) {
+        tmax = tzmax;
+	}
+	if (tmax <= 0) { // Only in the positive direction.
+		*intersect = false;
+		//*inDistance = NAN;
+		//*outDistance = NAN;
+		//*inIp = (NAN, NAN, NAN, NAN);
+		//*outIp = (NAN, NAN, NAN, NAN);
+        return;
+	}
+	*intersect = true;
+	*inDistance = tmin;
+	*outDistance = tmax;
+	*inIp = l->origin + l->direction*tmin;
+	*outIp = l->origin + l->direction*tmax;
+}
+
+// Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
+void intersectLineBBoxColLeaf(const Line *l, __global const BBox *bb, bool *intersect, float *distance, float4 *ip)
+{
+	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	BBox *b = &bbox;
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	if (l->direction.x >= 0) {
+        tmin = (b->min.x - l->origin.x) / l->direction.x;
+        tmax = (b->max.x - l->origin.x) / l->direction.x;
+	}
+    else {
+        tmin = (b->max.x - l->origin.x) / l->direction.x;
+        tmax = (b->min.x - l->origin.x) / l->direction.x;
+	}
+    if (l->direction.y >= 0) {
+        tymin = (b->min.y - l->origin.y) / l->direction.y;
+        tymax = (b->max.y - l->origin.y) / l->direction.y;
+	}
+    else {
+        tymin = (b->max.y - l->origin.y) / l->direction.y;
+        tymax = (b->min.y - l->origin.y) / l->direction.y;
+	}
+    if ((tmin > tymax) || (tymin > tmax)) {
+		*intersect = false;
+		//*distance = NAN;
+		//*ip = (NAN, NAN, NAN, NAN);
+        return;
+	}
+    if (tymin > tmin) {
+        tmin = tymin;
+	}
+    if (tymax < tmax) {
+       tmax = tymax;
+	}
+    if (l->direction.z >= 0) {
+        tzmin = (b->min.z - l->origin.z) / l->direction.z;
+        tzmax = (b->max.z - l->origin.z) / l->direction.z;
+	}
+    else {
+        tzmin = (b->max.z - l->origin.z) / l->direction.z;
+        tzmax = (b->min.z - l->origin.z) / l->direction.z;
+	}
+    if ((tmin > tzmax) || (tzmin > tmax)) {
+        *intersect = false;
+		//*distance = NAN;
+		//*ip = (NAN, NAN, NAN, NAN);
+        return;
+	}
+    if (tzmin > tmin) {
+        tmin = tzmin;
+	}
+    if (tzmax < tmax) {
+        tmax = tzmax;
+	}
+	if (tmax <= 0) { // Only in the positive direction.
+		*intersect = false;
+		//*distance = NAN;
+		//*ip = (NAN, NAN, NAN, NAN);
+        return;
+	}
+	*intersect = true;
+	*distance = tmin;
+	*ip = l->origin + l->direction*tmin;
+	// Could give the outgoing distance (tmax) and point here as well.
+}
+
+// Registers: 6.
+void intersectLineBBoxInOutColLeaf(const Line *l, __global const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
 	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	//BBox *b = &bbox;
