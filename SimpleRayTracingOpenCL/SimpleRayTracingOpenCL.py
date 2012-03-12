@@ -98,9 +98,19 @@ jaw2.boundingBox = calculateCollimatorBoundingBox(jaw2)
 collimator_array = Collimator * NUMBER_OF_COLLIMATORS
 #collimators = collimator_array(col1)
 collimators = collimator_array(jaw1, jaw2, col1, col2)
+leaves = []
+initCollimators(collimators, leaves) # Init Collimator
+
+leaf_array_type = float4 * len(leaves)
+leaf_array = leaf_array_type()
+for i in range(len(leaves)):
+    leaf_array[i] = leaves[i]
+
+if (SOA == 1):
+    collimators = CollimatorAoStoSoA(collimators)
 
 fm = FluenceMap(Rectangle(float4(-30,-30,-100,0), float4(30,-30,-100,0), float4(30,30,-100,0), float4(-30,30,-100,0)))
-scene = Scene(rs,len(collimators), collimators, fm)
+scene = Scene(rs,NUMBER_OF_COLLIMATORS, collimators, fm)
 
 # Settings
 flx = FLX
@@ -114,17 +124,6 @@ lstep = scene.raySource.disc.radius*2/(LSAMPLES-1)
 #mode = 0
 render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep)
 #render = Render(xstep,ystep,xoffset,yoffset,lstep)
-
-leaves = []
-init(scene, render, collimators, leaves) # Init Collimator
-
-leaf_array_type = float4 * len(leaves)
-leaf_array = leaf_array_type()
-for i in range(len(leaves)):
-    leaf_array[i] = leaves[i]
-
-if (SOA == 1):
-    collimators = CollimatorAoStoSoA(collimators)
 
 if python:
     fluence_dataPython = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
@@ -145,7 +144,7 @@ if python:
 # Run in OpenCL
 if openCL:
     debugOpenCL = Debug()
-    program = oclu.loadProgram(ctx, "OpenCL/RayTracingGPU.cl", "-cl-nv-verbose " + settingsString())
+    program = oclu.loadProgram(ctx, "OpenCL/RayTracingGPU.cl", "-cl-nv-verbose -w " + settingsString())
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
     render_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=render)

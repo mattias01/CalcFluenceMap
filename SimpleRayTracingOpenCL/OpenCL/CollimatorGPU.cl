@@ -18,6 +18,8 @@ typedef struct FlatCollimator {
 	float4 ydir;
 	float absorptionCoeff;
 	int numberOfLeaves;
+	int leafArrayOffset;
+	int leafArrayStride;
 	//Triangle leaves[NUMBER_OF_LEAVES * 2];
 } __attribute__((packed)) FlatCollimator;
 
@@ -28,6 +30,8 @@ typedef struct BBoxCollimator {
 	float4 ydir;
 	float absorptionCoeff;
 	int numberOfLeaves;
+	int leafArrayOffset;
+	int leafArrayStride;
 	//BBox leaves[NUMBER_OF_LEAVES];
 } __attribute__((packed)) BBoxCollimator;
 
@@ -38,6 +42,8 @@ typedef struct BoxCollimator {
 	float4 ydir;
 	float absorptionCoeff;
 	int numberOfLeaves;
+	int leafArrayOffset;
+	int leafArrayStride;
 	//Box leaves[NUMBER_OF_LEAVES];
 } __attribute__((packed)) BoxCollimator;
 
@@ -68,6 +74,8 @@ typedef struct FlatCollimator {
 	float4 ydir[NUMBER_OF_COLLIMATORS];
 	float absorptionCoeff[NUMBER_OF_COLLIMATORS];
 	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
+	int leafArrayOffset[NUMBER_OF_COLLIMATORS];
+	int leafArrayStride[NUMBER_OF_COLLIMATORS];
 	//Triangle leaves[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES * 2];
 } __attribute__((packed)) FlatCollimator;
 
@@ -78,6 +86,8 @@ typedef struct BBoxCollimator {
 	float4 ydir[NUMBER_OF_COLLIMATORS];
 	float absorptionCoeff[NUMBER_OF_COLLIMATORS];
 	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
+	int leafArrayOffset[NUMBER_OF_COLLIMATORS];
+	int leafArrayStride[NUMBER_OF_COLLIMATORS];
 	//BBox leaves[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES];
 } __attribute__((packed)) BBoxCollimator;
 
@@ -88,6 +98,8 @@ typedef struct BoxCollimator {
 	float4 ydir[NUMBER_OF_COLLIMATORS];
 	float absorptionCoeff[NUMBER_OF_COLLIMATORS];
 	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
+	int leafArrayOffset[NUMBER_OF_COLLIMATORS];
+	int leafArrayStride[NUMBER_OF_COLLIMATORS];
 	//Box leaves[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES];
 } __attribute__((packed)) BoxCollimator;
 

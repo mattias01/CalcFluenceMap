@@ -55,7 +55,7 @@ class BBox(Structure):
         return bboxToBox(self).getVertices()
 
     def getfloat4List(self):
-        return [min, max]
+        return [self.min, self.max]
 
 class Box(Structure):
     _fields_ = [("triangles", Triangle * 12)]

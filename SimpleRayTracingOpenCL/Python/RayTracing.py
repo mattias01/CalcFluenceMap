@@ -19,11 +19,18 @@ class SimpleRaySourceDisc(Structure):
 class FluenceMap(Structure):
     _fields_ = [("rectangle", Rectangle)]
 
-class Scene(Structure):
-    _fields_ = [("raySource", SimpleRaySourceDisc),
-                ("numberOfCollimators", c_int),
-                ("collimators", Collimator * NUMBER_OF_COLLIMATORS),
-                ("fluenceMap", FluenceMap)]
+if SOA == 0:
+    class Scene(Structure):
+        _fields_ = [("raySource", SimpleRaySourceDisc),
+                    ("numberOfCollimators", c_int),
+                    ("collimators", Collimator * NUMBER_OF_COLLIMATORS),
+                    ("fluenceMap", FluenceMap)]
+elif SOA == 1:
+    class Scene(Structure):
+        _fields_ = [("raySource", SimpleRaySourceDisc),
+                    ("numberOfCollimators", c_int),
+                    ("collimators", CollimatorSoA),
+                    ("fluenceMap", FluenceMap)]
 
 class Render(Structure):
     _fields_ = [("flx", c_int),
@@ -189,18 +196,51 @@ def calcAllFluenceElements(scene, render, collimators, fluency_data, debug):
         for fj in range(render.fly):
             calcFluenceElement(scene, render, collimators, fluency_data, fi, fj, debug)
 
-def init(scene, render, collimators, leaf_array):
-    for col in collimators:
+def initCollimators(collimators, leaf_array):
+    for i in range(NUMBER_OF_COLLIMATORS):
         leaves = []
         if MODE == 0:
-            [col.flatCollimatorm, leaves] = createFlatCollimator(col)
+            [collimators[i].flatCollimator, leaves] = createFlatCollimator(collimators[i], leaf_array)
         elif MODE == 1:
-            [col.bboxCollimator, leaves] = createBBoxCollimator(col)
+            [collimators[i].bboxCollimator, leaves] = createBBoxCollimator(collimators[i], leaf_array)
         elif MODE == 2:
-            [col.boxCollimator, leaves] = createBoxCollimator(col)
+            [collimators[i].boxCollimator, leaves] = createBoxCollimator(collimators[i], leaf_array)
         else:
             print "Undefined mode"
         leaf_array.extend(leaves)
+
+"""def init(scene, render, collimators, leaf_array):
+    for i in range(len(collimators)):
+        leaves = []
+        if MODE == 0:
+            #if SOA == 0:
+                [collimators[i].flatCollimator, leaves] = createFlatCollimator(collimators[i], leaf_array)
+                scene.collimators[i].flatCollimator = collimators[i].flatCollimator
+            #elif SOA == 1:
+            #    [collimators[i].flatCollimator, leaves] = createFlatCollimator(collimators[i], leaf_array)
+            #    scene.collimators.flatCollimator[i] = collimators[i].flatCollimator
+        elif MODE == 1:
+            #if SOA == 0:
+                [collimators[i].bboxCollimator, leaves] = createBBoxCollimator(collimators[i], leaf_array)
+                scene.collimators[i].bboxCollimator = collimators[i].bboxCollimator
+            #elif SOA == 1:
+            #    [collimators[i].bboxCollimator, leaves] = createBBoxCollimator(collimators[i], leaf_array)
+            #    scene.collimators.bboxCollimator[i] = collimators[i].bboxCollimator
+        elif MODE == 2:
+            #if SOA == 0:
+                [collimators[i].boxCollimator, leaves] = createBoxCollimator(collimators[i], leaf_array)
+                scene.collimators[i].boxCollimator = collimators[i].boxCollimator
+            #elif SOA == 1:
+            #    [collimators[i].boxCollimator, leaves] = createBoxCollimator(collimators[i], leaf_array)
+            #    scene.collimators.boxCollimator[i] = collimators[i].boxCollimator
+        else:
+            print "Undefined mode"
+        leaf_array.extend(leaves)
+
+    return [scene, render, collimators, leaf_array]
+        leaf_array.extend(leaves)
+
+    return [scene, render, collimators, leaf_array]"""
 
 
 def drawScene(scene, render, collimators, fluency_data, debug):
