@@ -133,59 +133,60 @@ void firstHitCollimator(__constant const Scene *s, __constant const Render *rend
 			*intersect = true;
 			*ip = ipTmpCollimatorBBOut;
 
-			if (collimatorIndex != -1) { // Check leaves on closest Collimator.
-				bool intersectTmp;
-				float4 ipTmpLeaf;
-				float thickness;
+			//bool intersectTmp;
+			float4 ipTmpLeaf;
+			float thickness;
 
-				#if LEAF_AS == 0
-				#elif LEAF_AS == 1
-					#if MODE == 0
-						__local float4 col_leaf_data[NUMBER_OF_LEAVES * 2 * 3]; // Make sure it's >= than the leaf data.
-						for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[collimatorIndex]; j++) {
-							col_leaf_data[j] = leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex] + j];
-						}
-					#elif MODE == 1
-						__local float4 col_leaf_data[NUMBER_OF_LEAVES * 2]; // Make sure it's >= than the leaf data.
-						for (int j = 0; j < s->collimators.bboxCollimator.numberOfLeaves[collimatorIndex] * s->collimators.bboxCollimator.leafArrayStride[collimatorIndex]; j++) {
-							col_leaf_data[j] = leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex] + j];
-						}
-					#elif MODE == 2
-						__local float4 col_leaf_data[NUMBER_OF_LEAVES * 12 * 3]; // Make sure it's >= than the leaf data.
-						for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[collimatorIndex]; j++) {
-							col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex] + j];
-						}
-					#endif
-				#elif LEAF_AS == 3
-					#if MODE == 0
-						__global float4 *col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex]];
-					#elif MODE == 1
-						__global float4 *col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex]];
-					#elif MODE == 2
-						__global float4 *col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex]];
-					#endif
+			#if LEAF_AS == 0
+			#elif LEAF_AS == 1
+				#if MODE == 0
+					__local float4 col_leaf_data[NUMBER_OF_LEAVES * 2 * 3]; // Make sure it's >= than the leaf data.
+					for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[collimatorIndex]; j++) {
+						col_leaf_data[j] = leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex] + j];
+					}
+					barrier(CLK_LOCAL_MEM_FENCE);
+				#elif MODE == 1
+					__local float4 col_leaf_data[NUMBER_OF_LEAVES * 2]; // Make sure it's >= than the leaf data.
+					for (int j = 0; j < s->collimators.bboxCollimator.numberOfLeaves[collimatorIndex] * s->collimators.bboxCollimator.leafArrayStride[collimatorIndex]; j++) {
+						col_leaf_data[j] = leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex] + j];
+					}
+					barrier(CLK_LOCAL_MEM_FENCE);
+				#elif MODE == 2
+					__local float4 col_leaf_data[NUMBER_OF_LEAVES * 12 * 3]; // Make sure it's >= than the leaf data.
+					for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[collimatorIndex]; j++) {
+						col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex] + j];
+					}
+					barrier(CLK_LOCAL_MEM_FENCE);
 				#endif
+			#elif LEAF_AS == 3
+				#if MODE == 0
+					__global float4 *col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex]];
+				#elif MODE == 1
+					__global float4 *col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex]];
+				#elif MODE == 2
+					__global float4 *col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex]];
+				#endif
+			#endif
 
-				firstHitLeaf(s, render, r, col_leaf_data, &collimatorIndex, &intersectTmp, &ipTmpLeaf, &thickness, debug);
-				#if SOA == 0
-					float absorptionCoeff = s->collimators[collimatorIndex].absorptionCoeff;
-				#elif SOA == 1
-					float absorptionCoeff = s->collimators.absorptionCoeff[collimatorIndex];
+			firstHitLeaf(s, render, r, col_leaf_data, &collimatorIndex, &intersectTmp, &ipTmpLeaf, &thickness, debug);
+			#if SOA == 0
+				float absorptionCoeff = s->collimators[collimatorIndex].absorptionCoeff;
+			#elif SOA == 1
+				float absorptionCoeff = s->collimators.absorptionCoeff[collimatorIndex];
+			#endif
+			while (intersectTmp) {
+				*intersect = true;
+				*intensityCoeff *= exp(-absorptionCoeff*thickness);
+				#if MODE == 0
+					// One leaf hit. Continue ray after collimator because leaves don't have thickness.
+					intersectTmp = false;
+					*ip = ipTmpLeaf;
+				#elif MODE == 1 || MODE == 2
+					// One ray can hit several leaves.
+					*ip = ipTmpLeaf;
+					r->origin = ipTmpLeaf;
+					firstHitLeaf(s, render, r, col_leaf_data, &collimatorIndex, &intersectTmp, &ipTmpLeaf, &thickness, debug);
 				#endif
-				while (intersectTmp) {
-					*intersect = true;
-					*intensityCoeff *= exp(-absorptionCoeff*thickness);
-					#if MODE == 0
-						// One leaf hit. Continue ray after collimator because leaves don't have thickness.
-						intersectTmp = false;
-						*ip = ipTmpLeaf;
-					#elif MODE == 1 || MODE == 2
-						// One ray can hit several leaves.
-						*ip = ipTmpLeaf;
-						r->origin = ipTmpLeaf;
-						firstHitLeaf(s, render, r, col_leaf_data, &collimatorIndex, &intersectTmp, &ipTmpLeaf, &thickness, debug);
-					#endif
-				}
 			}
 		}
 	}
@@ -427,7 +428,7 @@ __kernel void calcFluenceElement(__constant const Scene *scene, __constant const
 	unsigned int i = get_global_id(0);
     unsigned int j = get_global_id(1);
 
-	float fluenceSum = 0;
+	float fluenceSum;
 	for (int k = 0; k < render->lsamples*render->lsamples; k++) {
 		fluenceSum += intensity_map[j + i*render->fly + k*render->flx*render->fly];
 	}
