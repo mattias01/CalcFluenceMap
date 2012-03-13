@@ -39,3 +39,49 @@
 #ifndef SOA
 #define SOA 0
 #endif //SOA
+
+#ifndef WG_LIGHT_SAMPLING_X
+#define WG_LIGHT_SAMPLING_X 1
+#endif //WG_LIGHT_SAMPLING_X
+
+#ifndef WG_LIGHT_SAMPLING_Y
+#define WG_LIGHT_SAMPLING_Y 16
+#endif //WG_LIGHT_SAMPLING_Y
+
+#ifndef WG_LIGHT_SAMPLING_Z
+#define WG_LIGHT_SAMPLING_Z 4
+#endif //WG_LIGHT_SAMPLING_Z
+
+#ifndef WG_LIGHT_SAMPLING_SIZE
+#define WG_LIGHT_SAMPLING_SIZE WG_LIGHT_SAMPLING_X * WG_LIGHT_SAMPLING_Y * WG_LIGHT_SAMPLING_Z
+#endif //WG_LIGHT_SAMPLING_SIZE
+
+#ifndef RAY_AS
+#define RAY_AS 0
+#endif
+
+#if RAY_AS == 0
+	#define RAY_ASQ __private
+#elif RAY_AS == 1
+	#define RAY_ASQ __local
+#elif RAY_AS == 2 // Does not work
+	#define RAY_ASQ __constant
+#elif RAY_AS == 3
+	#define RAY_ASQ __global
+#endif
+
+#ifndef LEAF_AS
+#define LEAF_AS 1
+#endif
+
+#if LEAF_AS == 0
+	#define LEAF_ASQ __private
+#elif LEAF_AS == 1
+	#define LEAF_ASQ __local
+#elif LEAF_AS == 2 // Does not work
+	#define LEAF_ASQ __constant
+#elif LEAF_AS == 3
+	#define LEAF_ASQ __global
+#endif
+
+#define FHCOL_WHILE_WHILE 0

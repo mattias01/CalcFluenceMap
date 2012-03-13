@@ -188,7 +188,7 @@ void createRectangles(float4 *position, float4 *xdir, float4 *ydir, float *recta
 }*/
 
 // Intersection calculations
-void intersectLineFlatCollimatorLeaf(const Line *l, __global const Triangle *t1, __global const Triangle *t2, bool *intersect, float *distance, float4 *ip) {
+void intersectLineFlatCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t1, LEAF_ASQ const Triangle *t2, bool *intersect, float *distance, float4 *ip) {
 	//intersectLineRectangle(l, c, intersect, distance, ip);
 	
 	intersectLineTriangle(l, t1, intersect, distance, ip);
@@ -197,13 +197,13 @@ void intersectLineFlatCollimatorLeaf(const Line *l, __global const Triangle *t1,
 	}
 }
 
-void intersectLineBBoxCollimatorLeaf(const Line *l, __global const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
+void intersectLineBBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
 	//BBox bbox = *b;
 	//intersectLineBBoxInOut(l, &bbox, intersect, inDistance, outDistance, inIp, outIp);
 	intersectLineBBoxInOutColLeaf(l, b, intersect, inDistance, outDistance, inIp, outIp);
 }
 
-void intersectLineBoxCollimatorLeaf(const Line *l, __global const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
+void intersectLineBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
 	intersectLineBoxInOut(l, b, intersect, inDistance, outDistance, inIp, outIp);
 }
 

@@ -107,7 +107,7 @@ void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint) {
 }
 
 // Intersection calculations. Registers: 1.
-void intersectLinePlane(const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip)
+void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip)
 {
 	// Init to not intersect
 	*intersect = false;
@@ -125,7 +125,7 @@ void intersectLinePlane(const Line *l, const Plane *p, bool *intersect, float *d
 
 #if LINE_TRIANGLE_INTERSECTION_ALGORITHM == 0 // SoftSurfer, modified MT
 // SoftSurfer.com, modified MT. Registers: 32 + 1.
-void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *intersect, float *distance, float4 *ip)
+void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
 	float4 u = t->p1 - t->p0;
     float4 v = t->p2 - t->p0;
@@ -164,7 +164,7 @@ void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *inte
 
 #elif LINE_TRIANGLE_INTERSECTION_ALGORITHM == 1 // Orig. MT
 // Möller/Trombore 97. Registers 24.
-void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *intersect, float *distance, float4 *ip)
+void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
 	float4 edge1, edge2, tvec, pvec, qvec;
 	float det, inv_det;
@@ -219,7 +219,7 @@ void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *inte
 #elif LINE_TRIANGLE_INTERSECTION_ALGORITHM == 2 // MT2
 /* code rewritten to do tests on the sign of the determinant */
 /* the division is at the end in the code */   
-void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *intersect, float *distance, float4 *ip)
+void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
 	float4 edge1, edge2, tvec, pvec, qvec;
 	float det, inv_det;
@@ -298,7 +298,7 @@ void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *inte
 #elif LINE_TRIANGLE_INTERSECTION_ALGORITHM == 3 // MT3
 /* code rewritten to do tests on the sign of the determinant */
 /* the division is before the test of the sign of the det    */
-void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *intersect, float *distance, float4 *ip)
+void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
 	float4 edge1, edge2, tvec, pvec, qvec;
 	float det, inv_det;
@@ -375,7 +375,7 @@ void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *inte
 /* code rewritten to do tests on the sign of the determinant */
 /* the division is before the test of the sign of the det    */
 /* and one CROSS has been moved out from the if-else if-else */
-void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *intersect, float *distance, float4 *ip)
+void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
 	float4 edge1, edge2, tvec, pvec, qvec;
 	float det, inv_det;
@@ -461,7 +461,7 @@ void intersectLineTriangle(const Line *l, __global const Triangle *t, bool *inte
 }*/
 
 // Registers: 8 + 33 + 4.
-void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float *distance, float4 *ip)
+void intersectLineDisc(RAY_ASQ const Line *l, const Disc *d, bool *intersect, float *distance, float4 *ip)
 {
 	Plane p = {
 		.origin = d->origin,
@@ -480,7 +480,7 @@ void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float *dis
 }
 
 // Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
-void intersectLineBBox(const Line *l, __constant const BBox *bb, bool *intersect, float *distance, float4 *ip)
+void intersectLineBBox(RAY_ASQ const Line *l, __constant const BBox *bb, bool *intersect, float *distance, float4 *ip)
 {
 	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	BBox *b = &bbox;
@@ -546,7 +546,7 @@ void intersectLineBBox(const Line *l, __constant const BBox *bb, bool *intersect
 }
 
 // Registers: 6.
-void intersectLineBBoxInOut(const Line *l, __constant const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+void intersectLineBBoxInOut(RAY_ASQ const Line *l, __constant const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
 	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	//BBox *b = &bbox;
@@ -619,7 +619,7 @@ void intersectLineBBoxInOut(const Line *l, __constant const BBox *b, bool *inter
 }
 
 // Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
-void intersectLineBBoxColLeaf(const Line *l, __global const BBox *bb, bool *intersect, float *distance, float4 *ip)
+void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *bb, bool *intersect, float *distance, float4 *ip)
 {
 	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	BBox *b = &bbox;
@@ -685,7 +685,7 @@ void intersectLineBBoxColLeaf(const Line *l, __global const BBox *bb, bool *inte
 }
 
 // Registers: 6.
-void intersectLineBBoxInOutColLeaf(const Line *l, __global const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
 	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	//BBox *b = &bbox;
@@ -758,7 +758,7 @@ void intersectLineBBoxInOutColLeaf(const Line *l, __global const BBox *b, bool *
 }
 
 // Registers 7 + 33.
-void intersectLineBox(const Line *l, __global const Box *b, bool *intersect, float *distance, float4 *ip) {
+void intersectLineBox(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *distance, float4 *ip) {
 	int counter = 0;
 	*intersect = false;
 	bool intersectTmp;
@@ -791,7 +791,7 @@ void intersectLineBox(const Line *l, __global const Box *b, bool *intersect, flo
 }
 
 // Registers 7 + 33.
-void intersectLineBoxInOut(const Line *l, __global const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
+void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
 	int counter = 0;
 	*intersect = false;
 	bool intersectTmp;
