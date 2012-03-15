@@ -10,7 +10,7 @@ import pyopencl as cl
 import struct
 from sys import getsizeof
 from time import time, sleep
-import visual as vs
+#import visual as vs
 
 from OpenCLUtility import OpenCLUtility as oclu
 from OpenCLTypes import *
@@ -18,6 +18,7 @@ from Python.Collimator import CollimatorAoStoSoA, float4ArrayFromCollimators
 from Python.RayTracing import *
 from Test import *
 from Python.Settings import *
+import Python.Settings as Settings
 
 print 'Start SimpleRayTracingOpenCL'
 
@@ -34,9 +35,10 @@ elif run == "2":
 
 # Init OpenCL
 if OPENCL == 1:
-    #ctx = cl.create_some_context()
+    ctx = cl.create_some_context()
     os.environ["PYOPENCL_COMPILER_OUTPUT"] = "1"
-    ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
+    os.environ["CL_LOG_ERRORS"] = "stdout"
+    #ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
     queue = cl.CommandQueue(ctx)
 
 # Run tests
@@ -109,18 +111,23 @@ for i in range(len(leaves)):
 if (SOA == 1):
     collimators = CollimatorAoStoSoA(collimators)
 
-fm = FluenceMap(Rectangle(float4(-30,-30,-100,0), float4(30,-30,-100,0), float4(30,30,-100,0), float4(-30,30,-100,0)))
-scene = Scene(rs,NUMBER_OF_COLLIMATORS, collimators, fm)
+fm = FluenceMap(Rectangle(float4(-30.0, -30.0, -100.0, 0.0), float4(30.0, -30.0, -100.0, 0.0), float4(30.0, 30.0, -100.0, 0.0), float4(-30.0, 30.0, -100.0, 0.0)))
+scene = Scene(fm, rs, NUMBER_OF_COLLIMATORS, collimators)
 
 # Settings
-flx = FLX
-fly = FLY
+flx = int(FLX)
+fly = int(FLY)
 xstep = (0.0 + length(scene.fluenceMap.rectangle.p1 - scene.fluenceMap.rectangle.p0))/FLX # Length in x / x resolution
 ystep = (0.0 + length(scene.fluenceMap.rectangle.p3 - scene.fluenceMap.rectangle.p0))/FLY # Length in y / y resolution
+Settings.XSTEP = xstep
+Settings.YSTEP = ystep
 xoffset = xstep/2.0
 yoffset = ystep/2.0
-lsamples = LSAMPLES
+Settings.XOFFSET = xoffset
+Settings.YOFFSET = yoffset
+lsamples = int(LSAMPLES)
 lstep = scene.raySource.disc.radius*2/(LSAMPLES-1)
+Settings.LSTEP = lstep
 #mode = 0
 render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep)
 #render = Render(xstep,ystep,xoffset,yoffset,lstep)
@@ -144,7 +151,8 @@ if PYTHON == 1:
 # Run in OpenCL
 if OPENCL == 1:
     debugOpenCL = Debug()
-    program = oclu.loadProgram(ctx, "OpenCL/RayTracingGPU.cl", "-cl-nv-verbose -w " + settingsString())
+    #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose -w " + settingsString())
+    program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString())
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
     render_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=render)
@@ -154,11 +162,15 @@ if OPENCL == 1:
     debugOpenCL_buf = cl.Buffer(ctx, mf.WRITE_ONLY, sizeof(debugOpenCL))
 
     time1 = time()
-    program.flatLightSourceSampling(queue, intensities.shape, (WG_LIGHT_SAMPLING_X, WG_LIGHT_SAMPLING_Y, WG_LIGHT_SAMPLING_Z), scene_buf, render_buf,  leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
+    program.flatLightSourceSampling(queue, intensities.shape, (WG_LIGHT_SAMPLING_X, WG_LIGHT_SAMPLING_Y, WG_LIGHT_SAMPLING_Z), scene_buf, leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
+    #program.flatLightSourceSampling(queue, intensities.shape, None, scene_buf, leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
+    #a_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=numpy.array([1]))
+    #b_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=numpy.array([2]))
+    #program.test(queue, (3,2), None, scene_buf, b_buf).wait()
     time2 = time()
-    program.calculateIntensityDecreaseWithDistance(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
+    program.calculateIntensityDecreaseWithDistance(queue, fluence_dataOpenCL.shape, None, scene_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
     time3 = time()
-    program.calcFluenceElement(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, intensities_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
+    program.calcFluenceElement(queue, fluence_dataOpenCL.shape, None, scene_buf, intensities_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
     time4 = time()
     cl.enqueue_read_buffer(queue, fluence_dataOpenCL_buf, fluence_dataOpenCL)
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
@@ -167,6 +179,7 @@ if OPENCL == 1:
     print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
     samplesPerSecondOpenCL = FLX*FLY*LSAMPLES*LSAMPLES/timeOpenCL
     print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
+    print fluence_dataOpenCL
 
 # Show plots
 if SHOW_PLOT == 1:

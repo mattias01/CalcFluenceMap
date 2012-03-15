@@ -1,6 +1,6 @@
-#include "OpenCL/Misc.cl"
-#include "OpenCL/CollimatorTest.cl"
-#include "OpenCL/PrimitivesTest.cl"
+#include "Misc.cl"
+#include "CollimatorTest.cl"
+#include "PrimitivesTest.cl"
 
 // Tests
 

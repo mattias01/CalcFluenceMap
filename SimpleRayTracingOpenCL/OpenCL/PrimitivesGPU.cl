@@ -1,7 +1,7 @@
 #ifndef __Primitives__
 #define __Primitives__
 
-#include "OpenCL/Settings.cl"
+#include "Settings.cl"
 
 // Data types
 typedef struct Line {
@@ -41,6 +41,20 @@ typedef struct BBox {
 typedef struct Box {
 	Triangle triangles[12];
 } __attribute__((packed)) Box;
+
+// Function declarations
+void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, float4 *p5, float4 *p6, float4 *p7, BBox *bbox);
+void createBoxFromPoints(float4 p0, float4 p1, float4 p2, float4 p3, float4 p4, float4 p5, float4 p6, float4 p7, Box *box);
+void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint);
+void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip);
+void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip);
+void intersectLineDisc(RAY_ASQ const Line *l, const Disc *d, bool *intersect, float *distance, float4 *ip);
+void intersectLineBBox(RAY_ASQ const Line *l, __constant const BBox *bb, bool *intersect, float *distance, float4 *ip);
+void intersectLineBBoxInOut(RAY_ASQ const Line *l, const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
+void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *bb, bool *intersect, float *distance, float4 *ip);
+void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
+void intersectLineBox(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *distance, float4 *ip);
+void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
 
 // Other
 
@@ -546,7 +560,7 @@ void intersectLineBBox(RAY_ASQ const Line *l, __constant const BBox *bb, bool *i
 }
 
 // Registers: 6.
-void intersectLineBBoxInOut(RAY_ASQ const Line *l, __constant const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+void intersectLineBBoxInOut(RAY_ASQ const Line *l, const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
 	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	//BBox *b = &bbox;

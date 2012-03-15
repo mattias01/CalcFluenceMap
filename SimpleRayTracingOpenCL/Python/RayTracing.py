@@ -21,16 +21,16 @@ class FluenceMap(Structure):
 
 if SOA == 0:
     class Scene(Structure):
-        _fields_ = [("raySource", SimpleRaySourceDisc),
+        _fields_ = [("fluenceMap", FluenceMap),
+                    ("raySource", SimpleRaySourceDisc),
                     ("numberOfCollimators", c_int),
-                    ("collimators", Collimator * NUMBER_OF_COLLIMATORS),
-                    ("fluenceMap", FluenceMap)]
+                    ("collimators", Collimator * NUMBER_OF_COLLIMATORS)]
 elif SOA == 1:
     class Scene(Structure):
-        _fields_ = [("raySource", SimpleRaySourceDisc),
+        _fields_ = [("fluenceMap", FluenceMap),
+                    ("raySource", SimpleRaySourceDisc),
                     ("numberOfCollimators", c_int),
-                    ("collimators", CollimatorSoA),
-                    ("fluenceMap", FluenceMap)]
+                    ("collimators", CollimatorSoA)]
 
 class Render(Structure):
     _fields_ = [("flx", c_int),
