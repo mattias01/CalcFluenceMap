@@ -70,9 +70,9 @@ col2.xdir = float4(0,-1,0,0)
 col2.ydir = float4(-1,0,0,0)
 col2.absorptionCoeff = 1.0
 col2.height = 8.2
-col2.numberOfLeaves = 2
+col2.numberOfLeaves = 40
 col2.width = 11.8
-col2.leafPositions = (8,9)
+col2.leafPositions = (8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9)
 col2.boundingBox = calculateCollimatorBoundingBox(col2)
 
 jaw1 = Collimator()

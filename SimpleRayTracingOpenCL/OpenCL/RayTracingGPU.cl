@@ -69,33 +69,33 @@ void firstHitLeaf(SCENE_ASQ const Scene *s, RAY_ASQ const Line *r, LEAF_ASQ cons
 		float4 ipTmp;
 		float thicknessTmp;
 		#if MODE == 0
-			#if SOA == 0
+			/*#if SOA == 0
 				intersectLineFlatCollimatorLeaf(r, &(leaf_data[i*s->collimators[*collimatorIndex].flatCollimator.leafArrayStride]), &(leaf_data[i*s->collimators[*collimatorIndex].flatCollimator.leafArrayStride + 3]), &intersectTmp, &distanceTmp, &ipTmp);
 				thicknessTmp = s->collimators[*collimatorIndex].height;
-			#elif SOA == 1
+			#elif SOA == 1*/
 				//intersectLineFlatCollimatorLeaf(r, &(leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]]), &(leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex] + 3]), &intersectTmp, &distanceTmp, &ipTmp);
 				intersectLineFlatCollimatorLeaf(r, &(leaf_data[i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]]), &(leaf_data[i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex] + 3]), &intersectTmp, &distanceTmp, &ipTmp);
 				thicknessTmp = s->collimators.height[*collimatorIndex];
-			#endif
+			//#endif
 		#elif MODE == 1
 			float4 ipInTmp;
 			float distanceOutTmp;
-			#if SOA == 0
+			/*#if SOA == 0
 				intersectLineBBoxCollimatorLeaf(r, &(leaf_data[s->collimators[i*s->collimators[*collimatorIndex].bboxCollimator.leafArrayStride]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-			#elif SOA == 1
+			#elif SOA == 1*/
 				//intersectLineBBoxCollimatorLeaf(r, &(leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex] + i*s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 				intersectLineBBoxCollimatorLeaf(r, &(leaf_data[i*s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-			#endif
+			//#endif
 			thicknessTmp = distanceOutTmp - distanceTmp;
 		#elif MODE == 2
 			float4 ipInTmp;
 			float distanceOutTmp;
-			#if SOA == 0
+			/*#if SOA == 0
 				intersectLineBoxCollimatorLeaf(r, (LEAF_ASQ Box const *) &(leaf_data[i*s->collimators[*collimatorIndex].boxCollimator.leafArrayStride]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-			#elif SOA == 1
+			#elif SOA == 1*/
 				//intersectLineBoxCollimatorLeaf(r, &(leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + i*s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 				intersectLineBoxCollimatorLeaf(r, (LEAF_ASQ Box const *) &(leaf_data[i*s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-			#endif
+			//#endif
 			thicknessTmp = distanceOutTmp - distanceTmp;
 		#endif
 
@@ -123,23 +123,23 @@ void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global cons
 		float4 ipTmpCollimatorBBIn;
 		float4 ipTmpCollimatorBBOut;
 		#if MODE == 0
-			#if SOA == 0
+			/*#if SOA == 0
 				intersectLineBBoxInOut(r, &(s->collimators[i].flatCollimator.boundingBox), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-			#elif SOA == 1
+			#elif SOA == 1*/
 				intersectLineBBoxInOut(r, &(s->collimators.flatCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-			#endif
+			//#endif
 		#elif MODE == 1
-			#if SOA == 0
+			/*#if SOA == 0
 				intersectLineBBoxInOut(r, &(s->collimators[i].bboxCollimator.boundingBox), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-			#elif SOA == 1
+			#elif SOA == 1*/
 				intersectLineBBoxInOut(r, &(s->collimators.bboxCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-			#endif
+			//#endif
 		#elif MODE == 2
-			#if SOA == 0
+			/*#if SOA == 0
 				intersectLineBBoxInOut(r, &(s->collimators[i].boxCollimator.boundingBox), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-			#elif SOA == 1
+			#elif SOA == 1*/
 				intersectLineBBoxInOut(r, &(s->collimators.boxCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-			#endif
+			//#endif
 		#endif
         
 		if (intersectTmp && (distanceTmpIn < minDistance)) {
@@ -175,32 +175,32 @@ void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global cons
 				#endif
 			#elif LEAF_AS == 3
 				#if MODE == 0
-					#if SOA == 0
+					/*#if SOA == 0
 						__global float4 const *col_leaf_data = &leaf_data[s->collimators[collimatorIndex].flatCollimator.leafArrayOffset];
-					#elif SOA == 1
+					#elif SOA == 1*/
 						__global float4 const *col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex]];
-					#endif
+					//#endif
 				#elif MODE == 1
-					#if SOA == 0
+					/*#if SOA == 0
 						__global float4 const *col_leaf_data = &leaf_data[s->collimators[collimatorIndex].bboxCollimator.leafArrayOffset];
-					#elif SOA == 1
+					#elif SOA == 1*/
 						__global float4 const *col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex]];
-					#endif
+					//#endif
 				#elif MODE == 2
-					#if SOA == 0
+					/*#if SOA == 0
 						__global float4 const *col_leaf_data = &leaf_data[s->collimators[collimatorIndex].boxCollimator.leafArrayOffset];
-					#elif SOA == 1
+					#elif SOA == 1*/
 						__global float4 const *col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex]];
-					#endif
+					//#endif
 				#endif
 			#endif
             
 			firstHitLeaf(s, r, col_leaf_data, &collimatorIndex, &intersectTmp, &ipTmpLeaf, &thickness, debug);
-			#if SOA == 0
+			/*#if SOA == 0
 				float absorptionCoeff = s->collimators[collimatorIndex].absorptionCoeff;
-			#elif SOA == 1
+			#elif SOA == 1*/
 				float absorptionCoeff = s->collimators.absorptionCoeff[collimatorIndex];
-			#endif
+			//#endif
 			while (intersectTmp) {
 				*intersect = true;
 				*intensityCoeff *= exp(-absorptionCoeff*thickness);
@@ -217,32 +217,6 @@ void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global cons
 			}
 		}
 	}
-	
-	/*if (collimatorIndex != -1) { // Check leaves on closest Collimator.
-		bool intersectTmp;
-		float4 ipTmpLeaf;
-		float thickness;
-		firstHitLeaf(s, render, r, leaf_data, &collimatorIndex, &intersectTmp, &ipTmpLeaf, &thickness, debug);
-		#if SOA == 0
-			float absorptionCoeff = s->collimators[collimatorIndex].absorptionCoeff;
-		#elif SOA == 1
-			float absorptionCoeff = s->collimators.absorptionCoeff[collimatorIndex];
-		#endif
-		while (intersectTmp) {
-			*intersect = true;
-			*intensityCoeff *= exp(-absorptionCoeff*thickness);
-			#if MODE == 0
-				// One leaf hit. Continue ray after collimator because leaves don't have thickness.
-				intersectTmp = false;
-				*ip = ipTmpLeaf;
-			#elif MODE == 1 || MODE == 2
-				// One ray can hit several leaves.
-				*ip = ipTmpLeaf;
-				r->origin = ipTmpLeaf;
-				firstHitLeaf(s, render, r, leaf_data, &collimatorIndex, &intersectTmp, &ipTmpLeaf, &thickness, debug);
-			#endif
-		}
-	}*/
 }
 
 void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, float *i, __global Debug *debug) {
@@ -266,7 +240,6 @@ void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *
 	bool intersectRaySource;
 	float distanceRaySource;
 	float4 ipRaySource;
-	//intersectSimpleRaySourceDisc(r, &(s->raySource), &intersectRaySource, &distanceRaySource, &ipRaySource);
 	intersectLineDisc(r, &(s->raySource), &intersectRaySource, &distanceRaySource, &ipRaySource);
 	if (intersectRaySource) {
 		*i = intensity;
@@ -397,15 +370,15 @@ __kernel void flatLightSourceSampling(SCENE_ASQ const Scene *scene, __global con
 	int z = get_local_id(2);
 
 	__local Line ray[WG_LIGHT_SAMPLING_SIZE];
-	ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y].origin = (float4) (scene->fluenceMap.rectangle.p0.x + i*render->xstep + render->xoffset, scene->fluenceMap.rectangle.p0.y + j*render->ystep + render->yoffset, scene->fluenceMap.rectangle.p0.z, 0);
-	ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y].direction = normalize(((float4)(scene->raySource.origin.x - scene->raySource.radius + li*render->lstep, scene->raySource.origin.y - scene->raySource.radius + lj*render->lstep, scene->raySource.origin.z, 0)) - ((float4)(scene->fluenceMap.rectangle.p0.x + i*render->xstep + render->xoffset, scene->fluenceMap.rectangle.p0.y + j*render->ystep + render->yoffset, scene->fluenceMap.rectangle.p0.z, 0)));
+	ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y].origin = (float4) (scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0);
+	ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y].direction = normalize(((float4)(scene->raySource.origin.x - scene->raySource.radius + li*LSTEP, scene->raySource.origin.y - scene->raySource.radius + lj*LSTEP, scene->raySource.origin.z, 0)) - ((float4)(scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0)));
 #endif //LOCAL_RAYS
  
 	float intensity;
 #if RAY_AS == 0
 	traceRay(scene, &ray, leaf_data, &intensity, debug);
 #elif RAY_AS == 1
-	traceRay(scene, render, &(ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y]), leaf_data, &intensity, debug);
+	traceRay(scene, &(ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y]), leaf_data, &intensity, debug);
 #endif 
 	intensity_map[get_global_id(1) + get_global_id(0)*FLY + get_global_id(2)*FLX*FLY] = intensity; // Add intensity from ray. Use get_global_id() to let the compiler spare some registers.
 } //RAY_AS
@@ -432,11 +405,8 @@ __kernel void calcFluenceElement(SCENE_ASQ const Scene *scene, __global float *i
     unsigned int j = get_global_id(1);
 
 	float fluenceSum = 0;
-	//for (int k = 0; k < render->lsamples*render->lsamples; k++) {
     for (int k = 0; k < LSAMPLESSQR; k++) {
-		//fluenceSum += intensity_map[j + i*render->fly + k*render->flx*render->fly];
         fluenceSum += intensity_map[j + i*FLY + k*FLX*FLY];
 	}
-	//fluence_data[j+i*render->fly] *= fluenceSum; // Assumes fluence element already contains distance factor.
     fluence_data[j+i*FLY] *= fluenceSum; // Assumes fluence element already contains distance factor.
 }

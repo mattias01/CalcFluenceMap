@@ -10,7 +10,7 @@ typedef struct SimpleCollimator {
 	Rectangle rightRectangle;
 } __attribute__((packed)) SimpleCollimator;
 
-#if SOA == 0
+/*#if SOA == 0
 typedef struct FlatCollimator {
 	BBox boundingBox;
 	float4 position;
@@ -66,7 +66,7 @@ typedef struct Collimator {
 	#endif
 } __attribute__((packed)) Collimator;
 
-#elif SOA == 1
+#elif SOA == 1*/
 typedef struct FlatCollimator {
 	BBox boundingBox[NUMBER_OF_COLLIMATORS];
 	float4 position[NUMBER_OF_COLLIMATORS];
@@ -121,7 +121,7 @@ typedef struct Collimator {
 		BoxCollimator boxCollimator;
 	#endif
 } __attribute__((packed)) Collimator;
-#endif //SOA
+//#endif //SOA
 
 // Function definitions
 void intersectLineFlatCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t1, LEAF_ASQ const Triangle *t2, bool *intersect, float *distance, float4 *ip);
