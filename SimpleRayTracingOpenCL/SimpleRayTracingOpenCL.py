@@ -18,6 +18,7 @@ from Python.Collimator import CollimatorAoStoSoA, float4ArrayFromCollimators
 from Python.RayTracing import *
 from Test import *
 from Python.Settings import *
+import Python.Settings as Settings
 
 print 'Start SimpleRayTracingOpenCL'
 
@@ -34,9 +35,10 @@ elif run == "2":
 
 # Init OpenCL
 if OPENCL == 1:
-    #ctx = cl.create_some_context()
+    ctx = cl.create_some_context()
     os.environ["PYOPENCL_COMPILER_OUTPUT"] = "1"
-    ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
+    os.environ["CL_LOG_ERRORS"] = "stdout"
+    #ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
     queue = cl.CommandQueue(ctx)
 
 # Run tests
@@ -48,7 +50,7 @@ if PYTHON == 1:
     #testOpenCL(ctx, queue)
 
 # Build scene objects
-rs = SimpleRaySourceDisc(Disc(float4(0,0,0,0), float4(0,0,1,0), 1))
+rs = Disc(float4(0,0,0,0), float4(0,0,1,0), 1)
 
 col1 = Collimator()
 #float4(-5.9,-5.9,-29.5,0)
@@ -109,21 +111,21 @@ for i in range(len(leaves)):
 if (SOA == 1):
     collimators = CollimatorAoStoSoA(collimators)
 
-fm = FluenceMap(Rectangle(float4(-30,-30,-100,0), float4(30,-30,-100,0), float4(30,30,-100,0), float4(-30,30,-100,0)))
-scene = Scene(rs,NUMBER_OF_COLLIMATORS, collimators, fm)
+fm = FluenceMap(Rectangle(float4(-30.0, -30.0, -100.0, 0.0), float4(30.0, -30.0, -100.0, 0.0), float4(30.0, 30.0, -100.0, 0.0), float4(-30.0, 30.0, -100.0, 0.0)))
+scene = Scene(fm, rs, NUMBER_OF_COLLIMATORS, collimators)
 
 # Settings
-flx = FLX
-fly = FLY
-xstep = (0.0 + length(scene.fluenceMap.rectangle.p1 - scene.fluenceMap.rectangle.p0))/FLX # Length in x / x resolution
-ystep = (0.0 + length(scene.fluenceMap.rectangle.p3 - scene.fluenceMap.rectangle.p0))/FLY # Length in y / y resolution
-xoffset = xstep/2.0
-yoffset = ystep/2.0
-lsamples = LSAMPLES
-lstep = scene.raySource.disc.radius*2/(LSAMPLES-1)
-#mode = 0
-render = Render(flx,fly,xstep,ystep,xoffset,yoffset,lsamples,lstep)
-#render = Render(xstep,ystep,xoffset,yoffset,lstep)
+XSTEP = (0.0 + length(scene.fluenceMap.rectangle.p1 - scene.fluenceMap.rectangle.p0))/FLX # Length in x / x resolution
+YSTEP = (0.0 + length(scene.fluenceMap.rectangle.p3 - scene.fluenceMap.rectangle.p0))/FLY # Length in y / y resolution
+XOFFSET = XSTEP/2.0
+YOFFSET = YSTEP/2.0
+LSTEP = scene.raySource.radius*2/(LSAMPLES-1)
+settingsList = getDefaultSettingsList()
+settingsList.append(("XSTEP", str(XSTEP)))
+settingsList.append(("YSTEP", str(YSTEP)))
+settingsList.append(("XOFFSET", str(XOFFSET)))
+settingsList.append(("YOFFSET", str(YOFFSET)))
+settingsList.append(("LSTEP", str(LSTEP)))
 
 if PYTHON == 1:
     fluence_dataPython = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
@@ -144,21 +146,25 @@ if PYTHON == 1:
 # Run in OpenCL
 if OPENCL == 1:
     debugOpenCL = Debug()
-    program = oclu.loadProgram(ctx, "OpenCL/RayTracingGPU.cl", "-cl-nv-verbose -w " + settingsString())
+    settingsString = macroString(settingsList)
+    program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
+    #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString)
+    #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString)
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
-    render_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=render)
+    #render_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=render)
     leaf_array_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=leaf_array)
     intensities_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.ALLOC_HOST_PTR, size=intensities.nbytes)
     fluence_dataOpenCL_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.ALLOC_HOST_PTR, size=fluence_dataOpenCL.nbytes)
     debugOpenCL_buf = cl.Buffer(ctx, mf.WRITE_ONLY, sizeof(debugOpenCL))
-
+    
     time1 = time()
-    program.flatLightSourceSampling(queue, intensities.shape, (WG_LIGHT_SAMPLING_X, WG_LIGHT_SAMPLING_Y, WG_LIGHT_SAMPLING_Z), scene_buf, render_buf,  leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
+    program.flatLightSourceSampling(queue, intensities.shape, (WG_LIGHT_SAMPLING_X, WG_LIGHT_SAMPLING_Y, WG_LIGHT_SAMPLING_Z), scene_buf, leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
+    #program.flatLightSourceSampling(queue, intensities.shape, None, scene_buf, leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
     time2 = time()
-    program.calculateIntensityDecreaseWithDistance(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
+    program.calculateIntensityDecreaseWithDistance(queue, fluence_dataOpenCL.shape, None, scene_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
     time3 = time()
-    program.calcFluenceElement(queue, fluence_dataOpenCL.shape, None, scene_buf, render_buf, intensities_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
+    program.calcFluenceElement(queue, fluence_dataOpenCL.shape, None, scene_buf, intensities_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
     time4 = time()
     cl.enqueue_read_buffer(queue, fluence_dataOpenCL_buf, fluence_dataOpenCL)
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
@@ -167,11 +173,12 @@ if OPENCL == 1:
     print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
     samplesPerSecondOpenCL = FLX*FLY*LSAMPLES*LSAMPLES/timeOpenCL
     print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
+    print fluence_dataOpenCL
 
 # Show plots
 if SHOW_PLOT == 1:
-    rspatch = patches.Circle((scene.raySource.disc.origin.y, scene.raySource.disc.origin.x), 
-                             scene.raySource.disc.radius, facecolor='none', edgecolor='red', linewidth=1, alpha=0.5)
+    rspatch = patches.Circle((scene.raySource.origin.y, scene.raySource.origin.x), 
+                             scene.raySource.radius, facecolor='none', edgecolor='red', linewidth=1, alpha=0.5)
 
     # Python
     if PYTHON == 1:
@@ -231,6 +238,6 @@ if SHOW_3D_SCENE == 1:
     f.make_twosided()
 
     # Ray source
-    vs.cylinder(pos=scene.raySource.disc.origin.get3DTuple(), axis=scene.raySource.disc.normal.get3DTuple(), radius=scene.raySource.disc.radius, color=vs.color.red, opacity=0.5)
+    vs.cylinder(pos=scene.raySource.origin.get3DTuple(), axis=scene.raySource.normal.get3DTuple(), radius=scene.raySource.radius, color=vs.color.red, opacity=0.5)
 
     #fr.rotate (angle = -pi/2, axis = (1.0, 1.0, 0.0))

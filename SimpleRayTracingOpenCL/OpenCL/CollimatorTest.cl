@@ -1,8 +1,8 @@
 #ifndef __CollimatorTest__
 #define __CollimatorTest__
 
-#include "OpenCL/Collimator.cl"
-#include "OpenCL/Primitives.cl"
+#include "Collimator.cl"
+#include "Primitives.cl"
 
 void testCreateFlatCollimator(int *passed) {
     Collimator collimator = {

@@ -24,6 +24,10 @@
 #define LSAMPLES 5
 #endif //LSAMPLES
 
+#ifndef LSAMPLESSQR
+#define LSAMPLESSQR LSAMPLES*LSAMPLES
+#endif //LSAMPLESSQR
+
 #ifndef MODE
 #define MODE 2
 #endif //MODE
@@ -78,10 +82,22 @@
 	#define LEAF_ASQ __private
 #elif LEAF_AS == 1
 	#define LEAF_ASQ __local
-#elif LEAF_AS == 2 // Does not work
+#elif LEAF_AS == 2 // No support
 	#define LEAF_ASQ __constant
 #elif LEAF_AS == 3
 	#define LEAF_ASQ __global
 #endif
 
-#define FHCOL_WHILE_WHILE 0
+#ifndef SCENE_AS
+#define SCENE_AS 2
+#endif
+
+#if SCENE_AS == 0 // No support
+	#define SCENE_ASQ __private
+#elif SCENE_AS == 1 // No support
+	#define SCENE_ASQ __local
+#elif SCENE_AS == 2
+	#define SCENE_ASQ __constant
+#elif SCENE_AS == 3
+	#define SCENE_ASQ __global
+#endif

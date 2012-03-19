@@ -1,8 +1,8 @@
 #ifndef __Collimator__
 #define __Collimator__
 
-#include "OpenCL/Primitives.cl"
-#include "OpenCL/Settings.cl"
+#include "Primitives.cl"
+#include "Settings.cl"
 
 // Data types
 typedef struct SimpleCollimator {

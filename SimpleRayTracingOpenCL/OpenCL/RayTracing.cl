@@ -1,7 +1,7 @@
-#include "OpenCL/Collimator.cl"
-#include "OpenCL/Misc.cl"
-#include "OpenCL/Primitives.cl"
-#include "OpenCL/Settings.cl"
+#include "Collimator.cl"
+#include "Misc.cl"
+#include "Primitives.cl"
+#include "Settings.cl"
 
 // Data types
 typedef struct SimpleRaySourceRectangle {

@@ -13,24 +13,24 @@ from Python.Settings import MODE, NUMBER_OF_COLLIMATORS, SOA
 class SimpleRaySourceRectangle(Structure):
     _fields_ = [("rectangle", Rectangle)]
 
-class SimpleRaySourceDisc(Structure):
-    _fields_ = [("disc", Disc)]
+"""class SimpleRaySourceDisc(Structure):
+    _fields_ = [("disc", Disc)]"""
 
 class FluenceMap(Structure):
     _fields_ = [("rectangle", Rectangle)]
 
 if SOA == 0:
     class Scene(Structure):
-        _fields_ = [("raySource", SimpleRaySourceDisc),
+        _fields_ = [("fluenceMap", FluenceMap),
+                    ("raySource", Disc),
                     ("numberOfCollimators", c_int),
-                    ("collimators", Collimator * NUMBER_OF_COLLIMATORS),
-                    ("fluenceMap", FluenceMap)]
+                    ("collimators", Collimator * NUMBER_OF_COLLIMATORS)]
 elif SOA == 1:
     class Scene(Structure):
-        _fields_ = [("raySource", SimpleRaySourceDisc),
+        _fields_ = [("fluenceMap", FluenceMap),
+                    ("raySource", Disc),
                     ("numberOfCollimators", c_int),
-                    ("collimators", CollimatorSoA),
-                    ("fluenceMap", FluenceMap)]
+                    ("collimators", CollimatorSoA)]
 
 class Render(Structure):
     _fields_ = [("flx", c_int),
@@ -152,7 +152,7 @@ def traceRayFirstHit(scene, render, ray, collimators):
             newRay = Line(intersectionPointCollimator, ray.direction)
             [intersectCollimator, distanceCollimator, intersectionPointCollimator, intensityCoeff] = firstHitCollimator(scene, render, newRay, collimators)
 
-    [intersectRS, intersectionDistanceRS, intersectionPointRS] = intersectLineSimpleRaySourceDisc(ray, scene.raySource)
+    [intersectRS, intersectionDistanceRS, intersectionPointRS] = intersectLineDisc(ray, scene.raySource)
     if intersectRS == True:
         return intensity
     else:

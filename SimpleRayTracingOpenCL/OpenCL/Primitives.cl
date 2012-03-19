@@ -1,7 +1,7 @@
 #ifndef __Primitives__
 #define __Primitives__
 
-#include "OpenCL/Settings.cl"
+#include "Settings.cl"
 
 // Data types
 typedef struct Line {
