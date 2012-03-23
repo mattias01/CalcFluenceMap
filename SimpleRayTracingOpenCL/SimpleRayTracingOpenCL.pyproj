@@ -22,6 +22,10 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Autotune\Autotune.py" />
+    <Compile Include="Autotune\Parameter.py" />
+    <Compile Include="Autotune\ParameterSet.py" />
+    <Compile Include="Autotune\__init__.py" />
     <Compile Include="OpenCLTypes.py" />
     <Compile Include="OpenCLUtility.py" />
     <Compile Include="Python\Collimator.py" />
@@ -50,6 +54,7 @@
     <Content Include="OpenCL\Settings.cl" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Autotune" />
     <Folder Include="OpenCL" />
     <Folder Include="Python" />
   </ItemGroup>
