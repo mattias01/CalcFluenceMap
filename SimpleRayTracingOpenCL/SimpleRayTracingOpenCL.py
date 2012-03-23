@@ -23,118 +23,121 @@ import Python.Settings as Settings
 print 'Start SimpleRayTracingOpenCL'
 
 # Select execution environment (Python, OpenCl or both)
-"""run = 0#raw_input("Choose environment:\n0: OpenCL, 1: Python, 2: Both\n[0]:")
+def select_excecution_environment():
+    run = raw_input("Choose environment:\n0: OpenCL, 1: Python, 2: Both\n[0]:")
 
-PYTHON = 0
-OPENCL = 1
-if run == "1":
-    PYTHON = 1
-    OPENCL = 0
-elif run == "2":
-    PYTHON = 1"""
+    PYTHON = 0
+    OPENCL = 1
+    if run == "1":
+        PYTHON = 1
+        OPENCL = 0
+    elif run == "2":
+        PYTHON = 1
 
 # Init OpenCL
-if OPENCL == 1:
+def init_OpenCL():
     ctx = cl.create_some_context()
     os.environ["PYOPENCL_COMPILER_OUTPUT"] = "1"
     os.environ["CL_LOG_ERRORS"] = "stdout"
     #ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
     queue = cl.CommandQueue(ctx)
 
+    return [ctx, queue]
+
 # Run tests
+def test():
+    if PYTHON == 1:
+        np.seterr(divide='ignore') # Disable warning on division by zero.
+        testPython()
+    if OPENCL == 1:
+        testOpenCL(ctx, queue)
 
-if PYTHON == 1:
-    np.seterr(divide='ignore') # Disable warning on division by zero.
-    testPython()
-#if openCL:
-    #testOpenCL(ctx, queue)
+def init_scene():
+    # Build scene objects
+    rs = Disc(float4(0,0,0,0), float4(0,0,1,0), 1)
 
-# Build scene objects
-rs = Disc(float4(0,0,0,0), float4(0,0,1,0), 1)
+    col1 = Collimator()
+    #float4(-5.9,-5.9,-29.5,0)
+    col1.position = float4(-5.9, -10, -29.5,0)
+    col1.xdir = float4(0,1,0,0)
+    col1.ydir = float4(1,0,0,0)
+    col1.absorptionCoeff = 1.0
+    col1.height = 8.2
+    col1.numberOfLeaves = 40
+    col1.width = 11.8
+    col1.leafPositions = (5,5.1,5.2,5.3,5.2,5.1,5.0,4.9,4.8,4.7,4.6,4.5,4.4,4.2,4,3.8,3.6,3.4,3.2,3.3,3.4,3.5,6,6,6.3,6.4,6,6,7,6,7,6,7,6,7,6,7,6,7,6)
+    col1.boundingBox = calculateCollimatorBoundingBox(col1)
 
-col1 = Collimator()
-#float4(-5.9,-5.9,-29.5,0)
-col1.position = float4(-5.9, -10, -29.5,0)
-col1.xdir = float4(0,1,0,0)
-col1.ydir = float4(1,0,0,0)
-col1.absorptionCoeff = 1.0
-col1.height = 8.2
-col1.numberOfLeaves = 40
-col1.width = 11.8
-col1.leafPositions = (5,5.1,5.2,5.3,5.2,5.1,5.0,4.9,4.8,4.7,4.6,4.5,4.4,4.2,4,3.8,3.6,3.4,3.2,3.3,3.4,3.5,6,6,6.3,6.4,6,6,7,6,7,6,7,6,7,6,7,6,7,6)
-col1.boundingBox = calculateCollimatorBoundingBox(col1)
+    col2 = Collimator()
+    col2.position = float4(5.9, 10, -29.5,0)
+    col2.xdir = float4(0,-1,0,0)
+    col2.ydir = float4(-1,0,0,0)
+    col2.absorptionCoeff = 1.0
+    col2.height = 8.2
+    col2.numberOfLeaves = 40
+    col2.width = 11.8
+    col2.leafPositions = (8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9)
+    col2.boundingBox = calculateCollimatorBoundingBox(col2)
 
-col2 = Collimator()
-col2.position = float4(5.9, 10, -29.5,0)
-col2.xdir = float4(0,-1,0,0)
-col2.ydir = float4(-1,0,0,0)
-col2.absorptionCoeff = 1.0
-col2.height = 8.2
-col2.numberOfLeaves = 40
-col2.width = 11.8
-col2.leafPositions = (8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9)
-col2.boundingBox = calculateCollimatorBoundingBox(col2)
+    jaw1 = Collimator()
+    jaw1.position = float4(14,-14,-45.1,0)
+    jaw1.xdir = float4(-1,0,0,0)
+    jaw1.ydir = float4(0,1,0,0)
+    jaw1.absorptionCoeff = 1.0
+    jaw1.height = 7.2
+    jaw1.width = 14*2
+    jaw1.numberOfLeaves = 1
+    jaw1.leafPositions = (10,)
+    jaw1.boundingBox = calculateCollimatorBoundingBox(jaw1)
 
-jaw1 = Collimator()
-jaw1.position = float4(14,-14,-45.1,0)
-jaw1.xdir = float4(-1,0,0,0)
-jaw1.ydir = float4(0,1,0,0)
-jaw1.absorptionCoeff = 1.0
-jaw1.height = 7.2
-jaw1.width = 14*2
-jaw1.numberOfLeaves = 1
-jaw1.leafPositions = (10,)
-jaw1.boundingBox = calculateCollimatorBoundingBox(jaw1)
+    jaw2 = Collimator()
+    jaw2.position = float4(-14,14,-45.1,0)
+    jaw2.xdir = float4(1,0,0,0)
+    jaw2.ydir = float4(0,-1,0,0)
+    jaw2.absorptionCoeff = 1.0
+    jaw2.height = 7.2
+    jaw2.width = 14*2
+    jaw2.numberOfLeaves = 1
+    jaw2.leafPositions = (10,)
+    jaw2.boundingBox = calculateCollimatorBoundingBox(jaw2)
 
-jaw2 = Collimator()
-jaw2.position = float4(-14,14,-45.1,0)
-jaw2.xdir = float4(1,0,0,0)
-jaw2.ydir = float4(0,-1,0,0)
-jaw2.absorptionCoeff = 1.0
-jaw2.height = 7.2
-jaw2.width = 14*2
-jaw2.numberOfLeaves = 1
-jaw2.leafPositions = (10,)
-jaw2.boundingBox = calculateCollimatorBoundingBox(jaw2)
+    collimator_array = Collimator * NUMBER_OF_COLLIMATORS
+    #collimators = collimator_array(col1)
+    collimators = collimator_array(jaw1, jaw2, col1, col2)
+    leaves = []
+    initCollimators(collimators, leaves) # Init Collimator
 
-collimator_array = Collimator * NUMBER_OF_COLLIMATORS
-#collimators = collimator_array(col1)
-collimators = collimator_array(jaw1, jaw2, col1, col2)
-leaves = []
-initCollimators(collimators, leaves) # Init Collimator
+    leaf_array_type = float4 * len(leaves)
+    leaf_array = leaf_array_type()
+    for i in range(len(leaves)):
+        leaf_array[i] = leaves[i]
 
-leaf_array_type = float4 * len(leaves)
-leaf_array = leaf_array_type()
-for i in range(len(leaves)):
-    leaf_array[i] = leaves[i]
+    if (SOA == 1):
+        collimators = CollimatorAoStoSoA(collimators)
 
-if (SOA == 1):
-    collimators = CollimatorAoStoSoA(collimators)
+    fm = FluenceMap(Rectangle(float4(-30.0, -30.0, -100.0, 0.0), float4(30.0, -30.0, -100.0, 0.0), float4(30.0, 30.0, -100.0, 0.0), float4(-30.0, 30.0, -100.0, 0.0)))
+    scene = Scene(fm, rs, NUMBER_OF_COLLIMATORS, collimators)
+    
+    return [scene, leaf_array]
 
-fm = FluenceMap(Rectangle(float4(-30.0, -30.0, -100.0, 0.0), float4(30.0, -30.0, -100.0, 0.0), float4(30.0, 30.0, -100.0, 0.0), float4(-30.0, 30.0, -100.0, 0.0)))
-scene = Scene(fm, rs, NUMBER_OF_COLLIMATORS, collimators)
+def define_settings(scene):
+    # Settings
+    XSTEP = (0.0 + length(scene.fluenceMap.rectangle.p1 - scene.fluenceMap.rectangle.p0))/FLX # Length in x / x resolution
+    YSTEP = (0.0 + length(scene.fluenceMap.rectangle.p3 - scene.fluenceMap.rectangle.p0))/FLY # Length in y / y resolution
+    XOFFSET = XSTEP/2.0
+    YOFFSET = YSTEP/2.0
+    LSTEP = scene.raySource.radius*2/(LSAMPLES-1)
+    settingsList = getDefaultSettingsList()
+    settingsList.append(("XSTEP", str(XSTEP)))
+    settingsList.append(("YSTEP", str(YSTEP)))
+    settingsList.append(("XOFFSET", str(XOFFSET)))
+    settingsList.append(("YOFFSET", str(YOFFSET)))
+    settingsList.append(("LSTEP", str(LSTEP)))
 
-# Settings
-XSTEP = (0.0 + length(scene.fluenceMap.rectangle.p1 - scene.fluenceMap.rectangle.p0))/FLX # Length in x / x resolution
-YSTEP = (0.0 + length(scene.fluenceMap.rectangle.p3 - scene.fluenceMap.rectangle.p0))/FLY # Length in y / y resolution
-XOFFSET = XSTEP/2.0
-YOFFSET = YSTEP/2.0
-LSTEP = scene.raySource.radius*2/(LSAMPLES-1)
-settingsList = getDefaultSettingsList()
-settingsList.append(("XSTEP", str(XSTEP)))
-settingsList.append(("YSTEP", str(YSTEP)))
-settingsList.append(("XOFFSET", str(XOFFSET)))
-settingsList.append(("YOFFSET", str(YOFFSET)))
-settingsList.append(("LSTEP", str(LSTEP)))
-
-if PYTHON == 1:
-    fluence_dataPython = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
-if OPENCL == 1:
-    fluence_dataOpenCL = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
-    intensities = numpy.zeros(shape=(FLX,FLY,LSAMPLES*LSAMPLES), dtype=numpy.float32)
+    return settingsList
 
 # Run in Python
-if PYTHON == 1:
+def run_Python(scene, render, collimators, fluence_dataPython):
     time1 = time()
     debugPython = Debug()
     drawScene(scene, render, collimators, fluence_dataPython, debugPython)
@@ -144,7 +147,7 @@ if PYTHON == 1:
     print "Time Python: ", timePython, " Samples per second: ", samplesPerSecondPython
 
 # Run in OpenCL
-if OPENCL == 1:
+def run_OpenCL(ctx, queue, settingsList, scene, leaf_array, intensities, fluence_dataOpenCL):
     debugOpenCL = Debug()
     settingsString = macroString(settingsList)
     program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
@@ -173,38 +176,25 @@ if OPENCL == 1:
     print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
     samplesPerSecondOpenCL = FLX*FLY*LSAMPLES*LSAMPLES/timeOpenCL
     print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
-    print fluence_dataOpenCL
+
+    return [fluence_dataOpenCL, timeOpenCL, samplesPerSecondOpenCL]
 
 # Show plots
-if SHOW_PLOT == 1:
+def show_plot(scene, fluence_data, elapsed_time, samplesPerSecond):
     rspatch = patches.Circle((scene.raySource.origin.y, scene.raySource.origin.x), 
-                             scene.raySource.radius, facecolor='none', edgecolor='red', linewidth=1, alpha=0.5)
+                                scene.raySource.radius, facecolor='none', edgecolor='red', linewidth=1, alpha=0.5)
+    print fluence_data
+    plt.imshow(fluence_data, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.rectangle.p0.y,
+                                                                         scene.fluenceMap.rectangle.p3.y,
+                                                                         -scene.fluenceMap.rectangle.p0.x,
+                                                                         -scene.fluenceMap.rectangle.p1.x])
 
-    # Python
-    if PYTHON == 1:
-        print fluence_dataPython
-        plt.imshow(fluence_dataPython, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.rectangle.p0.y,
-                                                                                   scene.fluenceMap.rectangle.p3.y,
-                                                                                   -scene.fluenceMap.rectangle.p0.x,
-                                                                                   -scene.fluenceMap.rectangle.p1.x])
+    plt.gca().add_patch(rspatch)
 
-        plt.gca().add_patch(rspatch)
+    plt.title("X " + "Time: " + str(elapsed_time) + " Samples per second: " + str(samplesPerSecond))
+    plt.show()
 
-        plt.title("Python " + "Time: " + str(timePython) + " Samples per second: " + str(samplesPerSecondPython))
-        plt.show()
-
-    # OpenCL
-    if OPENCL == 1:
-        print fluence_dataOpenCL
-        plt.imshow(fluence_dataOpenCL, interpolation='none', cmap=cm.gray, extent=[scene.fluenceMap.rectangle.p0.y,
-                                                                                   scene.fluenceMap.rectangle.p3.y,
-                                                                                   -scene.fluenceMap.rectangle.p0.x,
-                                                                                   -scene.fluenceMap.rectangle.p1.x])
-        plt.gca().add_patch(rspatch)
-        plt.title("OpenCL " + "Time: " + str(timeOpenCL) + " Samples per second: " + str(samplesPerSecondOpenCL))
-        plt.show()
-
-if SHOW_3D_SCENE == 1:
+def show_3D_scene(scene, collimators):
     # Visual python
     disp = vs.display()
     #disp.autocenter = True
@@ -241,3 +231,31 @@ if SHOW_3D_SCENE == 1:
     vs.cylinder(pos=scene.raySource.origin.get3DTuple(), axis=scene.raySource.normal.get3DTuple(), radius=scene.raySource.radius, color=vs.color.red, opacity=0.5)
 
     #fr.rotate (angle = -pi/2, axis = (1.0, 1.0, 0.0))
+
+def main():
+    #select_excecution_environment()
+    if OPENCL == 1:
+        [ctx, queue] = init_OpenCL()
+    #test()
+    [scene, leaf_array] = init_scene()
+    settingsList = define_settings(scene)
+
+    if PYTHON == 1:
+        fluence_data_Python = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
+    if OPENCL == 1:
+        fluence_data_OpenCL = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
+        intensities = numpy.zeros(shape=(FLX,FLY,LSAMPLES*LSAMPLES), dtype=numpy.float32)
+
+    #[fluence_data_Python, time_Python, samples_Python] = run_Python(scene, render, collimators, fluence_data_Python)
+    [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(ctx, queue, settingsList, scene, leaf_array, intensities, fluence_data_OpenCL)
+
+    if SHOW_PLOT == 1:
+        if PYTHON == 1:
+            show_plot(scene, fluence_data_Python, time_Python, samplesPerSecond_Python)
+        if OPENCL == 1:
+            show_plot(scene, fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL)
+    if SHOW_3D_SCENE == 1:
+        show_3D_scene(scene, collimators)
+    
+if __name__=="__main__":
+    main()
