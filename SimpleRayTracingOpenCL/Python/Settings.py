@@ -3,8 +3,8 @@
 NUMBER_OF_LEAVES = 40
 
 # Global defines
-FLX = 128
-FLY = 128
+FLX = 256
+FLY = 256
 #XSTEP = 0.0
 #YSTEP = 0.0
 #XOFFSET = 0.0
@@ -12,7 +12,9 @@ FLY = 128
 LSAMPLES = 20
 #LSTEP = 0.0
 MODE = 2
-NUMBER_OF_COLLIMATORS = 4
+NUMBER_OF_COLLIMATORS = 8
+
+# Optimization parameters
 LINE_TRIANGLE_INTERSECTION_ALGORITHM = 2 # SS, MT, MT2, MT3
 SOA = 1
 
@@ -47,16 +49,20 @@ def getDefaultSettingsList():
     list.append(("FLY", str(FLY)))
     list.append(("LSAMPLES", str(LSAMPLES)))
     list.append(("MODE", str(MODE)))
-    list.append(("NUMBER_OF_COLLIMATORS", str(NUMBER_OF_COLLIMATORS)))
+    list.append(("NUMBER_OF_COLLIMATORS", str(NUMBER_OF_COLLIMATORS))) 
+    list.append(("PATH_OPENCL", str(PATH_OPENCL)))
+    return list
+
+def getDeafaultOptimizationParameterList():
+    list = []
     list.append(("LINE_TRIANGLE_INTERSECTION_ALGORITHM", str(LINE_TRIANGLE_INTERSECTION_ALGORITHM)))
-    list.append(("SOA", str(SOA)))
     list.append(("WG_LIGHT_SAMPLING_X", str(WG_LIGHT_SAMPLING_X)))
     list.append(("WG_LIGHT_SAMPLING_Y", str(WG_LIGHT_SAMPLING_Y)))
     list.append(("WG_LIGHT_SAMPLING_Z", str(WG_LIGHT_SAMPLING_Z)))
     list.append(("RAY_AS", str(RAY_AS)))
     list.append(("LEAF_AS", str(LEAF_AS)))
     list.append(("SCENE_AS", str(SCENE_AS)))
-    list.append(("PATH_OPENCL", str(PATH_OPENCL)))
+    list.append(("SOA", str(SOA)))
     return list
 
 # Argument list is a list of tupels with the first element being the macro name and the second its value.
