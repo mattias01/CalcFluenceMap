@@ -10,7 +10,7 @@ import pyopencl as cl
 import struct
 from sys import getsizeof
 from time import time, sleep
-#import visual as vs
+import visual as vs
 
 from OpenCLUtility import OpenCLUtility as oclu
 from OpenCLTypes import *
@@ -19,7 +19,8 @@ from Python.RayTracing import *
 from Test import *
 from Python.Settings import *
 import Python.Settings as Settings
-import Autotune
+from Autotune.Autotune import *
+from Autotune.Parameter import *
 
 print 'Start SimpleRayTracingOpenCL'
 
@@ -245,7 +246,7 @@ def init_scene():
     fm = FluenceMap(Rectangle(float4(-30.0, -30.0, -100.0, 0.0), float4(30.0, -30.0, -100.0, 0.0), float4(30.0, 30.0, -100.0, 0.0), float4(-30.0, 30.0, -100.0, 0.0)))
     scene = Scene(fm, rs, NUMBER_OF_COLLIMATORS, collimators)
     
-    return [scene, leaf_array]
+    return [scene, collimators, leaf_array]
 
 def define_settings(scene):
     # Settings
@@ -323,7 +324,7 @@ def show_plot(scene, fluence_data, elapsed_time, samplesPerSecond):
     plt.title("X " + "Time: " + str(elapsed_time) + " Samples per second: " + str(samplesPerSecond))
     plt.show()
 
-def show_3D_scene(scene, collimators):
+def show_3D_scene(scene, leaf_array):
     # Visual python
     disp = vs.display()
     #disp.autocenter = True
@@ -334,19 +335,23 @@ def show_3D_scene(scene, collimators):
     disp.range = (30, 30, -100)
 
     # Collimators
-    for i in range(len(collimators)):
+    """for i in range(NUMBER_OF_COLLIMATORS):
         fr = vs.frame()
         if MODE == 0:
-            f = vs.faces(frame = fr, pos = collimators[i].flatCollimator.getVertices())
+            f = vs.faces(frame = fr, pos = collimators.flatCollimator[i].getVertices())
         elif MODE == 1:
-            f = vs.faces(frame = fr, pos = collimators[i].bboxCollimator.getVertices())
+            f = vs.faces(frame = fr, pos = collimators.bboxCollimator[i].getVertices())
         elif MODE == 2:
-            f = vs.faces(frame = fr, pos = collimators[i].boxCollimator.getVertices())
+            f = vs.faces(frame = fr, pos = collimators.boxCollimator[i].getVertices())
             #bb = vs.faces(frame = fr, pos = bboxToBox(collimators[i].boxCollimator.boundingBox).getVertices())
             #bb.make_normals()
             #bb.color = vs.color.blue
         f.color = vs.color.orange
-        f.make_normals()
+        f.make_normals()"""
+    fr = vs.frame()
+    f = vs.faces(frame = fr, pos = leaf_array_to_vertices(leaf_array))
+    f.color = vs.color.orange
+    f.make_normals()
 
     # Fluence map
     #fluence_dataOpenCL *= 255.0/fluence_dataOpenCL.max()
@@ -366,10 +371,21 @@ def main():
     if OPENCL == 1:
         [ctx, queue] = init_OpenCL()
     #test()
-    [scene, leaf_array] = init_scene()
+    [scene, collimators, leaf_array] = init_scene()
     settingsList = define_settings(scene)
 
-    settingsList.extend(Settings.getDeafaultOptimizationParameterList())
+    list = []
+    list.append(Parameter("LINE_TRIANGLE_INTERSECTION_ALGORITHM", 1))
+    list.append(Parameter("WG_LIGHT_SAMPLING_X", 1))
+    list.append(Parameter("WG_LIGHT_SAMPLING_Y", 1))
+    list.append(Parameter("WG_LIGHT_SAMPLING_Z", 1))
+    list.append(Parameter("RAY_AS", 0))
+    list.append(Parameter("LEAF_AS", 1))
+    list.append(Parameter("SCENE_AS", 2))
+    list.append(Parameter("SOA", 1))
+    at = Autotune(list, run_OpenCL)
+    settingsList.extend(at.parameters.getRunParametersList())
+    #settingsList.extend(Settings.getDeafaultOptimizationParameterList())
 
     if PYTHON == 1:
         fluence_data_Python = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
@@ -386,7 +402,7 @@ def main():
         if OPENCL == 1:
             show_plot(scene, fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL)
     if SHOW_3D_SCENE == 1:
-        show_3D_scene(scene, collimators)
+        show_3D_scene(scene, leaf_array)
     
 if __name__=="__main__":
     main()

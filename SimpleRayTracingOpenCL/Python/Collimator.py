@@ -248,6 +248,12 @@ def createfloat4List(obj_list):
         list.extend(x.getfloat4List())
     return list
 
+def leaf_array_to_vertices(leaf_array):
+    vertex_list = []
+    for x in leaf_array:
+        vertex_list.append(x.get3DTuple())
+    return vertex_list
+
 ###################### Collimator generation ######################
 
 def calculateCollimatorBoundingBox(collimator):

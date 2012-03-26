@@ -39,7 +39,7 @@ SCENE_AS = 2 # Valid: 2, 3.
 OPENCL = 1
 PYTHON = 0
 SHOW_PLOT = 1
-SHOW_3D_SCENE = 0
+SHOW_3D_SCENE = 1
 PATH_OPENCL = "OpenCL/"
 #PATH_OPENCL = "/Users/mattias/Skola/exjobb/CalcFluenceMap/SimpleRayTracingOpenCL/OpenCL/"
 
