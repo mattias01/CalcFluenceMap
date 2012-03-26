@@ -1,44 +1,25 @@
 
 # Collimator defines
-NUMBER_OF_LEAVES = 40
+NUMBER_OF_LEAVES = 10
 
 # Global defines
-<<<<<<< HEAD
-FLX = 256
-FLY = 256
+FLX = 128
+FLY = 128
 #XSTEP = 0.0
 #YSTEP = 0.0
 #XOFFSET = 0.0
 #YOFFSET = 0.0
 LSAMPLES = 20
 #LSTEP = 0.0
-=======
-FLX = 128
-FLY = 128
-XSTEP = 0.0
-YSTEP = 0.0
-XOFFSET = 0.0
-YOFFSET = 0.0
-LSAMPLES = 10
-LSTEP = 0.0
->>>>>>> 4bf8f506ddc89dce01c5da4b1d1497f8e5d9f592
+
 MODE = 2
-NUMBER_OF_COLLIMATORS = 8
+NUMBER_OF_COLLIMATORS = 10
 
 # Optimization parameters
 LINE_TRIANGLE_INTERSECTION_ALGORITHM = 2 # SS, MT, MT2, MT3
 SOA = 1
 
 # Work group sizes
-<<<<<<< HEAD
-=======
-WG_LIGHT_SAMPLING_X = 1
-WG_LIGHT_SAMPLING_Y = 1
-WG_LIGHT_SAMPLING_Z = 1
-#WG_LIGHT_SAMPLING_X = 2
-#WG_LIGHT_SAMPLING_Y = 32
-#WG_LIGHT_SAMPLING_Z = 4
->>>>>>> 4bf8f506ddc89dce01c5da4b1d1497f8e5d9f592
 #WG_LIGHT_SAMPLING_X = 1
 #WG_LIGHT_SAMPLING_Y = 1
 #WG_LIGHT_SAMPLING_Z = 1
@@ -50,22 +31,15 @@ WG_LIGHT_SAMPLING_Z = 16
 #WG_LIGHT_SAMPLING_Z = 2
 
 # Adress spaces. 0: private, 1: local, 2: constant, 3: global
-<<<<<<< HEAD
 RAY_AS = 0 # Valid: 0, 1.
 LEAF_AS = 1 # Valid: 1, 3.
 SCENE_AS = 2 # Valid: 2, 3.
-=======
-#Adress spaces. 0: local, 1: global, 2: constant, 3: private
-RAY_AS = 0 # Valid 0, 1.
-LEAF_AS = 3 # Valid 1, 3.
->>>>>>> 4bf8f506ddc89dce01c5da4b1d1497f8e5d9f592
 
 # Run settings
 OPENCL = 1
 PYTHON = 0
 SHOW_PLOT = 1
 SHOW_3D_SCENE = 0
-<<<<<<< HEAD
 PATH_OPENCL = "OpenCL/"
 #PATH_OPENCL = "/Users/mattias/Skola/exjobb/CalcFluenceMap/SimpleRayTracingOpenCL/OpenCL/"
 
@@ -98,10 +72,9 @@ def macroString(list):
     for x in list:
         s += " -D " + x[0] + "=" + str(x[1])
     return s
-=======
-#PATH_OPENCL = "OpenCL/"
-PATH_OPENCL = "/Users/mattias/Skola/exjobb/CalcFluenceMap/SimpleRayTracingOpenCL/OpenCL/"
->>>>>>> 4bf8f506ddc89dce01c5da4b1d1497f8e5d9f592
+
+PATH_OPENCL = "OpenCL/"
+#PATH_OPENCL = "/Users/mattias/Skola/exjobb/CalcFluenceMap/SimpleRayTracingOpenCL/OpenCL/"
 
 # Returns a string with all the settings as compiler arguments that can be passed to the OpenCL compiler to define macros.
 def settingsString():

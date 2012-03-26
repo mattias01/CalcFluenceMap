@@ -48,15 +48,9 @@ void createBoxFromPoints(float4 p0, float4 p1, float4 p2, float4 p3, float4 p4, 
 void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint);
 void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip);
 void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip);
-<<<<<<< HEAD
 void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ const Disc *d, bool *intersect, float *distance, float4 *ip);
 void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, bool *intersect, float *distance, float4 *ip);
 void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
-=======
-void intersectLineDisc(RAY_ASQ const Line *l, const Disc *d, bool *intersect, float *distance, float4 *ip);
-void intersectLineBBox(RAY_ASQ const Line *l, __constant const BBox *bb, bool *intersect, float *distance, float4 *ip);
-void intersectLineBBoxInOut(RAY_ASQ const Line *l, const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
->>>>>>> 4bf8f506ddc89dce01c5da4b1d1497f8e5d9f592
 void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *bb, bool *intersect, float *distance, float4 *ip);
 void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
 void intersectLineBox(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *distance, float4 *ip);
@@ -463,11 +457,7 @@ void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, bool *in
 }
 
 // Registers: 6.
-<<<<<<< HEAD
 void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
-=======
-void intersectLineBBoxInOut(RAY_ASQ const Line *l, const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
->>>>>>> 4bf8f506ddc89dce01c5da4b1d1497f8e5d9f592
 {
 	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	BBox *b = &bbox;
