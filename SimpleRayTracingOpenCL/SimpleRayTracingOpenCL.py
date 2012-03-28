@@ -12,7 +12,8 @@ from sys import getsizeof
 from time import time, sleep
 import visual as vs
 
-from OpenCLUtility import OpenCLUtility as oclu
+#from OpenCLUtility import OpenCLUtility as oclu
+import OpenCLUtility
 from OpenCLTypes import *
 from Python.Collimator import CollimatorAoStoSoA, float4ArrayFromCollimators
 from Python.RayTracing import *
@@ -20,7 +21,8 @@ from Test import *
 from Python.Settings import *
 import Python.Settings as Settings
 from Autotune.Autotune import *
-from Autotune.Parameter import *
+from Autotune.Parameter import Parameter
+from Autotune.ParameterSet import ParameterSet
 
 print 'Start SimpleRayTracingOpenCL'
 
@@ -256,58 +258,73 @@ def define_settings(scene):
     YOFFSET = YSTEP/2.0
     LSTEP = scene.raySource.radius*2/(LSAMPLES-1)
     settingsList = getDefaultSettingsList()
-    settingsList.append(("XSTEP", str(XSTEP)))
-    settingsList.append(("YSTEP", str(YSTEP)))
-    settingsList.append(("XOFFSET", str(XOFFSET)))
-    settingsList.append(("YOFFSET", str(YOFFSET)))
-    settingsList.append(("LSTEP", str(LSTEP)))
+    settingsList.append(("XSTEP", str(XSTEP), True))
+    settingsList.append(("YSTEP", str(YSTEP), True))
+    settingsList.append(("XOFFSET", str(XOFFSET), True))
+    settingsList.append(("YOFFSET", str(YOFFSET), True))
+    settingsList.append(("LSTEP", str(LSTEP), True))
 
     return settingsList
 
 # Run in Python
-def run_Python(scene, render, collimators, fluence_dataPython):
+def run_Python(scene, render, collimators):
     time1 = time()
     debugPython = Debug()
-    drawScene(scene, render, collimators, fluence_dataPython, debugPython)
+    fluence_data_Python = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
+    drawScene(scene, render, collimators, fluence_data_Python, debugPython)
     timePython = time()-time1
 
-    samplesPerSecondPython = FLX*FLY*LSAMPLES*LSAMPLES/timePython
-    print "Time Python: ", timePython, " Samples per second: ", samplesPerSecondPython
+    samplesPerSecond_OpenCL = FLX*FLY*LSAMPLES*LSAMPLES/timePython
+    print "Time Python: ", time_Python, " Samples per second: ", samplesPerSecond_Python
+
+    return [fluence_data_Python, time_Python, samplesPerSecond_Python]
 
 # Run in OpenCL
-def run_OpenCL(ctx, queue, settingsList, scene, leaf_array, intensities, fluence_dataOpenCL):
+def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, optimizationParameters):
     debugOpenCL = Debug()
+    #settingsList.extend(optimizationParameters)
     settingsString = macroString(settingsList)
-    program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
+    X_size = optimizationParameters[1][1]
+    Y_size = optimizationParameters[2][1]
+    Z_size = optimizationParameters[3][1]
+    #del optimizationParameters[1:4]
+    optParametersString = macroString(optimizationParameters)
+
+    #[ctx, queue] = init_OpenCL()
+
+    #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString)
-    #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString)
+    #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString + " " + optParametersString)
+    program = oclu.loadCachedProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString + " " + optParametersString)
+
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
     #render_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=render)
     leaf_array_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=leaf_array)
     intensities_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.ALLOC_HOST_PTR, size=intensities.nbytes)
-    fluence_dataOpenCL_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.ALLOC_HOST_PTR, size=fluence_dataOpenCL.nbytes)
+    fluence_data_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.ALLOC_HOST_PTR, size=fluence_data.nbytes)
     debugOpenCL_buf = cl.Buffer(ctx, mf.WRITE_ONLY, sizeof(debugOpenCL))
     
     time1 = time()
-    program.flatLightSourceSampling(queue, intensities.shape, (WG_LIGHT_SAMPLING_X, WG_LIGHT_SAMPLING_Y, WG_LIGHT_SAMPLING_Z), scene_buf, leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
+    program.flatLightSourceSampling(queue, intensities.shape, (X_size, Y_size, Z_size), scene_buf, leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
+    #program.flatLightSourceSampling(queue, intensities.shape, (optimizationParameters[1][1], optimizationParameters[2][1], optimizationParameters[3][1]), scene_buf, leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
     #program.flatLightSourceSampling(queue, intensities.shape, None, scene_buf, leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
 
     time2 = time()
-    program.calculateIntensityDecreaseWithDistance(queue, fluence_dataOpenCL.shape, None, scene_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
+    program.calculateIntensityDecreaseWithDistance(queue, fluence_data.shape, None, scene_buf, fluence_data_buf, debugOpenCL_buf).wait()
     time3 = time()
-    program.calcFluenceElement(queue, fluence_dataOpenCL.shape, None, scene_buf, intensities_buf, fluence_dataOpenCL_buf, debugOpenCL_buf).wait()
+    program.calcFluenceElement(queue, fluence_data.shape, None, scene_buf, intensities_buf, fluence_data_buf, debugOpenCL_buf).wait()
     time4 = time()
-    cl.enqueue_read_buffer(queue, fluence_dataOpenCL_buf, fluence_dataOpenCL)
+    cl.enqueue_read_buffer(queue, fluence_data_buf, fluence_data)
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
     timeOpenCL = time()-time1
 
-    print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
+    #print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
     samplesPerSecondOpenCL = FLX*FLY*LSAMPLES*LSAMPLES/timeOpenCL
-    print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
-    print fluence_dataOpenCL
+    #print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
+    #print fluence_data
 
-    return [fluence_dataOpenCL, timeOpenCL, samplesPerSecondOpenCL]
+    return [fluence_data, timeOpenCL, samplesPerSecondOpenCL]
 
 # Show plots
 def show_plot(scene, fluence_data, elapsed_time, samplesPerSecond):
@@ -375,26 +392,33 @@ def main():
     settingsList = define_settings(scene)
 
     list = []
-    list.append(Parameter("LINE_TRIANGLE_INTERSECTION_ALGORITHM", 1))
-    list.append(Parameter("WG_LIGHT_SAMPLING_X", 1))
-    list.append(Parameter("WG_LIGHT_SAMPLING_Y", 1))
-    list.append(Parameter("WG_LIGHT_SAMPLING_Z", 1))
-    list.append(Parameter("RAY_AS", 0))
-    list.append(Parameter("LEAF_AS", 1))
-    list.append(Parameter("SCENE_AS", 2))
-    list.append(Parameter("SOA", 1))
-    at = Autotune(list, run_OpenCL)
-    settingsList.extend(at.parameters.getRunParametersList())
-    #settingsList.extend(Settings.getDeafaultOptimizationParameterList())
+    list.append(Parameter("LINE_TRIANGLE_INTERSECTION_ALGORITHM", [2], True))
+    list.append(Parameter("WG_LIGHT_SAMPLING_X", [1,2,4,8,16,32,64,128,256,512,1024], False))
+    list.append(Parameter("WG_LIGHT_SAMPLING_Y", [1,2,4,8,16,32,64,128,256,512,1024], False))
+    list.append(Parameter("WG_LIGHT_SAMPLING_Z", [1,2,4,8,16,32], False))
+    list.append(Parameter("RAY_AS", [0], True))
+    list.append(Parameter("LEAF_AS", [1], True))
+    list.append(Parameter("SCENE_AS", [2], True))
+    list.append(Parameter("SOA", [1], True))
 
-    if PYTHON == 1:
-        fluence_data_Python = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
-    if OPENCL == 1:
-        fluence_data_OpenCL = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
-        intensities = numpy.zeros(shape=(FLX,FLY,LSAMPLES*LSAMPLES), dtype=numpy.float32)
+    fluence_data = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
+    intensities = numpy.zeros(shape=(FLX,FLY,LSAMPLES*LSAMPLES), dtype=numpy.float32)
+
+    oclu = OpenCLUtility.OpenCLUtility()
+
+    at = Autotune(ParameterSet(list), run_OpenCL, (oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList))
+
+    at.findOptimizationParameters()
+
+    #print at.getTable()
+    at.saveCSV()
+
+    # Reset output data
+    fluence_data = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
+    intensities = numpy.zeros(shape=(FLX,FLY,LSAMPLES*LSAMPLES), dtype=numpy.float32)
 
     #[fluence_data_Python, time_Python, samples_Python] = run_Python(scene, render, collimators, fluence_data_Python)
-    [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(ctx, queue, settingsList, scene, leaf_array, intensities, fluence_data_OpenCL)
+    [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, at.best_parameters) #at.best_parameters
 
     if SHOW_PLOT == 1:
         if PYTHON == 1:

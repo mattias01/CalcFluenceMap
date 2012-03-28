@@ -12,7 +12,7 @@ FLY = 128
 LSAMPLES = 20
 #LSTEP = 0.0
 
-MODE = 2
+MODE = 0
 NUMBER_OF_COLLIMATORS = 10
 
 # Optimization parameters
@@ -39,38 +39,39 @@ SCENE_AS = 2 # Valid: 2, 3.
 OPENCL = 1
 PYTHON = 0
 SHOW_PLOT = 1
-SHOW_3D_SCENE = 1
+SHOW_3D_SCENE = 0
 PATH_OPENCL = "OpenCL/"
 #PATH_OPENCL = "/Users/mattias/Skola/exjobb/CalcFluenceMap/SimpleRayTracingOpenCL/OpenCL/"
 
 def getDefaultSettingsList():
     list = []
-    list.append(("NUMBER_OF_LEAVES", str(NUMBER_OF_LEAVES)))
-    list.append(("FLX", str(FLX)))
-    list.append(("FLY", str(FLY)))
-    list.append(("LSAMPLES", str(LSAMPLES)))
-    list.append(("MODE", str(MODE)))
-    list.append(("NUMBER_OF_COLLIMATORS", str(NUMBER_OF_COLLIMATORS))) 
-    list.append(("PATH_OPENCL", str(PATH_OPENCL)))
+    list.append(("NUMBER_OF_LEAVES", str(NUMBER_OF_LEAVES), True))
+    list.append(("FLX", str(FLX), True))
+    list.append(("FLY", str(FLY), True))
+    list.append(("LSAMPLES", str(LSAMPLES), True))
+    list.append(("MODE", str(MODE), True))
+    list.append(("NUMBER_OF_COLLIMATORS", str(NUMBER_OF_COLLIMATORS), True)) 
+    list.append(("PATH_OPENCL", str(PATH_OPENCL), True))
     return list
 
 def getDeafaultOptimizationParameterList():
     list = []
-    list.append(("LINE_TRIANGLE_INTERSECTION_ALGORITHM", str(LINE_TRIANGLE_INTERSECTION_ALGORITHM)))
-    list.append(("WG_LIGHT_SAMPLING_X", str(WG_LIGHT_SAMPLING_X)))
-    list.append(("WG_LIGHT_SAMPLING_Y", str(WG_LIGHT_SAMPLING_Y)))
-    list.append(("WG_LIGHT_SAMPLING_Z", str(WG_LIGHT_SAMPLING_Z)))
-    list.append(("RAY_AS", str(RAY_AS)))
-    list.append(("LEAF_AS", str(LEAF_AS)))
-    list.append(("SCENE_AS", str(SCENE_AS)))
-    list.append(("SOA", str(SOA)))
+    list.append(("LINE_TRIANGLE_INTERSECTION_ALGORITHM", str(LINE_TRIANGLE_INTERSECTION_ALGORITHM), True))
+    list.append(("WG_LIGHT_SAMPLING_X", str(WG_LIGHT_SAMPLING_X), False))
+    list.append(("WG_LIGHT_SAMPLING_Y", str(WG_LIGHT_SAMPLING_Y), False))
+    list.append(("WG_LIGHT_SAMPLING_Z", str(WG_LIGHT_SAMPLING_Z), False))
+    list.append(("RAY_AS", str(RAY_AS), True))
+    list.append(("LEAF_AS", str(LEAF_AS), True))
+    list.append(("SCENE_AS", str(SCENE_AS), True))
+    list.append(("SOA", str(SOA), True))
     return list
 
 # Argument list is a list of tupels with the first element being the macro name and the second its value.
 def macroString(list):
     s = "-I " + PATH_OPENCL + " -I OpenCL/"
     for x in list:
-        s += " -D " + x[0] + "=" + str(x[1])
+        if x[2] == True: # x[0]: name, x[1]: value, x[2]: sendToKernel
+            s += " -D " + x[0] + "=" + str(x[1])
     return s
 
 PATH_OPENCL = "OpenCL/"
