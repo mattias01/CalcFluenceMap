@@ -42,8 +42,8 @@ typedef struct Scene {
 // Function declarations
 //void intersectSimpleRaySourceDisc(RAY_ASQ const Line *l, SCENE_ASQ const Disc *rs, bool *intersect, float *distance, float4 *ip);
 void firstHitLeaf(SCENE_ASQ const Scene *s, RAY_ASQ const Line *r, LEAF_ASQ const float4 *leaf_data, int *collimatorIndex, bool *intersect, float4 *ip, float *thickness, __global Debug *debug);
-void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug);
-void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, float *i, __global Debug *debug);
+void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug);
+void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug);
 void lightSourceAreaVectors(SCENE_ASQ const Scene *scene, const float4 *rayOrigin, float4 *vi0, float4 *vi1, float4 *vj0, float4 *vj1, __global Debug *debug);
 
 // Intersections
@@ -110,7 +110,7 @@ void firstHitLeaf(SCENE_ASQ const Scene *s, RAY_ASQ const Line *r, LEAF_ASQ cons
 	}
 }
 
-void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug) {
+void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
 	*intensityCoeff = 1;
@@ -155,19 +155,16 @@ void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global cons
 			#if LEAF_AS == 0
 			#elif LEAF_AS == 1
 				#if MODE == 0
-					__local float4 col_leaf_data[NUMBER_OF_LEAVES * 2 * 3]; // Make sure it's >= than the leaf data.
 					for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[collimatorIndex]; j++) {
 						col_leaf_data[j] = leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex] + j];
 					}
 					barrier(CLK_LOCAL_MEM_FENCE);
 				#elif MODE == 1
-					__local float4 col_leaf_data[NUMBER_OF_LEAVES * 2]; // Make sure it's >= than the leaf data.
 					for (int j = 0; j < s->collimators.bboxCollimator.numberOfLeaves[collimatorIndex] * s->collimators.bboxCollimator.leafArrayStride[collimatorIndex]; j++) {
 						col_leaf_data[j] = leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex] + j];
 					}
 					barrier(CLK_LOCAL_MEM_FENCE);
 				#elif MODE == 2
-					__local float4 col_leaf_data[NUMBER_OF_LEAVES * 12 * 3]; // Make sure it's >= than the leaf data.
 					for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[collimatorIndex]; j++) {
 						col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex] + j];
 					}
@@ -178,19 +175,22 @@ void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global cons
 					/*#if SOA == 0
 						__global float4 const *col_leaf_data = &leaf_data[s->collimators[collimatorIndex].flatCollimator.leafArrayOffset];
 					#elif SOA == 1*/
-						__global float4 const *col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex]];
+						//__global float4 const *col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex]];
+						col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex]];
 					//#endif
 				#elif MODE == 1
 					/*#if SOA == 0
 						__global float4 const *col_leaf_data = &leaf_data[s->collimators[collimatorIndex].bboxCollimator.leafArrayOffset];
 					#elif SOA == 1*/
-						__global float4 const *col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex]];
+						//__global float4 const *col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex]];
+						col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex]];
 					//#endif
 				#elif MODE == 2
 					/*#if SOA == 0
 						__global float4 const *col_leaf_data = &leaf_data[s->collimators[collimatorIndex].boxCollimator.leafArrayOffset];
 					#elif SOA == 1*/
-						__global float4 const *col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex]];
+						//__global float4 const *col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex]];
+						col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex]];
 					//#endif
 				#endif
 			#endif
@@ -219,12 +219,12 @@ void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global cons
 	}
 }
 
-void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, float *i, __global Debug *debug) {
+void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug) {
 	float intensity = 1;
 	bool intersectCollimator;
 	float4 ipCollimator;
 	float intensityCoeff;
-	firstHitCollimator(s, r, leaf_data, &intersectCollimator, &ipCollimator, &intensityCoeff, debug);
+	firstHitCollimator(s, r, leaf_data, col_leaf_data, &intersectCollimator, &ipCollimator, &intensityCoeff, debug);
 	while (intersectCollimator) {
 		intensity *= intensityCoeff;
 		if (intensity < INTENSITY_THRESHOLD) { // If intensity is below a treshhold, don't bother to cast more rays. Return 0 intensity.
@@ -233,7 +233,7 @@ void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *
 		}
 		else {
 			r->origin = ipCollimator; // Create a new ray. Same direction but new origin.
-			firstHitCollimator(s, r, leaf_data, &intersectCollimator, &ipCollimator, &intensityCoeff, debug);
+			firstHitCollimator(s, r, leaf_data, col_leaf_data, &intersectCollimator, &ipCollimator, &intensityCoeff, debug);
 		}
 	}
 
@@ -374,15 +374,27 @@ __kernel void flatLightSourceSampling(SCENE_ASQ const Scene *scene, __global con
 	ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y].origin = (float4) (scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0);
 	ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y].direction = normalize(((float4)(scene->raySource.origin.x - scene->raySource.radius + li*LSTEP, scene->raySource.origin.y - scene->raySource.radius + lj*LSTEP, scene->raySource.origin.z, 0)) - ((float4)(scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0)));
 #endif //LOCAL_RAYS
+
+#if LEAF_AS == 1 // Allocate __local memory here in the __kernel because some compilers don't allow for __local memory allocation in ordinary functions.
+	#if MODE == 0
+		__local float4 col_leaf_data[NUMBER_OF_LEAVES * 2 * 3]; // Make sure it's >= than the leaf data.
+	#elif MODE == 1
+		__local float4 col_leaf_data[NUMBER_OF_LEAVES * 2]; // Make sure it's >= than the leaf data.
+	#elif MODE == 2
+		__local float4 col_leaf_data[NUMBER_OF_LEAVES * 12 * 3]; // Make sure it's >= than the leaf data.
+	#endif
+#elif LEAF_AS == 3
+	__global float4 *col_leaf_data;
+#endif
  
 	float intensity;
 #if RAY_AS == 0
-	traceRay(scene, &ray, leaf_data, &intensity, debug);
+	traceRay(scene, &ray, leaf_data, col_leaf_data, &intensity, debug);
 #elif RAY_AS == 1
-	traceRay(scene, &(ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y]), leaf_data, &intensity, debug);
-#endif 
+	traceRay(scene, &(ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y]), leaf_data, col_leaf_data, &intensity, debug);
+#endif //RAY_AS
 	intensity_map[get_global_id(1) + get_global_id(0)*FLY + get_global_id(2)*FLX*FLY] = intensity; // Add intensity from ray. Use get_global_id() to let the compiler spare some registers.
-} //RAY_AS
+} 
 
 __kernel void calculateIntensityDecreaseWithDistance(SCENE_ASQ const Scene *scene, __global float *distanceFactors, __global Debug *debug) {
 	float4 vi0, vi1, vj0, vj1;
