@@ -48,9 +48,9 @@ void createBoxFromPoints(float4 p0, float4 p1, float4 p2, float4 p3, float4 p4, 
 void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint);
 void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip);
 void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip);
-void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ const Disc *d, bool *intersect, float *distance, float4 *ip);
-void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, bool *intersect, float *distance, float4 *ip);
-void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
+void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect, float *distance, float4 *ip);
+void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *distance, float4 *ip);
+void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
 void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *bb, bool *intersect, float *distance, float4 *ip);
 void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
 void intersectLineBox(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *distance, float4 *ip);
@@ -380,7 +380,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 #endif // LINE_TRIANGLE_INTERSECTION_ALGORITHM
 
 // Registers: 8 + 33 + 4.
-void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ const Disc *d, bool *intersect, float *distance, float4 *ip)
+void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect, float *distance, float4 *ip)
 {
 	Plane p = {
 		.origin = d->origin,
@@ -397,7 +397,7 @@ void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ const Disc *d, bool *int
 }
 
 // Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
-void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, bool *intersect, float *distance, float4 *ip)
+void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *distance, float4 *ip)
 {
 	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	BBox *b = &bbox;
@@ -457,7 +457,7 @@ void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, bool *in
 }
 
 // Registers: 6.
-void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
 	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	BBox *b = &bbox;

@@ -89,11 +89,11 @@
 #endif
 
 #if SCENE_AS == 0 // No support
-	#define SCENE_ASQ __private
+	#define SCENE_ASQ __private const
 #elif SCENE_AS == 1 // No support
-	#define SCENE_ASQ __local
+	#define SCENE_ASQ __local const
 #elif SCENE_AS == 2
 	#define SCENE_ASQ __constant
 #elif SCENE_AS == 3
-	#define SCENE_ASQ __global
+	#define SCENE_ASQ __global const
 #endif

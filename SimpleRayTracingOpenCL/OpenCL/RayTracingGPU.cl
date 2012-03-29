@@ -32,16 +32,16 @@ typedef struct Scene {
 } __attribute((packed)) Scene;
 
 // Function declarations
-void firstHitLeaf(SCENE_ASQ const Scene *s, RAY_ASQ const Line *r, LEAF_ASQ const float4 *leaf_data, int *collimatorIndex, bool *intersect, float4 *ip, float *thickness, __global Debug *debug);
-void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug);
-void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug);
-void lightSourceAreaVectors(SCENE_ASQ const Scene *scene, const float4 *rayOrigin, float4 *vi0, float4 *vi1, float4 *vj0, float4 *vj1, __global Debug *debug);
+void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ const float4 *leaf_data, int *collimatorIndex, bool *intersect, float4 *ip, float *thickness, __global Debug *debug);
+void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug);
+void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug);
+void lightSourceAreaVectors(SCENE_ASQ Scene *scene, const float4 *rayOrigin, float4 *vi0, float4 *vi1, float4 *vj0, float4 *vj1, __global Debug *debug);
 
 // Intersections
 
 // Ray tracing
 
-void firstHitLeaf(SCENE_ASQ const Scene *s, RAY_ASQ const Line *r, LEAF_ASQ const float4 *leaf_data, int *collimatorIndex, bool *intersect, float4 *ip, float *thickness, __global Debug *debug) {
+void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ const float4 *leaf_data, int *collimatorIndex, bool *intersect, float4 *ip, float *thickness, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
 
@@ -74,7 +74,7 @@ void firstHitLeaf(SCENE_ASQ const Scene *s, RAY_ASQ const Line *r, LEAF_ASQ cons
 	}
 }
 
-void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug) {
+void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
 	*intensityCoeff = 1;
@@ -151,7 +151,7 @@ void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global cons
 	}
 }
 
-void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug) {
+void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug) {
 	float intensity = 1;
 	bool intersectCollimator;
 	float4 ipCollimator;
@@ -182,7 +182,7 @@ void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *
 }
 
 // Gives vectors from the ray origin to left, right, bottom, top of the ray source.
-void lightSourceAreaVectors(SCENE_ASQ const Scene *scene, const float4 *rayOrigin, float4 *vi0, float4 *vi1, float4 *vj0, float4 *vj1, __global Debug *debug) {
+void lightSourceAreaVectors(SCENE_ASQ Scene *scene, const float4 *rayOrigin, float4 *vi0, float4 *vi1, float4 *vj0, float4 *vj1, __global Debug *debug) {
 	*vi0 = (float4) (scene->raySource.origin.x - scene->raySource.radius, 
 					 scene->raySource.origin.y, 
 					 scene->raySource.origin.z,
@@ -277,7 +277,7 @@ void lightSourceAreaVectors(SCENE_ASQ const Scene *scene, const float4 *rayOrigi
 }*/
 
 // Integration over the light source is done as if the rays where cast from a pixel straight under the origin of the light source. The sampling is uniform only from that point.
-__kernel void flatLightSourceSampling(SCENE_ASQ const Scene *scene, __global const float4 *leaf_data, __global float *intensity_map, __global Debug *debug) {
+__kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, __global const float4 *leaf_data, __global float *intensity_map, __global Debug *debug) {
 	int i = get_global_id(0);
 	int j = get_global_id(1);
 	int k = get_global_id(2);
@@ -328,7 +328,7 @@ __kernel void flatLightSourceSampling(SCENE_ASQ const Scene *scene, __global con
 	intensity_map[get_global_id(1) + get_global_id(0)*FLY + get_global_id(2)*FLX*FLY] = intensity; // Add intensity from ray. Use get_global_id() to let the compiler spare some registers.
 } 
 
-__kernel void calculateIntensityDecreaseWithDistance(SCENE_ASQ const Scene *scene, __global float *distanceFactors, __global Debug *debug) {
+__kernel void calculateIntensityDecreaseWithDistance(SCENE_ASQ Scene *scene, __global float *distanceFactors, __global Debug *debug) {
 	float4 vi0, vi1, vj0, vj1;
 
 	int i = get_global_id(0);
@@ -345,7 +345,7 @@ __kernel void calculateIntensityDecreaseWithDistance(SCENE_ASQ const Scene *scen
     distanceFactors[j+i*FLY] = anglei*anglej/M_PI_F*2; // The ratio of a unit half sphere that are covering the light source. => Things that are further away recieves less photons.
 }
 
-__kernel void calcFluenceElement(SCENE_ASQ const Scene *scene, __global float *intensity_map, __global float *fluence_data, __global Debug *debug){
+__kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensity_map, __global float *fluence_data, __global Debug *debug){
 	unsigned int i = get_global_id(0);
     unsigned int j = get_global_id(1);
 
