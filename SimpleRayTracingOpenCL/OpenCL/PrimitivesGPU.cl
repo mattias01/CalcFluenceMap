@@ -79,8 +79,8 @@ void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, flo
 	}
 
 	BBox box = {
-		.min = (float4) (xmin,ymin,zmin,0),
-		.max = (float4) (xmax,ymax,zmax,0)};
+		.min = (float4) (xmin,ymin,zmin,0.0f),
+		.max = (float4) (xmax,ymax,zmax,0.0f)};
 
 	*bbox = box;
 }
@@ -127,7 +127,7 @@ void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect, 
 	*intersect = false;
 	if (dot(l->direction, p->normal) != 0.0f) { // Not parallel -> intersect.
 		*distance = (dot(p->normal, (p->origin - l->origin))) / (dot(p->normal, l->direction));
-		if (*distance > 0) { // Plane is located in positive ray direction from the ray origin. Avoids hitting same thing it just hit.
+		if (*distance > 0.0f) { // Plane is located in positive ray direction from the ray origin. Avoids hitting same thing it just hit.
 			*intersect = true;
 			*ip = l->origin + l->direction*(*distance);
 		}
@@ -215,7 +215,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 	// calculate distance, ray intersects triangle
 	///intersect = true;
 	*distance = dot(edge2, qvec) * inv_det;
-	if (*distance < 0) {
+	if (*distance < 0.0f) {
 		*intersect = false;
 		return;
 	}
@@ -294,7 +294,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 
 	// calculate t, ray intersects triangle
 	*distance = dot(edge2, qvec) * inv_det;
-	if (*distance < 0) {
+	if (*distance < 0.0f) {
 		*intersect = false;
 		return;
 	}
@@ -370,7 +370,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 
 	//calculate t, ray intersects triangle
 	*distance = dot(edge2, qvec) * inv_det;
-	if (*distance < 0) {
+	if (*distance < 0.0f) {
 		*intersect = false;
 		return;
 	}
@@ -402,7 +402,7 @@ void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, bool *in
 	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
-	if (l->direction.x >= 0) {
+	if (l->direction.x >= 0.0f) {
         tmin = (b->min.x - l->origin.x) / l->direction.x;
         tmax = (b->max.x - l->origin.x) / l->direction.x;
 	}
@@ -410,7 +410,7 @@ void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, bool *in
         tmin = (b->max.x - l->origin.x) / l->direction.x;
         tmax = (b->min.x - l->origin.x) / l->direction.x;
 	}
-    if (l->direction.y >= 0) {
+    if (l->direction.y >= 0.0f) {
         tymin = (b->min.y - l->origin.y) / l->direction.y;
         tymax = (b->max.y - l->origin.y) / l->direction.y;
 	}
@@ -428,7 +428,7 @@ void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, bool *in
     if (tymax < tmax) {
        tmax = tymax;
 	}
-    if (l->direction.z >= 0) {
+    if (l->direction.z >= 0.0f) {
         tzmin = (b->min.z - l->origin.z) / l->direction.z;
         tzmax = (b->max.z - l->origin.z) / l->direction.z;
 	}
@@ -446,7 +446,7 @@ void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, bool *in
     if (tzmax < tmax) {
         tmax = tzmax;
 	}
-	if (tmax <= 0) { // Only in the positive direction.
+	if (tmax <= 0.0f) { // Only in the positive direction.
 		*intersect = false;
         return;
 	}
@@ -462,7 +462,7 @@ void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, boo
 	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
-	if (l->direction.x >= 0) {
+	if (l->direction.x >= 0.0f) {
         tmin = (b->min.x - l->origin.x) / l->direction.x;
         tmax = (b->max.x - l->origin.x) / l->direction.x;
 	}
@@ -470,7 +470,7 @@ void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, boo
         tmin = (b->max.x - l->origin.x) / l->direction.x;
         tmax = (b->min.x - l->origin.x) / l->direction.x;
 	}
-    if (l->direction.y >= 0) {
+    if (l->direction.y >= 0.0f) {
         tymin = (b->min.y - l->origin.y) / l->direction.y;
         tymax = (b->max.y - l->origin.y) / l->direction.y;
 	}
@@ -488,7 +488,7 @@ void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, boo
     if (tymax < tmax) {
        tmax = tymax;
 	}
-    if (l->direction.z >= 0) {
+    if (l->direction.z >= 0.0f) {
         tzmin = (b->min.z - l->origin.z) / l->direction.z;
         tzmax = (b->max.z - l->origin.z) / l->direction.z;
 	}
@@ -506,7 +506,7 @@ void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ const BBox *bb, boo
     if (tzmax < tmax) {
         tmax = tzmax;
 	}
-	if (tmax <= 0) { // Only in the positive direction.
+	if (tmax <= 0.0f) { // Only in the positive direction.
 		*intersect = false;
         return;
 	}
@@ -523,7 +523,7 @@ void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *bb, bo
 	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
-	if (l->direction.x >= 0) {
+	if (l->direction.x >= 0.0f) {
         tmin = (b->min.x - l->origin.x) / l->direction.x;
         tmax = (b->max.x - l->origin.x) / l->direction.x;
 	}
@@ -531,7 +531,7 @@ void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *bb, bo
         tmin = (b->max.x - l->origin.x) / l->direction.x;
         tmax = (b->min.x - l->origin.x) / l->direction.x;
 	}
-    if (l->direction.y >= 0) {
+    if (l->direction.y >= 0.0f) {
         tymin = (b->min.y - l->origin.y) / l->direction.y;
         tymax = (b->max.y - l->origin.y) / l->direction.y;
 	}
@@ -549,7 +549,7 @@ void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *bb, bo
     if (tymax < tmax) {
        tmax = tymax;
 	}
-    if (l->direction.z >= 0) {
+    if (l->direction.z >= 0.0f) {
         tzmin = (b->min.z - l->origin.z) / l->direction.z;
         tzmax = (b->max.z - l->origin.z) / l->direction.z;
 	}
@@ -567,7 +567,7 @@ void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *bb, bo
     if (tzmax < tmax) {
         tmax = tzmax;
 	}
-	if (tmax <= 0) { // Only in the positive direction.
+	if (tmax <= 0.0f) { // Only in the positive direction.
 		*intersect = false;
         return;
 	}
@@ -583,7 +583,7 @@ void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b
 	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
 	//BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
-	if (l->direction.x >= 0) {
+	if (l->direction.x >= 0.0f) {
         tmin = (b->min.x - l->origin.x) / l->direction.x;
         tmax = (b->max.x - l->origin.x) / l->direction.x;
 	}
@@ -591,7 +591,7 @@ void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b
         tmin = (b->max.x - l->origin.x) / l->direction.x;
         tmax = (b->min.x - l->origin.x) / l->direction.x;
 	}
-    if (l->direction.y >= 0) {
+    if (l->direction.y >= 0.0f) {
         tymin = (b->min.y - l->origin.y) / l->direction.y;
         tymax = (b->max.y - l->origin.y) / l->direction.y;
 	}
@@ -609,7 +609,7 @@ void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b
     if (tymax < tmax) {
        tmax = tymax;
 	}
-    if (l->direction.z >= 0) {
+    if (l->direction.z >= 0.0f) {
         tzmin = (b->min.z - l->origin.z) / l->direction.z;
         tzmax = (b->max.z - l->origin.z) / l->direction.z;
 	}
@@ -627,7 +627,7 @@ void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b
     if (tzmax < tmax) {
         tmax = tzmax;
 	}
-	if (tmax <= 0) { // Only in the positive direction.
+	if (tmax <= 0.0f) { // Only in the positive direction.
 		*intersect = false;
         return;
 	}

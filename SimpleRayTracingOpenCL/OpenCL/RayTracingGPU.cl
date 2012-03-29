@@ -160,7 +160,7 @@ void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *
 	while (intersectCollimator) {
 		intensity *= intensityCoeff;
 		if (intensity < INTENSITY_THRESHOLD) { // If intensity is below a treshhold, don't bother to cast more rays. Return 0 intensity.
-			*i = 0;
+			*i = 0.0f;
 			return;
 		}
 		else {
@@ -177,7 +177,7 @@ void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *
 		*i = intensity;
 	}
 	else {
-		*i = 0; // To infinity
+		*i = 0.0f; // To infinity
 	}
 }
 
@@ -287,10 +287,10 @@ __kernel void flatLightSourceSampling(SCENE_ASQ const Scene *scene, __global con
 #if RAY_AS == 0
     float4 rayOrigin = (float4) (scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, 
                                  scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, 
-                                 scene->fluenceMap.rectangle.p0.z, 0);
+                                 scene->fluenceMap.rectangle.p0.z, 0.0f);
     float4 lPoint =  (float4) (scene->raySource.origin.x - scene->raySource.radius + li*LSTEP, 
                                scene->raySource.origin.y - scene->raySource.radius + lj*LSTEP, 
-                               scene->raySource.origin.z, 0);
+                               scene->raySource.origin.z, 0.0f);
 
 	float4 rayDirection = normalize(lPoint - rayOrigin);
     	
@@ -336,7 +336,7 @@ __kernel void calculateIntensityDecreaseWithDistance(SCENE_ASQ const Scene *scen
     
     float4 rayOrigin = (float4) (scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, 
                                  scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, 
-                                 scene->fluenceMap.rectangle.p0.z, 0);
+                                 scene->fluenceMap.rectangle.p0.z, 0.0f);
 
 	lightSourceAreaVectors(scene, &rayOrigin, &vi0, &vi1, &vj0, &vj1, debug);
 	float anglei = acos(dot(normalize(vi0), normalize(vi1)));
