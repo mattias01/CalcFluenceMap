@@ -10,7 +10,7 @@ import pyopencl as cl
 import struct
 from sys import getsizeof
 from time import time, sleep
-import visual as vs
+#import visual as vs
 
 #from OpenCLUtility import OpenCLUtility as oclu
 import OpenCLUtility
@@ -284,9 +284,9 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     debugOpenCL = Debug()
     #settingsList.extend(optimizationParameters)
     settingsString = macroString(settingsList)
-    X_size = optimizationParameters[1][1]
-    Y_size = optimizationParameters[2][1]
-    Z_size = optimizationParameters[3][1]
+    X_size = int(optimizationParameters[1][1])
+    Y_size = int(optimizationParameters[2][1])
+    Z_size = int(optimizationParameters[3][1])
     #del optimizationParameters[1:4]
     optParametersString = macroString(optimizationParameters)
 
@@ -397,8 +397,8 @@ def main():
     list.append(Parameter("WG_LIGHT_SAMPLING_Y", [1,2,4,8,16,32,64,128,256,512,1024], False))
     list.append(Parameter("WG_LIGHT_SAMPLING_Z", [1,2,4,8,16,32], False))
     list.append(Parameter("RAY_AS", [0], True))
-    list.append(Parameter("LEAF_AS", [1], True))
-    list.append(Parameter("SCENE_AS", [2], True))
+    list.append(Parameter("LEAF_AS", [1,3], True))
+    list.append(Parameter("SCENE_AS", [2,3], True))
     list.append(Parameter("SOA", [1], True))
 
     fluence_data = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
@@ -419,6 +419,7 @@ def main():
 
     #[fluence_data_Python, time_Python, samples_Python] = run_Python(scene, render, collimators, fluence_data_Python)
     [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, at.best_parameters) #at.best_parameters
+    #[fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, getDeafaultOptimizationParameterList())
 
     if SHOW_PLOT == 1:
         if PYTHON == 1:
