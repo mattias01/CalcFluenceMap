@@ -162,7 +162,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 		}
 		else {
 			float t = (uv * wu - uu * wv) / D;
-			if (t < 0.0 || (s + t) > 1.0) { // IntersectionPoint is outside triangle
+			if (t < 0.0f || (s + t) > 1.0f) { // IntersectionPoint is outside triangle
 				*intersect = false;
 			}
 		}
@@ -190,14 +190,14 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 		*intersect = false;
 		return;
 	}
-	inv_det = 1.0 / det;
+	inv_det = 1.0f / det;
 
 	// calculate distance from t->p0 to ray origin
 	tvec = l->origin - t->p0;
 
 	// calculate U parameter and test bounds
 	float u = dot(tvec, pvec) * inv_det;
-	if (u < 0.0 || u > 1.0) {
+	if (u < 0.0f || u > 1.0f) {
 		*intersect = false;
 		return;
 	}
@@ -207,7 +207,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 
 	// calculate V parameter and test bounds
 	float v = dot(l->direction, qvec) * inv_det;
-	if (v < 0.0 || u + v > 1.0) {
+	if (v < 0.0f || u + v > 1.0f) {
 		*intersect = false;
 		return;
 	}
@@ -248,7 +248,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
       
 		// calculate U parameter and test bounds
 		float u = dot(tvec, pvec);
-		if (u < 0.0 || u > det) {
+		if (u < 0.0f || u > det) {
 			*intersect = false;
 			return;
 		}
@@ -258,7 +258,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
       
 		// calculate V parameter and test bounds
 		float v = dot(l->direction, qvec);
-		if (v < 0.0 || u + v > det) {
+		if (v < 0.0f || u + v > det) {
 			*intersect = false;
 			return;
 		}
@@ -270,7 +270,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
       
 		// calculate U parameter and test bounds
 		float u = dot(tvec, pvec);
-		if (u > 0.0 || u < det) {
+		if (u > 0.0f || u < det) {
 			*intersect = false;
 			return;
 		}
@@ -280,7 +280,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
       
 		// calculate V parameter and test bounds
 		float v = dot(l->direction, qvec) ;
-		if (v > 0.0 || u + v < det) {
+		if (v > 0.0f || u + v < det) {
 			*intersect = false;
 			return;
 		}
@@ -290,7 +290,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 		return;
 	}  // ray is parallell to the plane of the triangle
 
-	inv_det = 1.0 / det;
+	inv_det = 1.0f / det;
 
 	// calculate t, ray intersects triangle
 	*distance = dot(edge2, qvec) * inv_det;
@@ -322,13 +322,13 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 
 	//calculate distance from t->p0 to ray origin
 	tvec = l->origin - t->p0;
-	inv_det = 1.0 / det;
+	inv_det = 1.0f / det;
    
 	if (det > EPSILON)
 	{
 		//calculate U parameter and test bounds
 		float u = dot(tvec, pvec);
-		if (u < 0.0 || u > det) {
+		if (u < 0.0f || u > det) {
 			*intersect = false;
 			return;
 		}
@@ -338,7 +338,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
       
 		//calculate V parameter and test bounds
 		float v = dot(l->direction, qvec);
-		if (v < 0.0 || u + v > det) {
+		if (v < 0.0f || u + v > det) {
 			*intersect = false;
 			return;
 		}
@@ -348,7 +348,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 	{
 		//calculate U parameter and test bounds
 		float u = dot(tvec, pvec);
-		if (u > 0.0 || u < det) {
+		if (u > 0.0f || u < det) {
 			*intersect = false;
 			return;
 		}
@@ -358,7 +358,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
       
 		//calculate V parameter and test bounds
 		float v = dot(l->direction, qvec);
-		if (v > 0.0 || u + v < det) {
+		if (v > 0.0f || u + v < det) {
 			*intersect = false;
 			return;
 		}

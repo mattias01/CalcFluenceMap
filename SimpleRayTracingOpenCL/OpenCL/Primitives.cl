@@ -150,7 +150,7 @@ void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, fl
 		}
 		else {
 			float t = (uv * wu - uu * wv) / D;
-			if (t < 0.0 || (s + t) > 1.0) { // IntersectionPoint is outside triangle
+			if (t < 0.0f || (s + t) > 1.0f) { // IntersectionPoint is outside triangle
 				*intersect = false;
 				*distance = NAN;
 				*ip = (NAN, NAN, NAN, NAN);
