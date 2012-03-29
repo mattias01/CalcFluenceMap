@@ -10,63 +10,6 @@ typedef struct SimpleCollimator {
 	Rectangle rightRectangle;
 } __attribute__((packed)) SimpleCollimator;
 
-/*#if SOA == 0
-typedef struct FlatCollimator {
-	BBox boundingBox;
-	float4 position;
-	float4 xdir;
-	float4 ydir;
-	float absorptionCoeff;
-	int numberOfLeaves;
-	int leafArrayOffset;
-	int leafArrayStride;
-	//Triangle leaves[NUMBER_OF_LEAVES * 2];
-} __attribute__((packed)) FlatCollimator;
-
-typedef struct BBoxCollimator {
-	BBox boundingBox;
-	float4 position;
-	float4 xdir;
-	float4 ydir;
-	float absorptionCoeff;
-	int numberOfLeaves;
-	int leafArrayOffset;
-	int leafArrayStride;
-	//BBox leaves[NUMBER_OF_LEAVES];
-} __attribute__((packed)) BBoxCollimator;
-
-typedef struct BoxCollimator {
-	BBox boundingBox;
-	float4 position;
-	float4 xdir;
-	float4 ydir;
-	float absorptionCoeff;
-	int numberOfLeaves;
-	int leafArrayOffset;
-	int leafArrayStride;
-	//Box leaves[NUMBER_OF_LEAVES];
-} __attribute__((packed)) BoxCollimator;
-
-typedef struct Collimator {
-	BBox boundingBox;
-	float4 position;
-	float4 xdir;
-	float4 ydir;
-	float absorptionCoeff;
-	float height;
-	float leafWidth;
-	int numberOfLeaves;
-	float leafPositions[NUMBER_OF_LEAVES];
-	#if MODE == 0
-		FlatCollimator flatCollimator;
-	#elif MODE == 1
-		BBoxCollimator bboxCollimator;
-	#elif MODE == 2
-		BoxCollimator boxCollimator;
-	#endif
-} __attribute__((packed)) Collimator;
-
-#elif SOA == 1*/
 typedef struct FlatCollimator {
 	BBox boundingBox[NUMBER_OF_COLLIMATORS];
 	float4 position[NUMBER_OF_COLLIMATORS];
@@ -76,7 +19,6 @@ typedef struct FlatCollimator {
 	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
 	int leafArrayOffset[NUMBER_OF_COLLIMATORS];
 	int leafArrayStride[NUMBER_OF_COLLIMATORS];
-	//Triangle leaves[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES * 2];
 } __attribute__((packed)) FlatCollimator;
 
 typedef struct BBoxCollimator {
@@ -88,7 +30,6 @@ typedef struct BBoxCollimator {
 	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
 	int leafArrayOffset[NUMBER_OF_COLLIMATORS];
 	int leafArrayStride[NUMBER_OF_COLLIMATORS];
-	//BBox leaves[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES];
 } __attribute__((packed)) BBoxCollimator;
 
 typedef struct BoxCollimator {
@@ -100,7 +41,6 @@ typedef struct BoxCollimator {
 	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
 	int leafArrayOffset[NUMBER_OF_COLLIMATORS];
 	int leafArrayStride[NUMBER_OF_COLLIMATORS];
-	//Box leaves[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES];
 } __attribute__((packed)) BoxCollimator;
 
 typedef struct Collimator {
@@ -121,7 +61,6 @@ typedef struct Collimator {
 		BoxCollimator boxCollimator;
 	#endif
 } __attribute__((packed)) Collimator;
-//#endif //SOA
 
 // Function definitions
 void intersectLineFlatCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t1, LEAF_ASQ const Triangle *t2, bool *intersect, float *distance, float4 *ip);

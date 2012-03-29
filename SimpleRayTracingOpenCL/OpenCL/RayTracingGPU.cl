@@ -8,10 +8,6 @@ typedef struct SimpleRaySourceRectangle {
 	Rectangle rectangle;
 } __attribute__((packed)) SimpleRaySourceRectangle;
 
-/*typedef struct SimpleRaySourceDisc {
-	Disc disc;
-} __attribute__((packed)) SimpleRaySourceDisc;*/
-
 typedef struct FluenceMap {
 	Rectangle rectangle;
 } __attribute__((packed)) FluenceMap;
@@ -32,15 +28,10 @@ typedef struct Scene {
     FluenceMap fluenceMap;
 	Disc raySource;
 	int numberOfCollimators;
-#if SOA == 0
-	Collimator collimators[NUMBER_OF_COLLIMATORS];
-#elif SOA == 1
 	Collimator collimators;
-#endif
 } __attribute((packed)) Scene;
 
 // Function declarations
-//void intersectSimpleRaySourceDisc(RAY_ASQ const Line *l, SCENE_ASQ const Disc *rs, bool *intersect, float *distance, float4 *ip);
 void firstHitLeaf(SCENE_ASQ const Scene *s, RAY_ASQ const Line *r, LEAF_ASQ const float4 *leaf_data, int *collimatorIndex, bool *intersect, float4 *ip, float *thickness, __global Debug *debug);
 void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug);
 void traceRay(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug);
@@ -48,60 +39,33 @@ void lightSourceAreaVectors(SCENE_ASQ const Scene *scene, const float4 *rayOrigi
 
 // Intersections
 
-/*void intersectSimpleRaySourceDisc(RAY_ASQ const Line *l, SCENE_ASQ const Disc *rs, bool *intersect, float *distance, float4 *ip) {
-	//Disc d = rs->disc; // Copy from constant memory to private
-	//intersectLineDisc(l, &d, intersect, distance, ip);
-	intersectLineDisc(l, rs, intersect, distance, ip);
-}*/
-
 // Ray tracing
 
 void firstHitLeaf(SCENE_ASQ const Scene *s, RAY_ASQ const Line *r, LEAF_ASQ const float4 *leaf_data, int *collimatorIndex, bool *intersect, float4 *ip, float *thickness, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
-#if SOA == 0
-	for (int i = 0; i < s->collimators[*collimatorIndex].numberOfLeaves; i++) {
-#elif SOA == 1
+
 	for (int i = 0; i < s->collimators.numberOfLeaves[*collimatorIndex]; i++) {
-#endif
 		bool intersectTmp;
 		float distanceTmp;
 		float4 ipTmp;
 		float thicknessTmp;
 		#if MODE == 0
-			/*#if SOA == 0
-				intersectLineFlatCollimatorLeaf(r, &(leaf_data[i*s->collimators[*collimatorIndex].flatCollimator.leafArrayStride]), &(leaf_data[i*s->collimators[*collimatorIndex].flatCollimator.leafArrayStride + 3]), &intersectTmp, &distanceTmp, &ipTmp);
-				thicknessTmp = s->collimators[*collimatorIndex].height;
-			#elif SOA == 1*/
-				//intersectLineFlatCollimatorLeaf(r, &(leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]]), &(leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex] + 3]), &intersectTmp, &distanceTmp, &ipTmp);
-				intersectLineFlatCollimatorLeaf(r, &(leaf_data[i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]]), &(leaf_data[i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex] + 3]), &intersectTmp, &distanceTmp, &ipTmp);
-				thicknessTmp = s->collimators.height[*collimatorIndex];
-			//#endif
+			intersectLineFlatCollimatorLeaf(r, &(leaf_data[i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]]), &(leaf_data[i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex] + 3]), &intersectTmp, &distanceTmp, &ipTmp);
+			thicknessTmp = s->collimators.height[*collimatorIndex];
 		#elif MODE == 1
 			float4 ipInTmp;
 			float distanceOutTmp;
-			/*#if SOA == 0
-				intersectLineBBoxCollimatorLeaf(r, &(leaf_data[s->collimators[i*s->collimators[*collimatorIndex].bboxCollimator.leafArrayStride]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-			#elif SOA == 1*/
-				//intersectLineBBoxCollimatorLeaf(r, &(leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex] + i*s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-				intersectLineBBoxCollimatorLeaf(r, &(leaf_data[i*s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-			//#endif
+			intersectLineBBoxCollimatorLeaf(r, &(leaf_data[i*s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 			thicknessTmp = distanceOutTmp - distanceTmp;
 		#elif MODE == 2
 			float4 ipInTmp;
 			float distanceOutTmp;
-			/*#if SOA == 0
-				intersectLineBoxCollimatorLeaf(r, (LEAF_ASQ Box const *) &(leaf_data[i*s->collimators[*collimatorIndex].boxCollimator.leafArrayStride]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-			#elif SOA == 1*/
-				//intersectLineBoxCollimatorLeaf(r, &(leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + i*s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-				intersectLineBoxCollimatorLeaf(r, (LEAF_ASQ Box const *) &(leaf_data[i*s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
-			//#endif
+			intersectLineBoxCollimatorLeaf(r, (LEAF_ASQ Box const *) &(leaf_data[i*s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 			thicknessTmp = distanceOutTmp - distanceTmp;
 		#endif
 
 		if (intersectTmp && (distanceTmp < minDistance)) {
-            //printf((const char*)"i:%d", intersectTmp);
-
 			minDistance = distanceTmp;
 			*intersect = true;
 			*ip = ipTmp;
@@ -115,7 +79,6 @@ void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global cons
 	float minDistance = MAXFLOAT;
 	*intensityCoeff = 1;
 	int collimatorIndex = -1;
-	//for (int i = 0; i < s->numberOfCollimators; i++) { // Find closest collimator
     for (int i = 0; i < NUMBER_OF_COLLIMATORS; i++) { // Find closest collimator
 		bool intersectTmp;
 		float distanceTmpIn;
@@ -123,23 +86,11 @@ void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global cons
 		float4 ipTmpCollimatorBBIn;
 		float4 ipTmpCollimatorBBOut;
 		#if MODE == 0
-			/*#if SOA == 0
-				intersectLineBBoxInOut(r, &(s->collimators[i].flatCollimator.boundingBox), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-			#elif SOA == 1*/
-				intersectLineBBoxInOut(r, &(s->collimators.flatCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-			//#endif
+			intersectLineBBoxInOut(r, &(s->collimators.flatCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
 		#elif MODE == 1
-			/*#if SOA == 0
-				intersectLineBBoxInOut(r, &(s->collimators[i].bboxCollimator.boundingBox), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-			#elif SOA == 1*/
-				intersectLineBBoxInOut(r, &(s->collimators.bboxCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-			//#endif
+			intersectLineBBoxInOut(r, &(s->collimators.bboxCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
 		#elif MODE == 2
-			/*#if SOA == 0
-				intersectLineBBoxInOut(r, &(s->collimators[i].boxCollimator.boundingBox), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-			#elif SOA == 1*/
-				intersectLineBBoxInOut(r, &(s->collimators.boxCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
-			//#endif
+			intersectLineBBoxInOut(r, &(s->collimators.boxCollimator.boundingBox[i]), &intersectTmp, &distanceTmpIn, &distanceTmpOut, &ipTmpCollimatorBBIn, &ipTmpCollimatorBBOut);
 		#endif
         
 		if (intersectTmp && (distanceTmpIn < minDistance)) {
@@ -172,35 +123,16 @@ void firstHitCollimator(SCENE_ASQ const Scene *s, RAY_ASQ Line *r, __global cons
 				#endif
 			#elif LEAF_AS == 3
 				#if MODE == 0
-					/*#if SOA == 0
-						__global float4 const *col_leaf_data = &leaf_data[s->collimators[collimatorIndex].flatCollimator.leafArrayOffset];
-					#elif SOA == 1*/
-						//__global float4 const *col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex]];
-						col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex]];
-					//#endif
+					col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex]];
 				#elif MODE == 1
-					/*#if SOA == 0
-						__global float4 const *col_leaf_data = &leaf_data[s->collimators[collimatorIndex].bboxCollimator.leafArrayOffset];
-					#elif SOA == 1*/
-						//__global float4 const *col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex]];
-						col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex]];
-					//#endif
+					col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex]];
 				#elif MODE == 2
-					/*#if SOA == 0
-						__global float4 const *col_leaf_data = &leaf_data[s->collimators[collimatorIndex].boxCollimator.leafArrayOffset];
-					#elif SOA == 1*/
-						//__global float4 const *col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex]];
-						col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex]];
-					//#endif
+					col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex]];
 				#endif
 			#endif
             
 			firstHitLeaf(s, r, col_leaf_data, &collimatorIndex, &intersectTmp, &ipTmpLeaf, &thickness, debug);
-			/*#if SOA == 0
-				float absorptionCoeff = s->collimators[collimatorIndex].absorptionCoeff;
-			#elif SOA == 1*/
-				float absorptionCoeff = s->collimators.absorptionCoeff[collimatorIndex];
-			//#endif
+			float absorptionCoeff = s->collimators.absorptionCoeff[collimatorIndex];
 			while (intersectTmp) {
 				*intersect = true;
 				*intensityCoeff *= exp(-absorptionCoeff*thickness);

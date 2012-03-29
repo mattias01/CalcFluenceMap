@@ -1,7 +1,7 @@
 from ctypes import *
 from OpenCLTypes import *
 from Python.Primitives import *
-from Python.Settings import MODE, NUMBER_OF_COLLIMATORS, NUMBER_OF_LEAVES, SOA
+from Python.Settings import MODE, NUMBER_OF_COLLIMATORS, NUMBER_OF_LEAVES
 
 ###################### Class definitions ######################
 

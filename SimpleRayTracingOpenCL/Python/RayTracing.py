@@ -6,7 +6,7 @@ import sys
 from OpenCLTypes import *
 from Python.Collimator import *
 from Python.Primitives import *
-from Python.Settings import MODE, NUMBER_OF_COLLIMATORS, SOA
+from Python.Settings import MODE, NUMBER_OF_COLLIMATORS
 
 ###################### Class definitions ######################
 
@@ -19,18 +19,11 @@ class SimpleRaySourceRectangle(Structure):
 class FluenceMap(Structure):
     _fields_ = [("rectangle", Rectangle)]
 
-if SOA == 0:
-    class Scene(Structure):
-        _fields_ = [("fluenceMap", FluenceMap),
-                    ("raySource", Disc),
-                    ("numberOfCollimators", c_int),
-                    ("collimators", Collimator * NUMBER_OF_COLLIMATORS)]
-elif SOA == 1:
-    class Scene(Structure):
-        _fields_ = [("fluenceMap", FluenceMap),
-                    ("raySource", Disc),
-                    ("numberOfCollimators", c_int),
-                    ("collimators", CollimatorSoA)]
+class Scene(Structure):
+    _fields_ = [("fluenceMap", FluenceMap),
+                ("raySource", Disc),
+                ("numberOfCollimators", c_int),
+                ("collimators", CollimatorSoA)]
 
 class Render(Structure):
     _fields_ = [("flx", c_int),
