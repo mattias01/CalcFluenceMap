@@ -303,8 +303,8 @@ __kernel void flatLightSourceSampling(SCENE_ASQ const Scene *scene, __global con
 	int z = get_local_id(2);
 
 	__local Line ray[WG_LIGHT_SAMPLING_SIZE];
-	ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y].origin = (float4) (scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0);
-	ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y].direction = normalize(((float4)(scene->raySource.origin.x - scene->raySource.radius + li*LSTEP, scene->raySource.origin.y - scene->raySource.radius + lj*LSTEP, scene->raySource.origin.z, 0)) - ((float4)(scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0)));
+	ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y].origin = (float4) (scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0.0f);
+	ray[x + y*WG_LIGHT_SAMPLING_X + z*WG_LIGHT_SAMPLING_X*WG_LIGHT_SAMPLING_Y].direction = normalize(((float4)(scene->raySource.origin.x - scene->raySource.radius + li*LSTEP, scene->raySource.origin.y - scene->raySource.radius + lj*LSTEP, scene->raySource.origin.z, 0.0f)) - ((float4)(scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0.0f)));
 #endif //LOCAL_RAYS
 
 #if LEAF_AS == 1 // Allocate __local memory here in the __kernel because some compilers don't allow for __local memory allocation in ordinary functions.
