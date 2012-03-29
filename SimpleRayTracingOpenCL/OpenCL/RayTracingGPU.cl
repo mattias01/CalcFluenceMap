@@ -32,16 +32,16 @@ typedef struct Scene {
 } __attribute((packed)) Scene;
 
 // Function declarations
-void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ const float4 *leaf_data, int *collimatorIndex, bool *intersect, float4 *ip, float *thickness, __global Debug *debug);
-void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug);
-void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug);
+void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ float4 *leaf_data, int *collimatorIndex, bool *intersect, float4 *ip, float *thickness, __global Debug *debug);
+void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug);
+void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug);
 void lightSourceAreaVectors(SCENE_ASQ Scene *scene, const float4 *rayOrigin, float4 *vi0, float4 *vi1, float4 *vj0, float4 *vj1, __global Debug *debug);
 
 // Intersections
 
 // Ray tracing
 
-void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ const float4 *leaf_data, int *collimatorIndex, bool *intersect, float4 *ip, float *thickness, __global Debug *debug) {
+void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ float4 *leaf_data, int *collimatorIndex, bool *intersect, float4 *ip, float *thickness, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
 
@@ -74,7 +74,7 @@ void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ const floa
 	}
 }
 
-void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug) {
+void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
 	*intensityCoeff = 1;
@@ -123,11 +123,11 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global const floa
 				#endif
 			#elif LEAF_AS == 3
 				#if MODE == 0
-					col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex]];
+                    col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex]];
 				#elif MODE == 1
-					col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex]];
+                    col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex]];
 				#elif MODE == 2
-					col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex]];
+                    col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex]];
 				#endif
 			#endif
             
@@ -151,7 +151,7 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global const floa
 	}
 }
 
-void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global const float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug) {
+void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug) {
 	float intensity = 1;
 	bool intersectCollimator;
 	float4 ipCollimator;
@@ -277,7 +277,7 @@ void lightSourceAreaVectors(SCENE_ASQ Scene *scene, const float4 *rayOrigin, flo
 }*/
 
 // Integration over the light source is done as if the rays where cast from a pixel straight under the origin of the light source. The sampling is uniform only from that point.
-__kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, __global const float4 *leaf_data, __global float *intensity_map, __global Debug *debug) {
+__kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, __global float4 *leaf_data, __global float *intensity_map, __global Debug *debug) {
 	int i = get_global_id(0);
 	int j = get_global_id(1);
 	int k = get_global_id(2);

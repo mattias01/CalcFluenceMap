@@ -3,8 +3,8 @@
 NUMBER_OF_LEAVES = 10
 
 # Global defines
-FLX = 64
-FLY = 64
+FLX = 128
+FLY = 128
 #XSTEP = 0.0
 #YSTEP = 0.0
 #XOFFSET = 0.0
@@ -12,27 +12,27 @@ FLY = 64
 LSAMPLES = 20
 #LSTEP = 0.0
 
-MODE = 2
+MODE = 0
 NUMBER_OF_COLLIMATORS = 10
 
 # Optimization parameters
 LINE_TRIANGLE_INTERSECTION_ALGORITHM = 2 # SS, MT, MT2, MT3
 
 # Work group sizes
-WG_LIGHT_SAMPLING_X = 1
-WG_LIGHT_SAMPLING_Y = 1
-WG_LIGHT_SAMPLING_Z = 1
+#WG_LIGHT_SAMPLING_X = 1
+#WG_LIGHT_SAMPLING_Y = 1
+#WG_LIGHT_SAMPLING_Z = 1
 #WG_LIGHT_SAMPLING_X = 1
 #WG_LIGHT_SAMPLING_Y = 32
 #WG_LIGHT_SAMPLING_Z = 16
-#WG_LIGHT_SAMPLING_X = 2
-#WG_LIGHT_SAMPLING_Y = 16
-#WG_LIGHT_SAMPLING_Z = 2
+WG_LIGHT_SAMPLING_X = 4
+WG_LIGHT_SAMPLING_Y = 4
+WG_LIGHT_SAMPLING_Z = 2
 
 # Adress spaces. 0: private, 1: local, 2: constant, 3: global
 RAY_AS = 0 # Valid: 0, 1.
 LEAF_AS = 1 # Valid: 1, 3.
-SCENE_AS = 3 # Valid: 2, 3.
+SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu
 
 # Run settings
 OPENCL = 1
