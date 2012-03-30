@@ -77,7 +77,7 @@ void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ float4 *le
 void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
-	*intensityCoeff = 1;
+	*intensityCoeff = 1.0f;
 	int collimatorIndex = -1;
     for (int i = 0; i < NUMBER_OF_COLLIMATORS; i++) { // Find closest collimator
 		bool intersectTmp;
@@ -152,7 +152,7 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *le
 }
 
 void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug) {
-	float intensity = 1;
+	float intensity = 1.0f;
 	bool intersectCollimator;
 	float4 ipCollimator;
 	float intensityCoeff;
@@ -342,14 +342,14 @@ __kernel void calculateIntensityDecreaseWithDistance(SCENE_ASQ Scene *scene, __g
 	float anglei = acos(dot(normalize(vi0), normalize(vi1)));
     float anglej = acos(dot(normalize(vj0), normalize(vj1)));
 
-    distanceFactors[j+i*FLY] = anglei*anglej/M_PI_F*2; // The ratio of a unit half sphere that are covering the light source. => Things that are further away recieves less photons.
+    distanceFactors[j+i*FLY] = anglei*anglej/M_PI_F*2.0f; // The ratio of a unit half sphere that are covering the light source. => Things that are further away recieves less photons.
 }
 
 __kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensity_map, __global float *fluence_data, __global Debug *debug){
-	unsigned int i = get_global_id(0);
-    unsigned int j = get_global_id(1);
+	int i = get_global_id(0);
+    int j = get_global_id(1);
 
-	float fluenceSum = 0;
+	float fluenceSum = 0.0f;
     for (int k = 0; k < LSAMPLESSQR; k++) {
         fluenceSum += intensity_map[j + i*FLY + k*FLX*FLY];
 	}
