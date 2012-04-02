@@ -65,12 +65,7 @@ typedef struct Collimator {
 // Function definitions
 void intersectLineFlatCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t1, LEAF_ASQ const Triangle *t2, bool *intersect, float *distance, float4 *ip);
 void intersectLineBBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
-void intersectLineBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
-
-// Function definitions
-void intersectLineFlatCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t1, LEAF_ASQ const Triangle *t2, bool *intersect, float *distance, float4 *ip);
-void intersectLineBBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
-void intersectLineBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
+void intersectLineBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, /*float4 *inIp,*/ float4 *outIp);
 
 // Collimator generation
 /*void calculateCollimatorBoundingBox(Collimator *collimator, BBox *bbox) {
@@ -152,8 +147,8 @@ void intersectLineBBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox 
 	intersectLineBBoxInOutColLeaf(l, b, intersect, inDistance, outDistance, inIp, outIp);
 }
 
-void intersectLineBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
-	intersectLineBoxInOut(l, b, intersect, inDistance, outDistance, inIp, outIp);
+void intersectLineBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, /*float4 *inIp,*/ float4 *outIp) {
+	intersectLineBoxInOut(l, b, intersect, inDistance, outDistance, /*inIp,*/ outIp);
 }
 
 #endif //__Collimator__
