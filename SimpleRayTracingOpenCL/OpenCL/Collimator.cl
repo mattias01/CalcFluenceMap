@@ -11,45 +11,48 @@ typedef struct SimpleCollimator {
 } __attribute__((packed)) SimpleCollimator;
 
 typedef struct FlatCollimator {
-	BBox boundingBox;
-	float4 position;
-	float4 xdir;
-	float4 ydir;
-	float absorptionCoeff;
-	int numberOfLeaves;
-	Rectangle leaves[NUMBER_OF_LEAVES];
+	BBox boundingBox[NUMBER_OF_COLLIMATORS];
+	float4 position[NUMBER_OF_COLLIMATORS];
+	float4 xdir[NUMBER_OF_COLLIMATORS];
+	float4 ydir[NUMBER_OF_COLLIMATORS];
+	float absorptionCoeff[NUMBER_OF_COLLIMATORS];
+	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
+	int leafArrayOffset[NUMBER_OF_COLLIMATORS];
+	int leafArrayStride[NUMBER_OF_COLLIMATORS];
 } __attribute__((packed)) FlatCollimator;
 
 typedef struct BBoxCollimator {
-	BBox boundingBox;
-	float4 position;
-	float4 xdir;
-	float4 ydir;
-	float absorptionCoeff;
-	int numberOfLeaves;
-	BBox leaves[NUMBER_OF_LEAVES];
+	BBox boundingBox[NUMBER_OF_COLLIMATORS];
+	float4 position[NUMBER_OF_COLLIMATORS];
+	float4 xdir[NUMBER_OF_COLLIMATORS];
+	float4 ydir[NUMBER_OF_COLLIMATORS];
+	float absorptionCoeff[NUMBER_OF_COLLIMATORS];
+	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
+	int leafArrayOffset[NUMBER_OF_COLLIMATORS];
+	int leafArrayStride[NUMBER_OF_COLLIMATORS];
 } __attribute__((packed)) BBoxCollimator;
 
 typedef struct BoxCollimator {
-	BBox boundingBox;
-	float4 position;
-	float4 xdir;
-	float4 ydir;
-	float absorptionCoeff;
-	int numberOfLeaves;
-	Box leaves[NUMBER_OF_LEAVES];
+	BBox boundingBox[NUMBER_OF_COLLIMATORS];
+	float4 position[NUMBER_OF_COLLIMATORS];
+	float4 xdir[NUMBER_OF_COLLIMATORS];
+	float4 ydir[NUMBER_OF_COLLIMATORS];
+	float absorptionCoeff[NUMBER_OF_COLLIMATORS];
+	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
+	int leafArrayOffset[NUMBER_OF_COLLIMATORS];
+	int leafArrayStride[NUMBER_OF_COLLIMATORS];
 } __attribute__((packed)) BoxCollimator;
 
 typedef struct Collimator {
-	BBox boundingBox;
-	float4 position;
-	float4 xdir;
-	float4 ydir;
-	float absorptionCoeff;
-	float height;
-	float leafWidth;
-	int numberOfLeaves;
-	float leafPositions[NUMBER_OF_LEAVES];
+	BBox boundingBox[NUMBER_OF_COLLIMATORS];
+	float4 position[NUMBER_OF_COLLIMATORS];
+	float4 xdir[NUMBER_OF_COLLIMATORS];
+	float4 ydir[NUMBER_OF_COLLIMATORS];
+	float absorptionCoeff[NUMBER_OF_COLLIMATORS];
+	float height[NUMBER_OF_COLLIMATORS];
+	float leafWidth[NUMBER_OF_COLLIMATORS];
+	int numberOfLeaves[NUMBER_OF_COLLIMATORS];
+	float leafPositions[NUMBER_OF_COLLIMATORS][NUMBER_OF_LEAVES];
 	#if MODE == 0
 		FlatCollimator flatCollimator;
 	#elif MODE == 1
@@ -59,8 +62,18 @@ typedef struct Collimator {
 	#endif
 } __attribute__((packed)) Collimator;
 
+// Function definitions
+void intersectLineFlatCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t1, LEAF_ASQ const Triangle *t2, bool *intersect, float *distance, float4 *ip);
+void intersectLineBBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
+void intersectLineBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
+
+// Function definitions
+void intersectLineFlatCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t1, LEAF_ASQ const Triangle *t2, bool *intersect, float *distance, float4 *ip);
+void intersectLineBBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
+void intersectLineBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
+
 // Collimator generation
-void calculateCollimatorBoundingBox(Collimator *collimator, BBox *bbox) {
+/*void calculateCollimatorBoundingBox(Collimator *collimator, BBox *bbox) {
     float maxPosition = 0;
     for (int i = 0; i < collimator->numberOfLeaves; i++) {
         if (maxPosition < collimator->leafPositions[i]) {
@@ -97,9 +110,9 @@ void createRectangles(float4 *position, float4 *xdir, float4 *ydir, float *recta
 			.p3 = *position + y*i + x*rectangleLength[i]};
         rectangles[i] = rect;
     }
-}
+}*/
 
-void createFlatCollimator(Collimator *collimator, FlatCollimator *fc) {
+/*void createFlatCollimator(Collimator *collimator, FlatCollimator *fc) {
     Plane plane = {
 		.origin = collimator->position,
 		.normal = cross(collimator->xdir, collimator->ydir)}; // Plane perpendicular to xdir and ydir.
@@ -121,29 +134,25 @@ void createFlatCollimator(Collimator *collimator, FlatCollimator *fc) {
 	for (int i = 0; i < collimator->numberOfLeaves; i++) {
 		fc->leaves[i] = leaves[i];
 	}
-}
+}*/
 
 // Intersection calculations
-void intersectSimpleCollimator(const Line *l, __constant const SimpleCollimator *c, bool *intersect, float *distance, float4 *ip)
-{
-	Rectangle ls = c->leftRectangle; // Copy from constant memory to private
-	intersectLineRectangle(l, &ls, intersect, distance, ip);
-
-	if (!(*intersect)) { // Check the other rectangle of the SimpleCollimator
-		Rectangle rs = c->rightRectangle; // Copy from constant memory to private
-		intersectLineRectangle(l, &rs, intersect, distance, ip);
+void intersectLineFlatCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t1, LEAF_ASQ const Triangle *t2, bool *intersect, float *distance, float4 *ip) {
+	//intersectLineRectangle(l, c, intersect, distance, ip);
+	
+	intersectLineTriangle(l, t1, intersect, distance, ip);
+	if (!(*intersect)) { // Try to find intersection in second triangle
+		intersectLineTriangle(l, t2, intersect, distance, ip);
 	}
 }
 
-void intersectLineFlatCollimatorLeaf(const Line *l, const Rectangle *c, bool *intersect, float *distance, float4 *ip) {
-	intersectLineRectangle(l, c, intersect, distance, ip);
+void intersectLineBBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
+	//BBox bbox = *b;
+	//intersectLineBBoxInOut(l, &bbox, intersect, inDistance, outDistance, inIp, outIp);
+	intersectLineBBoxInOutColLeaf(l, b, intersect, inDistance, outDistance, inIp, outIp);
 }
 
-void intersectLineBBoxCollimatorLeaf(const Line *l, const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
-	intersectLineBBoxInOut(l, b, intersect, inDistance, outDistance, inIp, outIp);
-}
-
-void intersectLineBoxCollimatorLeaf(const Line *l, const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
+void intersectLineBoxCollimatorLeaf(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
 	intersectLineBoxInOut(l, b, intersect, inDistance, outDistance, inIp, outIp);
 }
 

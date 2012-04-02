@@ -10,9 +10,10 @@ FLY = 128
 #XOFFSET = 0.0
 #YOFFSET = 0.0
 LSAMPLES = 20
+LSAMPLESSQR = LSAMPLES*LSAMPLES
 #LSTEP = 0.0
 
-MODE = 0
+MODE = 2
 NUMBER_OF_COLLIMATORS = 10
 
 # Optimization parameters
@@ -39,8 +40,8 @@ OPENCL = 1
 PYTHON = 0
 SHOW_PLOT = 1
 SHOW_3D_SCENE = 0
-#PATH_OPENCL = "OpenCL/"
-PATH_OPENCL = "/Users/mattias/Skola/exjobb/CalcFluenceMap/SimpleRayTracingOpenCL/OpenCL/"
+PATH_OPENCL = "OpenCL/"
+#PATH_OPENCL = "/Users/mattias/Skola/exjobb/CalcFluenceMap/SimpleRayTracingOpenCL/OpenCL/"
 
 def getDefaultSettingsList():
     list = []
@@ -48,6 +49,7 @@ def getDefaultSettingsList():
     list.append(("FLX", str(FLX), True))
     list.append(("FLY", str(FLY), True))
     list.append(("LSAMPLES", str(LSAMPLES), True))
+    list.append(("LSAMPLESSQR", str(LSAMPLESSQR), True))
     list.append(("MODE", str(MODE), True))
     list.append(("NUMBER_OF_COLLIMATORS", str(NUMBER_OF_COLLIMATORS), True)) 
     list.append(("PATH_OPENCL", str(PATH_OPENCL), True))

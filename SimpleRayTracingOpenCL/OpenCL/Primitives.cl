@@ -42,9 +42,23 @@ typedef struct Box {
 	Triangle triangles[12];
 } __attribute__((packed)) Box;
 
+// Function declarations
+void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, float4 *p5, float4 *p6, float4 *p7, BBox *bbox);
+void createBoxFromPoints(float4 p0, float4 p1, float4 p2, float4 p3, float4 p4, float4 p5, float4 p6, float4 p7, Box *box);
+void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint);
+void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip);
+void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip);
+void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect, float *distance, float4 *ip);
+void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *distance, float4 *ip);
+void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
+void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *bb, bool *intersect, float *distance, float4 *ip);
+void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
+void intersectLineBox(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *distance, float4 *ip);
+void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
+
 // Other
 
-void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, float4 *p5, float4 *p6, float4 *p7, BBox *bbox) {
+/*void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, float4 *p5, float4 *p6, float4 *p7, BBox *bbox) {
 	float4 pointArray[8] = {*p0, *p1, *p2, *p3, *p4, *p5, *p6, *p7};
 
     float xmin = INFINITY;
@@ -65,13 +79,13 @@ void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, flo
 	}
 
 	BBox box = {
-		.min = (float4) (xmin,ymin,zmin,0),
-		.max = (float4) (xmax,ymax,zmax,0)};
+		.min = (float4) (xmin,ymin,zmin,0.0f),
+		.max = (float4) (xmax,ymax,zmax,0.0f)};
 
 	*bbox = box;
-}
+}*/
 
-void createBoxFromPoints(float4 p0, float4 p1, float4 p2, float4 p3, float4 p4, float4 p5, float4 p6, float4 p7, Box *box) {
+/*void createBoxFromPoints(float4 p0, float4 p1, float4 p2, float4 p3, float4 p4, float4 p5, float4 p6, float4 p7, Box *box) {
     // Bottom
 	Triangle t0 = {.p0=p0, .p1=p1, .p2=p3};
 	Triangle t1 = {.p0=p1, .p1=p2, .p2=p3};
@@ -95,35 +109,34 @@ void createBoxFromPoints(float4 p0, float4 p1, float4 p2, float4 p3, float4 p4, 
 	for (int i = 0; i < 12; i++) {
 		box->triangles[i] = new_triangles[i];
 	}
-}
+}*/
 
 // Projection calculations
 
-void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint) {
+/*void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint) {
     float sn = -dot(plane->normal, (*p0 - plane->origin));
     float sd = dot(plane->normal, plane->normal);
     float sb = sn / sd;
     *resultPoint = *p0 + plane->normal * sb;
-}
+}*/
 
-// Intersection calculations
-void intersectLinePlane(const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip)
+// Intersection calculations. Registers: 1.
+void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip)
 {
 	// Init to not intersect
 	*intersect = false;
-	*distance = NAN;
-	*ip = (NAN, NAN, NAN, NAN);
 	if (dot(l->direction, p->normal) != 0.0f) { // Not parallel -> intersect.
-		float t = (dot(p->normal, (p->origin - l->origin))) / (dot(p->normal, l->direction));
-		if (t > 0) { // Plane is located in positive ray direction from the ray origin. Avoids hitting same thing it just hit.
+		*distance = (dot(p->normal, (p->origin - l->origin))) / (dot(p->normal, l->direction));
+		if (*distance > 0.0f) { // Plane is located in positive ray direction from the ray origin. Avoids hitting same thing it just hit.
 			*intersect = true;
-			*distance = t;
 			*ip = l->origin + l->direction*(*distance);
 		}
 	}
 }
 
-void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, float *distance, float4 *ip)
+#if LINE_TRIANGLE_INTERSECTION_ALGORITHM == 0 // SoftSurfer, modified MT
+// SoftSurfer.com, modified MT. Registers: 32 + 1.
+void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
 	float4 u = t->p1 - t->p0;
     float4 v = t->p2 - t->p0;
@@ -132,6 +145,7 @@ void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, fl
 		.origin = t->p0,
 		.normal = triangleNorm};
 	intersectLinePlane(l, &p, intersect, distance, ip);
+	
 	if (*intersect) {
 		// Point in triangle plan. Check if in triangle
         float uu = dot(u,u);
@@ -145,39 +159,228 @@ void intersectLineTriangle(const Line *l, const Triangle *t, bool *intersect, fl
         float s = (uv * wv - vv * wu) / D;
         if (s < 0.0f || s > 1.0f) { // IntersectionPoint is outside triangle
             *intersect = false;
-			*distance = NAN;
-			*ip = (NAN, NAN, NAN, NAN);
 		}
 		else {
 			float t = (uv * wu - uu * wv) / D;
 			if (t < 0.0f || (s + t) > 1.0f) { // IntersectionPoint is outside triangle
 				*intersect = false;
-				*distance = NAN;
-				*ip = (NAN, NAN, NAN, NAN);
 			}
 		}
 	}
 }
 
-void intersectLineRectangle(const Line *l, const Rectangle *s, bool *intersect, float *distance, float4 *ip)
+#elif LINE_TRIANGLE_INTERSECTION_ALGORITHM == 1 // Orig. MT
+// Möller/Trombore 97. Registers 24.
+void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip)
 {
-	Triangle t1 = {
-		.p0 = s->p0,
-		.p1 = s->p1,
-		.p2 = s->p2};
-	Triangle t2 = {
-		.p0 = s->p2,
-		.p1 = s->p3,
-		.p2 = s->p0};
+	float4 edge1, edge2, tvec, pvec, qvec;
+	float det, inv_det;
 
-	intersectLineTriangle(l, &t1, intersect, distance, ip);
+	// find vectors for two edges sharing t->p0
+	edge1 = t->p1 - t->p0;
+	edge2 = t->p2 - t->p0;
 
-	if (!(*intersect)) { // Try to find intersection in second triangle
-		intersectLineTriangle(l, &t2, intersect, distance, ip);
+	// begin calculating determinant - also used to calculate U parameter
+	pvec = cross(l->direction, edge2);
+
+	// if determinant is near zero, ray lies in plane of triangle
+	det = dot(edge1, pvec);
+
+	if (det > -EPSILON && det < EPSILON) {
+		*intersect = false;
+		return;
 	}
+	inv_det = 1.0f / det;
+
+	// calculate distance from t->p0 to ray origin
+	tvec = l->origin - t->p0;
+
+	// calculate U parameter and test bounds
+	float u = dot(tvec, pvec) * inv_det;
+	if (u < 0.0f || u > 1.0f) {
+		*intersect = false;
+		return;
+	}
+
+	// prepare to test V parameter
+	qvec = cross(tvec, edge1);
+
+	// calculate V parameter and test bounds
+	float v = dot(l->direction, qvec) * inv_det;
+	if (v < 0.0f || u + v > 1.0f) {
+		*intersect = false;
+		return;
+	}
+
+	// calculate distance, ray intersects triangle
+	///intersect = true;
+	*distance = dot(edge2, qvec) * inv_det;
+	if (*distance < 0.0f) {
+		*intersect = false;
+		return;
+	}
+	*intersect = true;
+	*ip = l->origin + l->direction*(*distance);
 }
 
-void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float *distance, float4 *ip)
+#elif LINE_TRIANGLE_INTERSECTION_ALGORITHM == 2 // MT2
+// code rewritten to do tests on the sign of the determinant
+// the division is at the end in the code  
+void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip)
+{
+	float4 edge1, edge2, tvec, pvec, qvec;
+	float det, inv_det;
+
+	// find vectors for two edges sharing t->p0
+	edge1 = t->p1 - t->p0;
+	edge2 = t->p2 - t->p0;
+
+	// begin calculating determinant - also used to calculate U parameter
+	pvec = cross(l->direction, edge2);
+
+	// if determinant is near zero, ray lies in plane of triangle
+	det = dot(edge1, pvec);
+
+	if (det > EPSILON)
+	{
+		// calculate distance from t->p0 to ray origin
+		tvec = l->origin - t->p0;
+      
+		// calculate U parameter and test bounds
+		float u = dot(tvec, pvec);
+		if (u < 0.0f || u > det) {
+			*intersect = false;
+			return;
+		}
+      
+		// prepare to test V parameter
+		qvec = cross(tvec, edge1);
+      
+		// calculate V parameter and test bounds
+		float v = dot(l->direction, qvec);
+		if (v < 0.0f || u + v > det) {
+			*intersect = false;
+			return;
+		}
+	}
+	else if(det < -EPSILON)
+	{
+		// calculate distance from t->p0 to ray origin
+		tvec = l->origin - t->p0;
+      
+		// calculate U parameter and test bounds
+		float u = dot(tvec, pvec);
+		if (u > 0.0f || u < det) {
+			*intersect = false;
+			return;
+		}
+      
+		// prepare to test V parameter
+		qvec = cross(tvec, edge1);
+      
+		// calculate V parameter and test bounds
+		float v = dot(l->direction, qvec) ;
+		if (v > 0.0f || u + v < det) {
+			*intersect = false;
+			return;
+		}
+	}
+	else {
+		*intersect = false;
+		return;
+	}  // ray is parallell to the plane of the triangle
+
+	inv_det = 1.0f / det;
+
+	// calculate t, ray intersects triangle
+	*distance = dot(edge2, qvec) * inv_det;
+	if (*distance < 0.0f) {
+		*intersect = false;
+		return;
+	}
+	*intersect = true;
+	*ip = l->origin + l->direction*(*distance);
+}
+
+#elif LINE_TRIANGLE_INTERSECTION_ALGORITHM == 3 // MT3
+// code rewritten to do tests on the sign of the determinant
+// the division is before the test of the sign of the det
+void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip)
+{
+	float4 edge1, edge2, tvec, pvec, qvec;
+	float det, inv_det;
+
+	//find vectors for two edges sharing t->p0
+	edge1 = t->p1 - t->p0;
+	edge2 = t->p2 - t->p0;
+
+	//begin calculating determinant - also used to calculate U parameter
+	pvec = cross(l->direction, edge2);
+
+	//if determinant is near zero, ray lies in plane of triangle
+	det = dot(edge1, pvec);
+
+	//calculate distance from t->p0 to ray origin
+	tvec = l->origin - t->p0;
+	inv_det = 1.0f / det;
+   
+	if (det > EPSILON)
+	{
+		//calculate U parameter and test bounds
+		float u = dot(tvec, pvec);
+		if (u < 0.0f || u > det) {
+			*intersect = false;
+			return;
+		}
+      
+		//prepare to test V parameter
+		qvec = cross(tvec, edge1);
+      
+		//calculate V parameter and test bounds
+		float v = dot(l->direction, qvec);
+		if (v < 0.0f || u + v > det) {
+			*intersect = false;
+			return;
+		}
+      
+	}
+	else if(det < -EPSILON)
+	{
+		//calculate U parameter and test bounds
+		float u = dot(tvec, pvec);
+		if (u > 0.0f || u < det) {
+			*intersect = false;
+			return;
+		}
+      
+		//prepare to test V parameter
+		qvec = cross(tvec, edge1);
+      
+		//calculate V parameter and test bounds
+		float v = dot(l->direction, qvec);
+		if (v > 0.0f || u + v < det) {
+			*intersect = false;
+			return;
+		}
+	}
+	else {
+		*intersect = false;
+		return;
+	}  //ray is parallell to the plane of the triangle
+
+	//calculate t, ray intersects triangle
+	*distance = dot(edge2, qvec) * inv_det;
+	if (*distance < 0.0f) {
+		*intersect = false;
+		return;
+	}
+	*intersect = true;
+	*ip = l->origin + l->direction*(*distance);
+}
+#endif // LINE_TRIANGLE_INTERSECTION_ALGORITHM
+
+// Registers: 8 + 33 + 4.
+void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect, float *distance, float4 *ip)
 {
 	Plane p = {
 		.origin = d->origin,
@@ -189,17 +392,17 @@ void intersectLineDisc(const Line *l, const Disc *d, bool *intersect, float *dis
 		float4 D = d->origin - *ip;
 		if (dot(D,D) > d->radius*d->radius) {
 			*intersect = false;
-			*distance = NAN;
-			*ip = (NAN, NAN, NAN, NAN);
 		}
 	}
 }
 
-// Relies on IEEE 754 floating point arithmetic (div by 0 -> inf).
-void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *distance, float4 *ip)
+// Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
+void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *distance, float4 *ip)
 {
+	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
-	if (l->direction.x >= 0) {
+	if (l->direction.x >= 0.0f) {
         tmin = (b->min.x - l->origin.x) / l->direction.x;
         tmax = (b->max.x - l->origin.x) / l->direction.x;
 	}
@@ -207,7 +410,7 @@ void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *dis
         tmin = (b->max.x - l->origin.x) / l->direction.x;
         tmax = (b->min.x - l->origin.x) / l->direction.x;
 	}
-    if (l->direction.y >= 0) {
+    if (l->direction.y >= 0.0f) {
         tymin = (b->min.y - l->origin.y) / l->direction.y;
         tymax = (b->max.y - l->origin.y) / l->direction.y;
 	}
@@ -217,8 +420,6 @@ void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *dis
 	}
     if ((tmin > tymax) || (tymin > tmax)) {
 		*intersect = false;
-		*distance = NAN;
-		*ip = (NAN, NAN, NAN, NAN);
         return;
 	}
     if (tymin > tmin) {
@@ -227,7 +428,7 @@ void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *dis
     if (tymax < tmax) {
        tmax = tymax;
 	}
-    if (l->direction.z >= 0) {
+    if (l->direction.z >= 0.0f) {
         tzmin = (b->min.z - l->origin.z) / l->direction.z;
         tzmax = (b->max.z - l->origin.z) / l->direction.z;
 	}
@@ -237,8 +438,6 @@ void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *dis
 	}
     if ((tmin > tzmax) || (tzmin > tmax)) {
         *intersect = false;
-		*distance = NAN;
-		*ip = (NAN, NAN, NAN, NAN);
         return;
 	}
     if (tzmin > tmin) {
@@ -247,10 +446,8 @@ void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *dis
     if (tzmax < tmax) {
         tmax = tzmax;
 	}
-	if (tmax <= 0) { // Only in the positive direction.
+	if (tmax <= 0.0f) { // Only in the positive direction.
 		*intersect = false;
-		*distance = NAN;
-		*ip = (NAN, NAN, NAN, NAN);
         return;
 	}
 	*intersect = true;
@@ -259,10 +456,13 @@ void intersectLineBBox(const Line *l, const BBox *b, bool *intersect, float *dis
 	// Could give the outgoing distance (tmax) and point here as well.
 }
 
-void intersectLineBBoxInOut(const Line *l, const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+// Registers: 6.
+/*void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
+	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
-	if (l->direction.x >= 0) {
+	if (l->direction.x >= 0.0f) {
         tmin = (b->min.x - l->origin.x) / l->direction.x;
         tmax = (b->max.x - l->origin.x) / l->direction.x;
 	}
@@ -270,7 +470,7 @@ void intersectLineBBoxInOut(const Line *l, const BBox *b, bool *intersect, float
         tmin = (b->max.x - l->origin.x) / l->direction.x;
         tmax = (b->min.x - l->origin.x) / l->direction.x;
 	}
-    if (l->direction.y >= 0) {
+    if (l->direction.y >= 0.0f) {
         tymin = (b->min.y - l->origin.y) / l->direction.y;
         tymax = (b->max.y - l->origin.y) / l->direction.y;
 	}
@@ -280,10 +480,6 @@ void intersectLineBBoxInOut(const Line *l, const BBox *b, bool *intersect, float
 	}
     if ((tmin > tymax) || (tymin > tmax)) {
 		*intersect = false;
-		*inDistance = NAN;
-		*outDistance = NAN;
-		*inIp = (NAN, NAN, NAN, NAN);
-		*outIp = (NAN, NAN, NAN, NAN);
         return;
 	}
     if (tymin > tmin) {
@@ -292,7 +488,7 @@ void intersectLineBBoxInOut(const Line *l, const BBox *b, bool *intersect, float
     if (tymax < tmax) {
        tmax = tymax;
 	}
-    if (l->direction.z >= 0) {
+    if (l->direction.z >= 0.0f) {
         tzmin = (b->min.z - l->origin.z) / l->direction.z;
         tzmax = (b->max.z - l->origin.z) / l->direction.z;
 	}
@@ -302,10 +498,6 @@ void intersectLineBBoxInOut(const Line *l, const BBox *b, bool *intersect, float
 	}
     if ((tmin > tzmax) || (tzmin > tmax)) {
         *intersect = false;
-		*inDistance = NAN;
-		*outDistance = NAN;
-		*inIp = (NAN, NAN, NAN, NAN);
-		*outIp = (NAN, NAN, NAN, NAN);
         return;
 	}
     if (tzmin > tmin) {
@@ -314,12 +506,71 @@ void intersectLineBBoxInOut(const Line *l, const BBox *b, bool *intersect, float
     if (tzmax < tmax) {
         tmax = tzmax;
 	}
-	if (tmax <= 0) { // Only in the positive direction.
+	if (tmax <= 0.0f) { // Only in the positive direction.
 		*intersect = false;
-		*inDistance = NAN;
-		*outDistance = NAN;
-		*inIp = (NAN, NAN, NAN, NAN);
-		*outIp = (NAN, NAN, NAN, NAN);
+        return;
+	}
+	*intersect = true;
+	*inDistance = tmin;
+	*outDistance = tmax;
+	*inIp = l->origin + l->direction*tmin;
+	*outIp = l->origin + l->direction*tmax;
+}*/
+
+void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+{
+	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	BBox *b = &bbox;
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	float divx = 1.0f / l->direction.x;
+	if (divx >= 0.0f) {
+        tmin = (b->min.x - l->origin.x) * divx;
+        tmax = (b->max.x - l->origin.x) * divx;
+	}
+    else {
+        tmin = (b->max.x - l->origin.x) * divx;
+        tmax = (b->min.x - l->origin.x) * divx;
+	}
+	float divy = 1.0f / l->direction.y;
+    if (divy >= 0.0f) {
+        tymin = (b->min.y - l->origin.y) * divy;
+        tymax = (b->max.y - l->origin.y) * divy;
+	}
+    else {
+        tymin = (b->max.y - l->origin.y) * divy;
+        tymax = (b->min.y - l->origin.y) * divy;
+	}
+    if ((tmin > tymax) || (tymin > tmax)) {
+		*intersect = false;
+        return;
+	}
+    if (tymin > tmin) {
+        tmin = tymin;
+	}
+    if (tymax < tmax) {
+       tmax = tymax;
+	}
+	float divz = 1.0f / l->direction.z;
+    if (divz >= 0.0f) {
+        tzmin = (b->min.z - l->origin.z) * divz;
+        tzmax = (b->max.z - l->origin.z) * divz;
+	}
+    else {
+        tzmin = (b->max.z - l->origin.z) * divz;
+        tzmax = (b->min.z - l->origin.z) * divz;
+	}
+    if ((tmin > tzmax) || (tzmin > tmax)) {
+        *intersect = false;
+        return;
+	}
+    if (tzmin > tmin) {
+        tmin = tzmin;
+	}
+    if (tzmax < tmax) {
+        tmax = tzmax;
+	}
+	if (tmax <= 0.0f) { // Only in the positive direction.
+		*intersect = false;
         return;
 	}
 	*intersect = true;
@@ -329,13 +580,131 @@ void intersectLineBBoxInOut(const Line *l, const BBox *b, bool *intersect, float
 	*outIp = l->origin + l->direction*tmax;
 }
 
-void intersectLineBox(const Line *l, const Box *b, bool *intersect, float *distance, float4 *ip) {
+// Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
+void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *bb, bool *intersect, float *distance, float4 *ip)
+{
+	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	BBox *b = &bbox;
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	if (l->direction.x >= 0.0f) {
+        tmin = (b->min.x - l->origin.x) / l->direction.x;
+        tmax = (b->max.x - l->origin.x) / l->direction.x;
+	}
+    else {
+        tmin = (b->max.x - l->origin.x) / l->direction.x;
+        tmax = (b->min.x - l->origin.x) / l->direction.x;
+	}
+    if (l->direction.y >= 0.0f) {
+        tymin = (b->min.y - l->origin.y) / l->direction.y;
+        tymax = (b->max.y - l->origin.y) / l->direction.y;
+	}
+    else {
+        tymin = (b->max.y - l->origin.y) / l->direction.y;
+        tymax = (b->min.y - l->origin.y) / l->direction.y;
+	}
+    if ((tmin > tymax) || (tymin > tmax)) {
+		*intersect = false;
+        return;
+	}
+    if (tymin > tmin) {
+        tmin = tymin;
+	}
+    if (tymax < tmax) {
+       tmax = tymax;
+	}
+    if (l->direction.z >= 0.0f) {
+        tzmin = (b->min.z - l->origin.z) / l->direction.z;
+        tzmax = (b->max.z - l->origin.z) / l->direction.z;
+	}
+    else {
+        tzmin = (b->max.z - l->origin.z) / l->direction.z;
+        tzmax = (b->min.z - l->origin.z) / l->direction.z;
+	}
+    if ((tmin > tzmax) || (tzmin > tmax)) {
+        *intersect = false;
+        return;
+	}
+    if (tzmin > tmin) {
+        tmin = tzmin;
+	}
+    if (tzmax < tmax) {
+        tmax = tzmax;
+	}
+	if (tmax <= 0.0f) { // Only in the positive direction.
+		*intersect = false;
+        return;
+	}
+	*intersect = true;
+	*distance = tmin;
+	*ip = l->origin + l->direction*tmin;
+	// Could give the outgoing distance (tmax) and point here as well.
+}
+
+// Registers: 6.
+void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+{
+	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	//BBox *b = &bbox;
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	if (l->direction.x >= 0.0f) {
+        tmin = (b->min.x - l->origin.x) / l->direction.x;
+        tmax = (b->max.x - l->origin.x) / l->direction.x;
+	}
+    else {
+        tmin = (b->max.x - l->origin.x) / l->direction.x;
+        tmax = (b->min.x - l->origin.x) / l->direction.x;
+	}
+    if (l->direction.y >= 0.0f) {
+        tymin = (b->min.y - l->origin.y) / l->direction.y;
+        tymax = (b->max.y - l->origin.y) / l->direction.y;
+	}
+    else {
+        tymin = (b->max.y - l->origin.y) / l->direction.y;
+        tymax = (b->min.y - l->origin.y) / l->direction.y;
+	}
+    if ((tmin > tymax) || (tymin > tmax)) {
+		*intersect = false;
+        return;
+	}
+    if (tymin > tmin) {
+        tmin = tymin;
+	}
+    if (tymax < tmax) {
+       tmax = tymax;
+	}
+    if (l->direction.z >= 0.0f) {
+        tzmin = (b->min.z - l->origin.z) / l->direction.z;
+        tzmax = (b->max.z - l->origin.z) / l->direction.z;
+	}
+    else {
+        tzmin = (b->max.z - l->origin.z) / l->direction.z;
+        tzmax = (b->min.z - l->origin.z) / l->direction.z;
+	}
+    if ((tmin > tzmax) || (tzmin > tmax)) {
+        *intersect = false;
+        return;
+	}
+    if (tzmin > tmin) {
+        tmin = tzmin;
+	}
+    if (tzmax < tmax) {
+        tmax = tzmax;
+	}
+	if (tmax <= 0.0f) { // Only in the positive direction.
+		*intersect = false;
+        return;
+	}
+	*intersect = true;
+	*inDistance = tmin;
+	*outDistance = tmax;
+	*inIp = l->origin + l->direction*tmin;
+	*outIp = l->origin + l->direction*tmax;
+}
+
+// Registers 7 + 33.
+void intersectLineBox(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *distance, float4 *ip) {
 	int counter = 0;
 	*intersect = false;
-	*distance = NAN;
-	*ip = (NAN, NAN, NAN, NAN);
-	float minDistance = INFINITY;
-	float4 minPoint;
 	bool intersectTmp;
 	float distanceTmp;
 	float4 ipTmp;
@@ -343,23 +712,21 @@ void intersectLineBox(const Line *l, const Box *b, bool *intersect, float *dista
 		intersectLineTriangle(l, &(b->triangles[i]), &intersectTmp, &distanceTmp, &ipTmp);
 		if (intersectTmp) {
 			if (counter == 0) {
-				minDistance = distanceTmp;
-				minPoint = ipTmp;
+				*distance = distanceTmp;
+				*ip = ipTmp;
 				counter = counter + 1;
 			}
 			else {
-				if (distanceTmp < minDistance - EPSILON) {
-					minDistance = distanceTmp;
-					minPoint = ipTmp;
+				if (distanceTmp < *distance - EPSILON) {
+					*distance = distanceTmp;
+					*ip = ipTmp;
 					counter = counter + 1;
 				}
-				else if (distanceTmp > minDistance + EPSILON) {
+				else if (distanceTmp > *distance + EPSILON) {
 					counter = counter + 1;
 				}
 				if (counter == 2) {
 					*intersect = true;
-					*distance = minDistance;
-					*ip = minPoint;
 					return;
 				}
 			}
@@ -367,47 +734,36 @@ void intersectLineBox(const Line *l, const Box *b, bool *intersect, float *dista
 	}
 }
 
-void intersectLineBoxInOut(const Line *l, const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
+// Registers 7 + 33.
+void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
 	int counter = 0;
 	*intersect = false;
-	*inDistance = NAN;
-	*outDistance = NAN;
-	*inIp = (NAN, NAN, NAN, NAN);
-	*outIp = (NAN, NAN, NAN, NAN);
-	float minDistance = INFINITY;
-	float4 minPoint;
-	float maxDistance = -INFINITY;
-	float4 maxPoint;
 	bool intersectTmp;
 	float distanceTmp;
 	float4 ipTmp;
 	for (int i = 0; i < 12; i++) {
 		intersectLineTriangle(l, &(b->triangles[i]), &intersectTmp, &distanceTmp, &ipTmp);
 		if (intersectTmp) {
-			if (counter == 0) {
-				minDistance = distanceTmp;
-				minPoint = ipTmp;
-				maxDistance = distanceTmp;
-				maxPoint = ipTmp;
+			if (counter == 0) { // First intersection initializes in and out.
+				*inDistance = distanceTmp;
+				*inIp = ipTmp;
+				*outDistance = distanceTmp;
+				*outIp = ipTmp;
 				counter = counter + 1;
 			}
 			else {
-				if (distanceTmp < minDistance - EPSILON) {
-					minDistance = distanceTmp;
-					minPoint = ipTmp;
+				if (distanceTmp < *inDistance - EPSILON) {
+					*inDistance = distanceTmp;
+					*inIp = ipTmp;
 					counter = counter + 1;
 				}
-				else if (distanceTmp > maxDistance + EPSILON) {
-					maxDistance = distanceTmp;
-					maxPoint = ipTmp;
+				else if (distanceTmp > *outDistance + EPSILON) {
+					*outDistance = distanceTmp;
+					*outIp = ipTmp;
 					counter = counter + 1;
 				}
 				if (counter == 2) {
 					*intersect = true;
-					*inDistance = minDistance;
-					*outDistance = maxDistance;
-					*inIp = minPoint;
-					*outIp = maxPoint;
 					return;
 				}
 			}

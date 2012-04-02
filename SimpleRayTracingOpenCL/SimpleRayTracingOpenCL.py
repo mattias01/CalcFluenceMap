@@ -290,7 +290,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString)
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString + " " + optParametersString)
-    program = oclu.loadCachedProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-single-precision-constant " + settingsString + " " + optParametersString)
+    program = oclu.loadCachedProgram(ctx, PATH_OPENCL + "RayTracing.cl", "-cl-single-precision-constant -cl-nv-verbose " + settingsString + " " + optParametersString)
 
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
