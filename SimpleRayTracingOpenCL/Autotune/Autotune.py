@@ -40,7 +40,10 @@ class Autotune(object):
                     self.best_time = test_time
                     self.best_parameters = self.parameters.getRunParametersList()
 
-                print str(i) + ", Time:" + str(test_time) + " " + self.parameters.toStringCurrent()
+                tab = '\t'
+                if test_time == float('inf'): # Adjust tabulation so parameters are aligned in output.
+                    tab += '\t\t'
+                print str(i) + '\t' + "Time:" + str(test_time) + tab + " " + self.parameters.toStringCurrentValue()
                 if i < self.parameters.getNumberOfStates()-1:
                     self.parameters.next()
             

@@ -72,3 +72,9 @@ class ParameterSet(object):
         for x in self.parameters:
             string += x.name + " " + str(x.current()) + " "
         return string
+
+    def toStringCurrentValue(self):
+        string = ""
+        for x in self.parameters:
+            string += str(x.current()) + " "
+        return string
