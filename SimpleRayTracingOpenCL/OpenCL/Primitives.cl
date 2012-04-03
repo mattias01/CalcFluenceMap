@@ -1,62 +1,5 @@
-#ifndef __Primitives__
-#define __Primitives__
 
-#include "Settings.cl"
-
-// Data types
-typedef struct Line {
-	float4 origin;
-	float4 direction;
-} __attribute__((packed)) Line;
-
-typedef struct Plane {
-	float4 origin;
-	float4 normal;
-} __attribute__((packed)) Plane;
-
-typedef struct Triangle {
-	float4 p0;
-	float4 p1;
-	float4 p2;
-} __attribute__((packed)) Triangle;
-
-typedef struct Rectangle {
-	float4 p0;
-	float4 p1;
-	float4 p2;
-	float4 p3;
-} __attribute__((packed)) Rectangle;
-
-typedef struct Disc {
-	float4 origin;
-	float4 normal;
-	float radius;
-} __attribute__((packed)) Disc;
-
-typedef struct BBox {
-	float4 min;
-	float4 max;
-} __attribute__((packed)) BBox;
-
-typedef struct Box {
-	Triangle triangles[12];
-} __attribute__((packed)) Box;
-
-// Function declarations
-void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, float4 *p5, float4 *p6, float4 *p7, BBox *bbox);
-void createBoxFromPoints(float4 p0, float4 p1, float4 p2, float4 p3, float4 p4, float4 p5, float4 p6, float4 p7, Box *box);
-void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint);
-void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip);
-void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip);
-void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect, float *distance, float4 *ip);
-void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *distance, float4 *ip);
-void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
-void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *bb, bool *intersect, float *distance, float4 *ip);
-void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
-void intersectLineBox(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *distance, float4 *ip);
-void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, /*float4 *inIp,*/ float4 *outIp);
-
-// Other
+#include "Primitives.h"
 
 /*void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, float4 *p5, float4 *p6, float4 *p7, BBox *bbox) {
 	float4 pointArray[8] = {*p0, *p1, *p2, *p3, *p4, *p5, *p6, *p7};
@@ -535,10 +478,10 @@ void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect
 	*outIp = l->origin + l->direction*tmax;
 }*/
 
-void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
-	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
-	//BBox *b = &bbox;
+	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
+	BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	float divx = 1.0f / l->direction.x;
 	if (divx >= 0.0f) {
@@ -795,4 +738,3 @@ void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *i
 	}
 }
 
-#endif //__Primitives__

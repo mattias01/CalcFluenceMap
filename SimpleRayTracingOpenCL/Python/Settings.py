@@ -20,15 +20,18 @@ NUMBER_OF_COLLIMATORS = 10
 LINE_TRIANGLE_INTERSECTION_ALGORITHM = 2 # SS, MT, MT2, MT3
 
 # Work group sizes
+# Best INTEL
 #WG_LIGHT_SAMPLING_X = 1
 #WG_LIGHT_SAMPLING_Y = 1
 #WG_LIGHT_SAMPLING_Z = 1
-#WG_LIGHT_SAMPLING_X = 1
-#WG_LIGHT_SAMPLING_Y = 32
-#WG_LIGHT_SAMPLING_Z = 16
-WG_LIGHT_SAMPLING_X = 4
+# Best NVIDIA GTX 470
+WG_LIGHT_SAMPLING_X = 1
 WG_LIGHT_SAMPLING_Y = 4
-WG_LIGHT_SAMPLING_Z = 2
+WG_LIGHT_SAMPLING_Z = 16
+#WG_LIGHT_SAMPLING_X = 4
+#WG_LIGHT_SAMPLING_Y = 4
+#WG_LIGHT_SAMPLING_Z = 2
+WG_LIGHT_SAMPLING_SIZE = WG_LIGHT_SAMPLING_X * WG_LIGHT_SAMPLING_Y * WG_LIGHT_SAMPLING_Z
 
 # Adress spaces. 0: private, 1: local, 2: constant, 3: global
 RAY_AS = 0 # Valid: 0, 1.
@@ -55,12 +58,13 @@ def getDefaultSettingsList():
     list.append(("PATH_OPENCL", str(PATH_OPENCL), True))
     return list
 
-def getDeafaultOptimizationParameterList():
+def getDefaultOptimizationParameterList():
     list = []
     list.append(("LINE_TRIANGLE_INTERSECTION_ALGORITHM", str(LINE_TRIANGLE_INTERSECTION_ALGORITHM), True))
     list.append(("WG_LIGHT_SAMPLING_X", str(WG_LIGHT_SAMPLING_X), False))
     list.append(("WG_LIGHT_SAMPLING_Y", str(WG_LIGHT_SAMPLING_Y), False))
     list.append(("WG_LIGHT_SAMPLING_Z", str(WG_LIGHT_SAMPLING_Z), False))
+    #list.append(("WG_LIGHT_SAMPLING_SIZE", str(WG_LIGHT_SAMPLING_SIZE), True))
     list.append(("RAY_AS", str(RAY_AS), True))
     list.append(("LEAF_AS", str(LEAF_AS), True))
     list.append(("SCENE_AS", str(SCENE_AS), True))
@@ -68,7 +72,7 @@ def getDeafaultOptimizationParameterList():
 
 # Argument list is a list of tupels with the first element being the macro name and the second its value.
 def macroString(list):
-    s = "-I " + PATH_OPENCL + " -I OpenCL/"
+    s = "-I " + PATH_OPENCL
     for x in list:
         if x[2] == True: # x[0]: name, x[1]: value, x[2]: sendToKernel
             s += " -D " + x[0] + "=" + str(x[1])

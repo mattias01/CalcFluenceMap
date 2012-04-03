@@ -1,4 +1,4 @@
-#include "Misc.cl"
+#include "Misc.h"
 #include "CollimatorTest.cl"
 #include "PrimitivesTest.cl"
 

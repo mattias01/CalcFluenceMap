@@ -1,8 +1,8 @@
 #ifndef __PrimitivesTest__
 #define __PrimitivesTest__
 
-#include "Misc.cl"
-#include "Primitives.cl"
+#include "Misc.h"
+#include "Primitives.h"
 
 void testIntersectLinePlane(int *passed)
 {

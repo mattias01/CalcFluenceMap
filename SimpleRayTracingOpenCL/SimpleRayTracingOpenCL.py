@@ -286,11 +286,12 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     Y_size = int(optimizationParameters[2][1])
     Z_size = int(optimizationParameters[3][1])
     optParametersString = macroString(optimizationParameters)
+    optParametersString += " -D WG_LIGHT_SAMPLING_SIZE=" + str(X_size*Y_size*Z_size)
 
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString)
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString + " " + optParametersString)
-    program = oclu.loadCachedProgram(ctx, PATH_OPENCL + "RayTracing.cl", "-cl-single-precision-constant -cl-nv-verbose " + settingsString + " " + optParametersString)
+    program = oclu.loadCachedProgram(ctx, PATH_OPENCL + "RayTracing.cl", "-cl-nv-verbose " + settingsString + " " + optParametersString)
 
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
@@ -388,12 +389,12 @@ def main():
 
     list = []
     list.append(Parameter("LINE_TRIANGLE_INTERSECTION_ALGORITHM", [2], True))
-    list.append(Parameter("WG_LIGHT_SAMPLING_X", [1,2,4,8,16,32,64,128,256,512,1024], False))
-    list.append(Parameter("WG_LIGHT_SAMPLING_Y", [1,2,4,8,16,32,64,128,256,512,1024], False))
+    list.append(Parameter("WG_LIGHT_SAMPLING_X", [1,2,4,8,16,32,64,128], False))
+    list.append(Parameter("WG_LIGHT_SAMPLING_Y", [1,2,4,8,16,32,64,128], False))
     list.append(Parameter("WG_LIGHT_SAMPLING_Z", [1,2,4,8,16,32], False))
-    list.append(Parameter("RAY_AS", [0], True))
+    list.append(Parameter("RAY_AS", [0,1], True))
     list.append(Parameter("LEAF_AS", [1,3], True))
-    list.append(Parameter("SCENE_AS", [2,3], True))
+    list.append(Parameter("SCENE_AS", [2], True))
 
     fluence_data = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
     intensities = numpy.zeros(shape=(FLX,FLY,LSAMPLES*LSAMPLES), dtype=numpy.float32)
@@ -413,7 +414,7 @@ def main():
 
     #[fluence_data_Python, time_Python, samples_Python] = run_Python(scene, render, collimators, fluence_data_Python)
     #[fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, at.best_parameters) #at.best_parameters
-    [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, getDeafaultOptimizationParameterList())
+    [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, getDefaultOptimizationParameterList())
 
     if SHOW_PLOT == 1:
         if PYTHON == 1:

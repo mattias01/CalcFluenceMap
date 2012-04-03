@@ -42,13 +42,16 @@
   <ItemGroup>
     <Content Include="Activity1.nvact" />
     <Content Include="OpenCL\Collimator.cl" />
+    <Content Include="OpenCL\Collimator.h" />
     <Content Include="OpenCL\CollimatorTest.cl" />
-    <Content Include="OpenCL\Misc.cl" />
+    <Content Include="OpenCL\Misc.h" />
     <Content Include="OpenCL\Primitives.cl" />
+    <Content Include="OpenCL\Primitives.h" />
     <Content Include="OpenCL\PrimitivesTest.cl" />
     <Content Include="OpenCL\RayTracing.cl" />
+    <Content Include="OpenCL\RayTracing.h" />
     <Content Include="OpenCL\RayTracingTests.cl" />
-    <Content Include="OpenCL\Settings.cl" />
+    <Content Include="OpenCL\Settings.h" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Autotune" />
