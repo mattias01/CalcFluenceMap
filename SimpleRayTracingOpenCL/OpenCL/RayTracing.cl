@@ -287,7 +287,7 @@ __kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, __global float4 *l
 	#elif MODE == 1
 		__local float4 col_leaf_data[NUMBER_OF_LEAVES * 2]; // Make sure it's >= than the leaf data.
 	#elif MODE == 2
-		__local float4 col_leaf_data[NUMBER_OF_LEAVES * 12 * 3]; // Make sure it's >= than the leaf data.
+		__local float4 col_leaf_data[NUMBER_OF_LEAVES * 10/*12*/ * 3]; // Make sure it's >= than the leaf data.
 	#endif
 #elif LEAF_AS == 3
 	__global float4 *col_leaf_data;

@@ -39,7 +39,7 @@ typedef struct BBox {
 } __attribute__((packed)) BBox;
 
 typedef struct Box {
-	Triangle triangles[12];
+	Triangle triangles[10];//[12];
 } __attribute__((packed)) Box;
 
 // Function declarations
@@ -56,7 +56,7 @@ void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b
 void intersectLineBox(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *distance, float4 *ip);
 void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, /*float4 *inIp,*/ float4 *outIp);
 
-#include "Primitives.cl" //Hack to go around the inability for OpenCL 1.1 to compile several source files and lik to one.
+#include "Primitives.cl" //Hack to go around the inability for OpenCL 1.1 to compile several source files and link to one.
 
 #endif //__Primitives__
 

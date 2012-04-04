@@ -58,7 +58,7 @@ class BBox(Structure):
         return [self.min, self.max]
 
 class Box(Structure):
-    _fields_ = [("triangles", Triangle * 12)]
+    _fields_ = [("triangles", Triangle * 10)]#12)]
 
     def getVertices(self):
         list = []
@@ -109,21 +109,22 @@ def createBoxFromPoints(p0, p1, p2, p3, p4, p5, p6, p7):
     # Top
     t2 = Triangle(p5, p6, p4)
     t3 = Triangle(p6, p7, p4)
-    # Left side
-    t4 = Triangle(p3, p7, p2)
-    t5 = Triangle(p7, p6, p2)
-    # Right side
-    t6 = Triangle(p4, p0, p5)
-    t7 = Triangle(p0, p1, p5)
+    # Left or right side
+    t4 = Triangle(p1, p2, p5)
+    t5 = Triangle(p2, p6, p5)
+    # Left or right side
+    t6 = Triangle(p4, p7, p0)
+    t7 = Triangle(p7, p3, p0)
     # Front side
-    t8 = Triangle(p1, p2, p5)
-    t9 = Triangle(p2, p6, p5)
+    t8 = Triangle(p3, p7, p2)
+    t9 = Triangle(p7, p6, p2)
     # Back side (Not needed?)
-    t10 = Triangle(p4, p7, p0)
-    t11 = Triangle(p7, p3, p0)
+    #t10 = Triangle(p4, p0, p5)
+    #t11 = Triangle(p0, p1, p5)
     
-    triangle_array = Triangle * 12
-    triangles = triangle_array(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11)
+    triangle_array = Triangle * 10 #12
+    #triangles = triangle_array(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11)
+    triangles = triangle_array(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9)
     return Box(triangles)
 
 def bboxToBox(bbox):

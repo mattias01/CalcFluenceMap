@@ -675,7 +675,7 @@ void intersectLineBox(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *inters
 	bool intersectTmp;
 	float distanceTmp;
 	float4 ipTmp;
-	for (int i = 0; i < 12; i++) {
+	for (int i = 0; i < 10/*12*/; i++) {
 		intersectLineTriangle(l, &(b->triangles[i]), &intersectTmp, &distanceTmp, &ipTmp);
 		if (intersectTmp) {
 			if (counter == 0) {
@@ -708,7 +708,7 @@ void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *i
 	bool intersectTmp;
 	float distanceTmp;
 	float4 ipTmp;
-	for (int i = 0; i < 12; i++) {
+	for (int i = 0; i < 10/*12*/; i++) {
 		intersectLineTriangle(l, &(b->triangles[i]), &intersectTmp, &distanceTmp, &ipTmp);
 		if (intersectTmp) {
 			if (counter == 0) { // First intersection initializes in and out.

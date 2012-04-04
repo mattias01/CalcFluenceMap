@@ -86,50 +86,50 @@ def init_scene():
 
     col1a1 = Collimator()
     #float4(-5.9,-5.9,-29.5,0)
-    col1a1.position = float4(-5.9, -10, -29.5,0)
+    col1a1.position = float4(-5.9, -12, -29.5,0)
     col1a1.xdir = float4(0,1,0,0)
     col1a1.ydir = float4(1,0,0,0)
     col1a1.absorptionCoeff = 1.0
     col1a1.height = 8.2
     col1a1.numberOfLeaves = 10
     col1a1.width = 2.95
-    col1a1.leafPositions = (5,5.1,5.2,5.3,5.2,5.1,5.0,4.9,4.8,4.7)
+    col1a1.leafPositions = (6,6.1,6.2,6.3,6.2,6.1,6.0,5.9,5.8,5.7)
     col1a1.boundingBox = calculateCollimatorBoundingBox(col1a1)
 
     col1a2 = Collimator()
     #float4(-5.9,-5.9,-29.5,0)
-    col1a2.position = float4(-2.95, -10, -29.5,0)
+    col1a2.position = float4(-2.95, -12, -29.5,0)
     col1a2.xdir = float4(0,1,0,0)
     col1a2.ydir = float4(1,0,0,0)
     col1a2.absorptionCoeff = 1.0
     col1a2.height = 8.2
     col1a2.numberOfLeaves = 10
     col1a2.width = 2.95
-    col1a2.leafPositions = (4.6,4.5,4.4,4.2,4,3.8,3.6,3.4,3.2,3.3)
+    col1a2.leafPositions = (5.6,5.5,5.4,5.2,5,4.8,4.6,4.4,4.2,4.3)
     col1a2.boundingBox = calculateCollimatorBoundingBox(col1a2)
 
     col1b1 = Collimator()
     #float4(-5.9,-5.9,-29.5,0)
-    col1b1.position = float4(0, -10, -29.5,0)
+    col1b1.position = float4(0, -12, -29.5,0)
     col1b1.xdir = float4(0,1,0,0)
     col1b1.ydir = float4(1,0,0,0)
     col1b1.absorptionCoeff = 1.0
     col1b1.height = 8.2
     col1b1.numberOfLeaves = 10
     col1b1.width = 2.95
-    col1b1.leafPositions = (3.4,3.5,6,6,6.3,6.4,6,6,7,6)
+    col1b1.leafPositions = (4.4,4.5,7,7,7.3,7.4,7,7,8,7)
     col1b1.boundingBox = calculateCollimatorBoundingBox(col1b1)
 
     col1b2 = Collimator()
     #float4(-5.9,-5.9,-29.5,0)
-    col1b2.position = float4(2.95, -10, -29.5,0)
+    col1b2.position = float4(2.95, -12, -29.5,0)
     col1b2.xdir = float4(0,1,0,0)
     col1b2.ydir = float4(1,0,0,0)
     col1b2.absorptionCoeff = 1.0
     col1b2.height = 8.2
     col1b2.numberOfLeaves = 10
     col1b2.width = 2.95
-    col1b2.leafPositions = (7,6,7,6,7,6,7,6,7,6)
+    col1b2.leafPositions = (8,7,8,7,8,7,8,7,8,7)
     col1b2.boundingBox = calculateCollimatorBoundingBox(col1b2)
 
     """col2 = Collimator()
@@ -155,47 +155,47 @@ def init_scene():
     col2a.boundingBox = calculateCollimatorBoundingBox(col2a)"""
 
     col2a1 = Collimator()
-    col2a1.position = float4(5.9, 10, -29.5,0)
+    col2a1.position = float4(5.9, 12, -29.5,0)
     col2a1.xdir = float4(0,-1,0,0)
     col2a1.ydir = float4(-1,0,0,0)
     col2a1.absorptionCoeff = 1.0
     col2a1.height = 8.2
     col2a1.numberOfLeaves = 10
     col2a1.width = 2.95
-    col2a1.leafPositions = (8,9,8,9,8,9,8,9,8,9)
+    col2a1.leafPositions = (9,10,9,10,9,10,9,10,9,10)
     col2a1.boundingBox = calculateCollimatorBoundingBox(col2a1)
 
     col2a2 = Collimator()
-    col2a2.position = float4(2.95, 10, -29.5,0)
+    col2a2.position = float4(2.95, 12, -29.5,0)
     col2a2.xdir = float4(0,-1,0,0)
     col2a2.ydir = float4(-1,0,0,0)
     col2a2.absorptionCoeff = 1.0
     col2a2.height = 8.2
     col2a2.numberOfLeaves = 10
     col2a2.width = 2.95
-    col2a2.leafPositions = (8,9,8,9,8,9,8,9,8,9)
+    col2a2.leafPositions = (9,10,9,10,9,10,9,10,9,10)
     col2a2.boundingBox = calculateCollimatorBoundingBox(col2a2)
 
     col2b1 = Collimator()
-    col2b1.position = float4(0, 10, -29.5,0)
+    col2b1.position = float4(0, 12, -29.5,0)
     col2b1.xdir = float4(0,-1,0,0)
     col2b1.ydir = float4(-1,0,0,0)
     col2b1.absorptionCoeff = 1.0
     col2b1.height = 8.2
     col2b1.numberOfLeaves = 10
     col2b1.width = 2.95
-    col2b1.leafPositions = (8,9,8,9,8,9,8,9,8,9)
+    col2b1.leafPositions = (9,10,9,10,9,10,9,10,9,10)
     col2b1.boundingBox = calculateCollimatorBoundingBox(col2b1)
 
     col2b2 = Collimator()
-    col2b2.position = float4(-2.95, 10, -29.5,0)
+    col2b2.position = float4(-2.95, 12, -29.5,0)
     col2b2.xdir = float4(0,-1,0,0)
     col2b2.ydir = float4(-1,0,0,0)
     col2b2.absorptionCoeff = 1.0
     col2b2.height = 8.2
     col2b2.numberOfLeaves = 10
     col2b2.width = 2.95
-    col2b2.leafPositions = (8,9,8,9,8,9,8,9,8,9)
+    col2b2.leafPositions = (9,10,9,10,9,10,9,10,9,10)
     col2b2.boundingBox = calculateCollimatorBoundingBox(col2b2)
 
     """col2b = Collimator()
@@ -395,26 +395,26 @@ def main():
     list.append(Parameter("RAY_AS", [0], True))
     list.append(Parameter("LEAF_AS", [1], True))
     list.append(Parameter("SCENE_AS", [2], True))
-    list.append(Parameter("STRUCTURE", [0,1], True))
+    list.append(Parameter("STRUCTURE", [0], True))
 
     fluence_data = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
     intensities = numpy.zeros(shape=(FLX,FLY,LSAMPLES*LSAMPLES), dtype=numpy.float32)
 
     oclu = OpenCLUtility.OpenCLUtility()
 
-    at = Autotune(ParameterSet(list), run_OpenCL, (oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList))
+    #at = Autotune(ParameterSet(list), run_OpenCL, (oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList))
 
-    at.findOptimizationParameters()
+    #at.findOptimizationParameters()
 
     #print at.getTable()
-    at.saveCSV()
+    #at.saveCSV()
 
     # Reset output data
     fluence_data = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
     intensities = numpy.zeros(shape=(FLX,FLY,LSAMPLES*LSAMPLES), dtype=numpy.float32)
 
     #[fluence_data_Python, time_Python, samples_Python] = run_Python(scene, render, collimators, fluence_data_Python)
-    #[fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, at.best_parameters) #at.best_parameters
+    #[fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, at.best_parameters)
     [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, getDefaultOptimizationParameterList())
 
     if SHOW_PLOT == 1:

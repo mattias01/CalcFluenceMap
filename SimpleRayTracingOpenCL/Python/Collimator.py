@@ -238,7 +238,7 @@ def float4ArrayFromCollimators(collimators):
                     leaf_array[leaf_array_position + k*3 + 0] = collimators[i].boxCollimator.leaves[j].triangles[k].p0
                     leaf_array[leaf_array_position + k*3 + 1] = collimators[i].boxCollimator.leaves[j].triangles[k].p1
                     leaf_array[leaf_array_position + k*3 + 2] = collimators[i].boxCollimator.leaves[j].triangles[k].p2
-                leaf_array_position += 12 * 3
+                leaf_array_position += 10 * 3#12 * 3
     
     return leaf_array
 
@@ -384,7 +384,7 @@ def createBoxCollimator(collimator, leaf_array):
     bc.absorptionCoeff = collimator.absorptionCoeff
     bc.numberOfLeaves = collimator.numberOfLeaves
     bc.leafArrayOffset = len(leaf_array)
-    bc.leafArrayStride = 12 * 3
+    bc.leafArrayStride = 10 * 3#12 * 3
     #bc.leaves = boxes
     return [bc, createfloat4List(boxes)]
 
