@@ -42,7 +42,7 @@ class Autotune(object):
 
                 tab = '\t'
                 if test_time == float('inf'): # Adjust tabulation so parameters are aligned in output.
-                    tab += '\t\t'
+                    tab += '\t'
                 print str(i) + '\t' + "Time:" + str(test_time) + tab + " " + self.parameters.toStringCurrentValue()
                 if i < self.parameters.getNumberOfStates()-1:
                     self.parameters.next()
