@@ -333,7 +333,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 
 	if (*intersect){
 		float4 D = d->origin - *ip;
-		if (dot(D,D) > d->radius*d->radius) {
+		if (length(D) > d->radius*d->radius) {
 			*intersect = false;
 		}
 	}
@@ -341,15 +341,17 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 
 void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect, float *distance, float4 *ip)
 {
-	if (dot(l->direction, d->normal) != 0.0f) { // Not parallel -> intersect.
-		*distance = (dot(d->normal, (d->origin - l->origin))) / (dot(d->normal, l->direction));
-		if (*distance > 0.0f) { // Plane is located in positive ray direction from the ray origin. Avoids hitting same thing it just hit.
+	float a = dot(l->direction, d->normal);
+	if (a != 0.0f) { // Not parallel -> intersect.
+		*distance = dot(d->normal, (d->origin - l->origin)) / a;
+		//if (*distance > 0.0f) { // Assumes it can not come from the top side.
+			*ip = l->origin + l->direction*(*distance);
 			float4 D = d->origin - *ip;
-			if (dot(D,D) <= d->radius*d->radius) {
+			if (length(D) <= d->radius*d->radius) {
 				*intersect = true;
 				return;
 			}
-		}
+		//}
 	}
 	*intersect = false;
 }
@@ -357,8 +359,6 @@ void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect
 // Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
 void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *distance, float4 *ip)
 {
-	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
-	//BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	float divx = 1.0f / l->direction.x;
 	if (divx >= 0.0f) {
@@ -478,10 +478,8 @@ void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect
 	*outIp = l->origin + l->direction*tmax;
 }*/
 
-void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
-	BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
-	BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	float divx = 1.0f / l->direction.x;
 	if (divx >= 0.0f) {
@@ -544,8 +542,6 @@ void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *int
 // Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
 void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *distance, float4 *ip)
 {
-	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
-	//BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	float divx = 1.0f / l->direction.x;
 	if (divx >= 0.0f) {
@@ -607,8 +603,6 @@ void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, boo
 // Registers: 6.
 void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
-	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
-	//BBox *b = &bbox;
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	float divx = 1.0f / l->direction.x;
 	if (divx >= 0.0f) {
