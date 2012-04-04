@@ -97,3 +97,7 @@
 #elif SCENE_AS == 3
 	#define SCENE_ASQ __global const
 #endif
+
+#ifndef STRUCTURE
+#define STRUCTURE 0
+#endif

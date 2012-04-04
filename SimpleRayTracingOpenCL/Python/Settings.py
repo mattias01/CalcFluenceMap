@@ -38,6 +38,9 @@ RAY_AS = 0 # Valid: 0, 1.
 LEAF_AS = 1 # Valid: 1, 3.
 SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu
 
+# Structure
+STRUCTURE = 0 # Valid 0: Detpth first, 1: Breadth first.
+
 # Run settings
 OPENCL = 1
 PYTHON = 0
@@ -68,6 +71,8 @@ def getDefaultOptimizationParameterList():
     list.append(("RAY_AS", str(RAY_AS), True))
     list.append(("LEAF_AS", str(LEAF_AS), True))
     list.append(("SCENE_AS", str(SCENE_AS), True))
+    list.append(("STRUCTURE", str(STRUCTURE), True))
+    
     return list
 
 # Argument list is a list of tupels with the first element being the macro name and the second its value.

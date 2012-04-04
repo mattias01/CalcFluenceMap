@@ -291,7 +291,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString)
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString + " " + optParametersString)
-    program = oclu.loadCachedProgram(ctx, PATH_OPENCL + "RayTracing.cl", "-cl-nv-verbose " + settingsString + " " + optParametersString)
+    program = oclu.loadCachedProgram(ctx, PATH_OPENCL + "RayTracing.cl", " " + settingsString + " " + optParametersString)
 
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
@@ -392,21 +392,22 @@ def main():
     list.append(Parameter("WG_LIGHT_SAMPLING_X", [1,2,4,8,16,32,64,128], False))
     list.append(Parameter("WG_LIGHT_SAMPLING_Y", [1,2,4,8,16,32,64,128], False))
     list.append(Parameter("WG_LIGHT_SAMPLING_Z", [1,2,4,8,16,32], False))
-    list.append(Parameter("RAY_AS", [0,1], True))
-    list.append(Parameter("LEAF_AS", [1,3], True))
+    list.append(Parameter("RAY_AS", [0], True))
+    list.append(Parameter("LEAF_AS", [1], True))
     list.append(Parameter("SCENE_AS", [2], True))
+    list.append(Parameter("STRUCTURE", [0,1], True))
 
     fluence_data = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)
     intensities = numpy.zeros(shape=(FLX,FLY,LSAMPLES*LSAMPLES), dtype=numpy.float32)
 
     oclu = OpenCLUtility.OpenCLUtility()
 
-    #at = Autotune(ParameterSet(list), run_OpenCL, (oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList))
+    at = Autotune(ParameterSet(list), run_OpenCL, (oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList))
 
-    #at.findOptimizationParameters()
+    at.findOptimizationParameters()
 
     #print at.getTable()
-    #at.saveCSV()
+    at.saveCSV()
 
     # Reset output data
     fluence_data = numpy.zeros(shape=(FLX,FLY), dtype=numpy.float32)

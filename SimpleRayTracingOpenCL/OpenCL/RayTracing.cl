@@ -110,13 +110,16 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *le
 			minDistance = distanceTmpIn;
 			*intersect = true;
 			*ip = ipTmpCollimatorBBOut;
-			
-			hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, ip, intensityCoeff, debug);
+			#if STRUCTURE == 0
+				hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, ip, intensityCoeff, debug);
+			#endif
 		}
 	}
 	
-	/*if (collimatorIndex != -1)
-		hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, ip, intensityCoeff, debug);*/
+	#if STRUCTURE == 1
+		if (collimatorIndex != -1)
+			hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, ip, intensityCoeff, debug);
+	#endif
 }
 
 void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug) {
