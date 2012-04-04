@@ -316,7 +316,7 @@ __kernel void calculateIntensityDecreaseWithDistance(SCENE_ASQ Scene *scene, __g
 	float anglei = acos(dot(normalize(vi0), normalize(vi1)));
     float anglej = acos(dot(normalize(vj0), normalize(vj1)));
 
-    distanceFactors[j+i*FLY] = anglei*anglej/M_PI_F*2.0f; // The ratio of a unit half sphere that are covering the light source. => Things that are further away recieves less photons.
+    distanceFactors[j+i*FLY] = anglei*anglej/M_PI_F*M_PI_F; // The ratio of a unit half sphere that are covering the light source. => Things that are further away recieves less photons.
 }
 
 __kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensity_map, __global float *fluence_data, __global Debug *debug){
@@ -330,4 +330,4 @@ __kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensi
     fluence_data[j+i*FLY] *= fluenceSum; // Assumes fluence element already contains distance factor.
 }
 
-#define force_recomp 29
+#define force_recomp 37
