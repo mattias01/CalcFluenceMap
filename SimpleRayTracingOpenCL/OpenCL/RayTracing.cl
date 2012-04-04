@@ -35,6 +35,57 @@ void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ float4 *le
 	}
 }
 
+void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, __global float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug) {
+	bool intersectTmp;
+	float4 ipTmpLeaf;
+	float thickness;
+
+	#if LEAF_AS == 0
+	#elif LEAF_AS == 1
+		#if MODE == 0
+			for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]; j++) {
+				col_leaf_data[j] = leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + j];
+			}
+			barrier(CLK_LOCAL_MEM_FENCE);
+		#elif MODE == 1
+			for (int j = 0; j < s->collimators.bboxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]; j++) {
+				col_leaf_data[j] = leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex] + j];
+			}
+			barrier(CLK_LOCAL_MEM_FENCE);
+		#elif MODE == 2
+			for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]; j++) {
+				col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + j];
+			}
+			barrier(CLK_LOCAL_MEM_FENCE);
+		#endif
+	#elif LEAF_AS == 3
+		#if MODE == 0
+            col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex]];
+		#elif MODE == 1
+            col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex]];
+		#elif MODE == 2
+            col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex]];
+		#endif
+	#endif
+            
+	firstHitLeaf(s, r, col_leaf_data, collimatorIndex, &intersectTmp, &ipTmpLeaf, &thickness, debug);
+	float absorptionCoeff = s->collimators.absorptionCoeff[*collimatorIndex];
+	while (intersectTmp) {
+		*intersect = true;
+		*intensityCoeff *= exp(-absorptionCoeff*thickness);
+		#if MODE == 0
+			// One leaf hit. Continue ray after collimator because leaves don't have thickness.
+			intersectTmp = false;
+			*ip = ipTmpLeaf;
+		#elif MODE == 1 || MODE == 2
+			// One ray can hit several leaves.
+			*ip = ipTmpLeaf;
+			r->origin = ipTmpLeaf;
+			firstHitLeaf(s, r, col_leaf_data, collimatorIndex, &intersectTmp, &ipTmpLeaf, &thickness, debug);
+		#endif
+	}
+}
+
 void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float4 *ip, float *intensityCoeff, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
@@ -60,56 +111,12 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *le
 			*intersect = true;
 			*ip = ipTmpCollimatorBBOut;
 			
-			//bool intersectTmp;
-			float4 ipTmpLeaf;
-			float thickness;
-
-			#if LEAF_AS == 0
-			#elif LEAF_AS == 1
-				#if MODE == 0
-					for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[collimatorIndex]; j++) {
-						col_leaf_data[j] = leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex] + j];
-					}
-					barrier(CLK_LOCAL_MEM_FENCE);
-				#elif MODE == 1
-					for (int j = 0; j < s->collimators.bboxCollimator.numberOfLeaves[collimatorIndex] * s->collimators.bboxCollimator.leafArrayStride[collimatorIndex]; j++) {
-						col_leaf_data[j] = leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex] + j];
-					}
-					barrier(CLK_LOCAL_MEM_FENCE);
-				#elif MODE == 2
-					for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[collimatorIndex]; j++) {
-						col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex] + j];
-					}
-					barrier(CLK_LOCAL_MEM_FENCE);
-				#endif
-			#elif LEAF_AS == 3
-				#if MODE == 0
-                    col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[collimatorIndex]];
-				#elif MODE == 1
-                    col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[collimatorIndex]];
-				#elif MODE == 2
-                    col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[collimatorIndex]];
-				#endif
-			#endif
-            
-			firstHitLeaf(s, r, col_leaf_data, &collimatorIndex, &intersectTmp, &ipTmpLeaf, &thickness, debug);
-			float absorptionCoeff = s->collimators.absorptionCoeff[collimatorIndex];
-			while (intersectTmp) {
-				*intersect = true;
-				*intensityCoeff *= exp(-absorptionCoeff*thickness);
-				#if MODE == 0
-					// One leaf hit. Continue ray after collimator because leaves don't have thickness.
-					intersectTmp = false;
-					*ip = ipTmpLeaf;
-				#elif MODE == 1 || MODE == 2
-					// One ray can hit several leaves.
-					*ip = ipTmpLeaf;
-					r->origin = ipTmpLeaf;
-					firstHitLeaf(s, r, col_leaf_data, &collimatorIndex, &intersectTmp, &ipTmpLeaf, &thickness, debug);
-				#endif
-			}
+			hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, ip, intensityCoeff, debug);
 		}
 	}
+	
+	/*if (collimatorIndex != -1)
+		hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, ip, intensityCoeff, debug);*/
 }
 
 void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug) {
