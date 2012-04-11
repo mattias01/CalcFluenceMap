@@ -1,3 +1,5 @@
+# Platform
+PLATFORM = 2 # 0: Windows NVidia, 1: Windows Intel, 2: OSX-CPU, 3: OSX-GPU, 4: AMD-CPU, 5: AMD-GPU
 
 # Collimator defines
 NUMBER_OF_LEAVES = 10
@@ -13,29 +15,30 @@ LSAMPLES = 20
 LSAMPLESSQR = LSAMPLES*LSAMPLES
 #LSTEP = 0.0
 
-MODE = 2
+MODE = 0
 NUMBER_OF_COLLIMATORS = 10
 
 # Optimization parameters
 LINE_TRIANGLE_INTERSECTION_ALGORITHM = 2 # SS, MT, MT2, MT3
 
 # Work group sizes
-# Best INTEL
-#WG_LIGHT_SAMPLING_X = 1
-#WG_LIGHT_SAMPLING_Y = 1
-#WG_LIGHT_SAMPLING_Z = 1
-# Best NVIDIA GTX 470
-WG_LIGHT_SAMPLING_X = 1
-WG_LIGHT_SAMPLING_Y = 4
-WG_LIGHT_SAMPLING_Z = 16
-#WG_LIGHT_SAMPLING_X = 4
-#WG_LIGHT_SAMPLING_Y = 4
-#WG_LIGHT_SAMPLING_Z = 2
+if PLATFORM in [1, 2, 4]: # Best CPU
+    WG_LIGHT_SAMPLING_X = 1
+    WG_LIGHT_SAMPLING_Y = 1
+    WG_LIGHT_SAMPLING_Z = 1
+elif PLATFORM in [0]: # Best NVIDIA GTX 470
+    WG_LIGHT_SAMPLING_X = 1
+    WG_LIGHT_SAMPLING_Y = 4
+    WG_LIGHT_SAMPLING_Z = 16
+else:
+    WG_LIGHT_SAMPLING_X = 2
+    WG_LIGHT_SAMPLING_Y = 2
+    WG_LIGHT_SAMPLING_Z = 4
 WG_LIGHT_SAMPLING_SIZE = WG_LIGHT_SAMPLING_X * WG_LIGHT_SAMPLING_Y * WG_LIGHT_SAMPLING_Z
 
 # Adress spaces. 0: private, 1: local, 2: constant, 3: global
 RAY_AS = 0 # Valid: 0, 1.
-LEAF_AS = 1 # Valid: 1, 3.
+LEAF_AS = 3 # Valid: 1, 3.
 SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu
 
 # Structure
@@ -46,11 +49,14 @@ OPENCL = 1
 PYTHON = 0
 SHOW_PLOT = 1
 SHOW_3D_SCENE = 0
-PATH_OPENCL = "OpenCL/"
-#PATH_OPENCL = "/Users/mattias/Skola/exjobb/CalcFluenceMap/SimpleRayTracingOpenCL/OpenCL/"
+if PLATFORM in [0, 1, 4, 5]:
+    PATH_OPENCL = "OpenCL/"
+elif PLATFORM in [2, 3]:
+    PATH_OPENCL = "/Users/mattias/Skola/exjobb/CalcFluenceMap/SimpleRayTracingOpenCL/OpenCL/"
 
 def getDefaultSettingsList():
     list = []
+    list.append(("PLATFORM", str(PLATFORM), True))
     list.append(("NUMBER_OF_LEAVES", str(NUMBER_OF_LEAVES), True))
     list.append(("FLX", str(FLX), True))
     list.append(("FLY", str(FLY), True))

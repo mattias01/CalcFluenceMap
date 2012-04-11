@@ -478,8 +478,14 @@ void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect
 	*outIp = l->origin + l->direction*tmax;
 }*/
 
-void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
+void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
+#if PLATFORM == 2
+    BBox bboxA = *bb;
+    BBox* b = &bboxA;
+#else
+    SCENE_ASQ BBox* b = bb;
+#endif
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	float divx = 1.0f / l->direction.x;
 	if (divx >= 0.0f) {

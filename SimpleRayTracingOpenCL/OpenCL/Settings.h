@@ -1,5 +1,9 @@
 // Default settings if a setting is not coming as copiler arguments.
 
+#ifndef PLATFORM
+#define PLATFORM 0
+#endif
+
 #ifndef NUMBER_OF_LEAVES
 #define NUMBER_OF_LEAVES 40
 #endif //NUMBEROFLEAVES
