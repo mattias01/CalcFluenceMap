@@ -417,70 +417,9 @@ void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect
 	// Could give the outgoing distance (tmax) and point here as well.
 }
 
-// Registers: 6.
-/*void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
-{
-	//BBox bbox = *bb; // Copy to private memory. Workaround to fix strange error.
-	//BBox *b = &bbox;
-	float tmin, tmax, tymin, tymax, tzmin, tzmax;
-	if (l->direction.x >= 0.0f) {
-        tmin = (b->min.x - l->origin.x) / l->direction.x;
-        tmax = (b->max.x - l->origin.x) / l->direction.x;
-	}
-    else {
-        tmin = (b->max.x - l->origin.x) / l->direction.x;
-        tmax = (b->min.x - l->origin.x) / l->direction.x;
-	}
-    if (l->direction.y >= 0.0f) {
-        tymin = (b->min.y - l->origin.y) / l->direction.y;
-        tymax = (b->max.y - l->origin.y) / l->direction.y;
-	}
-    else {
-        tymin = (b->max.y - l->origin.y) / l->direction.y;
-        tymax = (b->min.y - l->origin.y) / l->direction.y;
-	}
-    if ((tmin > tymax) || (tymin > tmax)) {
-		*intersect = false;
-        return;
-	}
-    if (tymin > tmin) {
-        tmin = tymin;
-	}
-    if (tymax < tmax) {
-       tmax = tymax;
-	}
-    if (l->direction.z >= 0.0f) {
-        tzmin = (b->min.z - l->origin.z) / l->direction.z;
-        tzmax = (b->max.z - l->origin.z) / l->direction.z;
-	}
-    else {
-        tzmin = (b->max.z - l->origin.z) / l->direction.z;
-        tzmax = (b->min.z - l->origin.z) / l->direction.z;
-	}
-    if ((tmin > tzmax) || (tzmin > tmax)) {
-        *intersect = false;
-        return;
-	}
-    if (tzmin > tmin) {
-        tmin = tzmin;
-	}
-    if (tzmax < tmax) {
-        tmax = tzmax;
-	}
-	if (tmax <= 0.0f) { // Only in the positive direction.
-		*intersect = false;
-        return;
-	}
-	*intersect = true;
-	*inDistance = tmin;
-	*outDistance = tmax;
-	*inIp = l->origin + l->direction*tmin;
-	*outIp = l->origin + l->direction*tmax;
-}*/
-
 void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
-#if PLATFORM == 2
+#if PLATFORM == 2 // Hack to make it work on OSX-CPU.
     BBox bboxA = *bb;
     BBox* b = &bboxA;
 #else

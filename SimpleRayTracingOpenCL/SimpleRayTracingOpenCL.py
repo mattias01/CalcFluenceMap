@@ -291,7 +291,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString)
     #program = oclu.loadProgram(ctx, PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString + " " + optParametersString)
-    program = oclu.loadCachedProgram(ctx, PATH_OPENCL + "RayTracing.cl", " " + settingsString + " " + optParametersString)
+    program = oclu.loadCachedProgram(ctx, PATH_OPENCL + "RayTracing.cl", "-cl-nv-verbose " + settingsString + " " + optParametersString)
 
     mf = cl.mem_flags
     scene_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=scene)
@@ -315,7 +315,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
     timeOpenCL = time()-time1
 
-    #print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
+    print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
     samplesPerSecondOpenCL = FLX*FLY*LSAMPLES*LSAMPLES/timeOpenCL
     #print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
     #print fluence_data
