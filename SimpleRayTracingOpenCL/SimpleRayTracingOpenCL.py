@@ -297,20 +297,20 @@ def main():
 
     oclu = OpenCLUtility.OpenCLUtility()
 
-    at = Autotune(ParameterSet(list), run_OpenCL, (oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList))
+    #at = Autotune(ParameterSet(list), run_OpenCL, (oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList))
 
-    at.findOptimizationParameters()
+    #at.findOptimizationParameters()
 
     #print at.getTable()
-    at.saveCSV()
+    #at.saveCSV()
 
     # Reset output data
     fluence_data = numpy.zeros(shape=(Settings.FLX,Settings.FLY), dtype=numpy.float32)
     intensities = numpy.zeros(shape=(Settings.FLX,Settings.FLY,Settings.LSAMPLES*Settings.LSAMPLES), dtype=numpy.float32)
 
     #[fluence_data_Python, time_Python, samples_Python] = run_Python(scene, render, collimators, fluence_data_Python)
-    [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, at.best_parameters)
-    #[fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, Settings.getDefaultOptimizationParameterList())
+    #[fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, at.best_parameters)
+    [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, Settings.getDefaultOptimizationParameterList())
 
     if Settings.SHOW_PLOT == 1:
         if Settings.PYTHON == 1:
