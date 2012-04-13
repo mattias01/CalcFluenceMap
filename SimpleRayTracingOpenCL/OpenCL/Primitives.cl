@@ -70,7 +70,7 @@ void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect, 
 	*intersect = false;
 	if (dot(l->direction, p->normal) != 0.0f) { // Not parallel -> intersect.
 		*distance = (dot(p->normal, (p->origin - l->origin))) / (dot(p->normal, l->direction));
-		if (*distance > 0.0f) { // Plane is located in positive ray direction from the ray origin. Avoids hitting same thing it just hit.
+		if (*distance >= 0.0f) { // Plane is located in positive ray direction from the ray origin. Avoids hitting same thing it just hit.
 			*intersect = true;
 			*ip = l->origin + l->direction*(*distance);
 		}
@@ -158,7 +158,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 	// calculate distance, ray intersects triangle
 	///intersect = true;
 	*distance = dot(edge2, qvec) * inv_det;
-	if (*distance < 0.0f) {
+	if (*distance <= 0.0f) {
 		*intersect = false;
 		return;
 	}
@@ -237,7 +237,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 
 	// calculate t, ray intersects triangle
 	*distance = dot(edge2, qvec) / det;//* inv_det;
-	if (*distance < 0.0f) {
+	if (*distance <= 0.0f) {
 		*intersect = false;
 		return;
 	}
@@ -313,7 +313,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 
 	//calculate t, ray intersects triangle
 	*distance = dot(edge2, qvec) * inv_det;
-	if (*distance < 0.0f) {
+	if (*distance <= 0.0f) {
 		*intersect = false;
 		return;
 	}
