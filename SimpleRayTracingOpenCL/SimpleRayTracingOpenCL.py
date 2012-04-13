@@ -169,10 +169,15 @@ def run_Python(scene, render, collimators):
 # Run in OpenCL
 def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, optimizationParameters):
     debugOpenCL = Debug()
-    settingsString = Settings.macroString(settingsList)
+    
     X_size = int(optimizationParameters[1][1])
     Y_size = int(optimizationParameters[2][1])
     Z_size = int(optimizationParameters[3][1])
+    #Settings.PIECES = int(optimizationParameters[4][1])
+    #[scene, collimators, leaf_array] = init_scene()
+    #settingsList = define_settings(scene)
+    
+    settingsString = Settings.macroString(settingsList)
     optParametersString = Settings.macroString(optimizationParameters)
     optParametersString += " -D WG_LIGHT_SAMPLING_SIZE=" + str(X_size*Y_size*Z_size)
 
@@ -281,31 +286,31 @@ def main():
     list.append(Parameter("WG_LIGHT_SAMPLING_X", [1,2,4,8,16,32,64,128], False))
     list.append(Parameter("WG_LIGHT_SAMPLING_Y", [1,2,4,8,16,32,64,128], False))
     list.append(Parameter("WG_LIGHT_SAMPLING_Z", [1,2,4,8,16,32], False))
+    #list.append(Parameter("PIECES", [1,2,4,10,20], False))
     list.append(Parameter("RAY_AS", [0], True))
     list.append(Parameter("LEAF_AS", [1], True))
     list.append(Parameter("SCENE_AS", [2], True))
     list.append(Parameter("STRUCTURE", [0], True))
-    list.append(Parameter("PIECES", [1,2,4,10,20], True))
 
     fluence_data = numpy.zeros(shape=(Settings.FLX,Settings.FLY), dtype=numpy.float32)
     intensities = numpy.zeros(shape=(Settings.FLX,Settings.FLY,Settings.LSAMPLES*Settings.LSAMPLES), dtype=numpy.float32)
 
     oclu = OpenCLUtility.OpenCLUtility()
 
-    #at = Autotune(ParameterSet(list), run_OpenCL, (oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList))
+    at = Autotune(ParameterSet(list), run_OpenCL, (oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList))
 
-    #at.findOptimizationParameters()
+    at.findOptimizationParameters()
 
     #print at.getTable()
-    #at.saveCSV()
+    at.saveCSV()
 
     # Reset output data
     fluence_data = numpy.zeros(shape=(Settings.FLX,Settings.FLY), dtype=numpy.float32)
     intensities = numpy.zeros(shape=(Settings.FLX,Settings.FLY,Settings.LSAMPLES*Settings.LSAMPLES), dtype=numpy.float32)
 
     #[fluence_data_Python, time_Python, samples_Python] = run_Python(scene, render, collimators, fluence_data_Python)
-    #[fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, at.best_parameters)
-    [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, Settings.getDefaultOptimizationParameterList())
+    [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, at.best_parameters)
+    #[fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, Settings.getDefaultOptimizationParameterList())
 
     if Settings.SHOW_PLOT == 1:
         if Settings.PYTHON == 1:
