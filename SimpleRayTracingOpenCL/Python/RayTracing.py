@@ -6,7 +6,8 @@ import sys
 from OpenCLTypes import *
 from Python.Collimator import *
 from Python.Primitives import *
-from Python.Settings import MODE, NUMBER_OF_COLLIMATORS
+#from Python.Settings import MODE, NUMBER_OF_COLLIMATORS
+import Python.Settings as Settings
 
 ###################### Class definitions ######################
 
@@ -19,11 +20,15 @@ class SimpleRaySourceRectangle(Structure):
 class FluenceMap(Structure):
     _fields_ = [("rectangle", Rectangle)]
 
-class Scene(Structure):
-    _fields_ = [("fluenceMap", FluenceMap),
-                ("raySource", Disc),
-                ("numberOfCollimators", c_int),
-                ("collimators", CollimatorSoA)]
+def sceneFactory(CSOA):
+    class Scene(Structure):
+        _fields_ = [("fluenceMap", FluenceMap),
+                    ("raySource", Disc),
+                    ("numberOfCollimators", c_int),
+                    #("collimators", CollimatorSoA)]
+                    #("collimators", collimatorSoAFactory())]
+                    ("collimators", CSOA)]
+    return Scene
 
 class Render(Structure):
     _fields_ = [("flx", c_int),
@@ -55,21 +60,21 @@ def firstHitLeaf(scene, render, ray, collimator):
         intersectTmp = False
         intersectionDistanceTmp = float("inf")
         intersectionPointTmp = None
-        if MODE == 0:
+        if Settings.MODE == 0:
             [intersectTmp, intersectionDistanceTmp, intersectionPointTmp] = intersectLineFlatCollimatorLeaf(ray, collimator.leaves[i*2], collimator.leaves[i*2 + 1])
-        elif MODE == 1:
+        elif Settings.MODE == 1:
             [intersectTmp, intersectionDistanceInTmp, intersectionDistanceOutTmp, intersectionPointInTmp, intersectionPointOutTmp] = intersectLineBBoxCollimatorLeaf(ray, collimator.leaves[i])
             intersectionDistanceTmp = intersectionDistanceInTmp
-        elif MODE == 2:
+        elif Settings.MODE == 2:
             [intersectTmp, intersectionDistanceInTmp, intersectionDistanceOutTmp, intersectionPointInTmp, intersectionPointOutTmp] = intersectLineBoxCollimatorLeaf(ray, collimator.leaves[i])
             intersectionDistanceTmp = intersectionDistanceInTmp
 
         if intersectTmp == True and intersectionDistanceTmp < minDistance:
             leafIndex = i
             minDistance = intersectionDistanceTmp
-            if MODE == 0:
+            if Settings.MODE == 0:
                 intersectionPoint = intersectionPointTmp
-            elif MODE == 1 or MODE == 2:
+            elif Settings.MODE == 1 or Settings.MODE == 2:
                 thickness = intersectionDistanceOutTmp - intersectionDistanceInTmp
                 intersectionPoint = intersectionPointOutTmp
 
@@ -107,25 +112,25 @@ def firstHitCollimator(scene, render, ray, collimators):
 
     if collimatorIndex != -1:
         thickness = 0
-        if MODE == 0:
+        if Settings.MODE == 0:
             [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, ray, collimators[collimatorIndex].flatCollimator)
-        elif MODE == 1:
+        elif Settings.MODE == 1:
             [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, ray, collimators[collimatorIndex].bboxCollimator)
-        elif MODE == 2:
+        elif Settings.MODE == 2:
             [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, ray, collimators[collimatorIndex].boxCollimator)
         while intersectTmp:
             intersect = True
             minDistance = intersectionDistanceTmp
             intersectionPoint = intersectionPointTmp
-            if MODE == 0:
+            if Settings.MODE == 0:
                 thickness = collimators[collimatorIndex].height
             intensityCoeff *= exp(-collimators[collimatorIndex].absorptionCoeff*thickness)
             newRay = Line(intersectionPointTmp, ray.direction)
-            if MODE == 0:
+            if Settings.MODE == 0:
                 [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, newRay, collimators[collimatorIndex].flatCollimator)
-            elif MODE == 1:
+            elif Settings.MODE == 1:
                 [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, newRay, collimators[collimatorIndex].bboxCollimator)
-            elif MODE == 2:
+            elif Settings.MODE == 2:
                 [intersectTmp, intersectionDistanceTmp, intersectionPointTmp, thickness] = firstHitLeaf(scene, render, newRay, collimators[collimatorIndex].boxCollimator)
 
         if (intersect == False):
@@ -171,8 +176,8 @@ def calcFluenceElement(scene, render, collimators, fluency_data, fi, fj, debug):
 
     ratio = anglei*anglej/pi*2
 
-    for li in range(LSAMPLES):
-        for lj in range(LSAMPLES):
+    for li in range(Settings.LSAMPLES):
+        for lj in range(Settings.LSAMPLES):
             lPoint =  float4(scene.raySource.disc.origin.x - scene.raySource.disc.radius + li*render.lstep, 
                              scene.raySource.disc.origin.y - scene.raySource.disc.radius + lj*render.lstep, 
                              scene.raySource.disc.origin.z,
@@ -190,17 +195,19 @@ def calcAllFluenceElements(scene, render, collimators, fluency_data, debug):
             calcFluenceElement(scene, render, collimators, fluency_data, fi, fj, debug)
 
 def initCollimators(collimators, leaf_array):
-    for i in range(NUMBER_OF_COLLIMATORS):
+    for i in range(Settings.NUMBER_OF_COLLIMATORS):
         leaves = []
-        if MODE == 0:
+        if Settings.MODE == 0:
             [collimators[i].flatCollimator, leaves] = createFlatCollimator(collimators[i], leaf_array)
-        elif MODE == 1:
+        elif Settings.MODE == 1:
             [collimators[i].bboxCollimator, leaves] = createBBoxCollimator(collimators[i], leaf_array)
-        elif MODE == 2:
+        elif Settings.MODE == 2:
             [collimators[i].boxCollimator, leaves] = createBoxCollimator(collimators[i], leaf_array)
         else:
             print "Undefined mode"
         leaf_array.extend(leaves)
+
+    return collimators
 
 """def init(scene, render, collimators, leaf_array):
     for i in range(len(collimators)):

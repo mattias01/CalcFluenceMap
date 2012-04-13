@@ -1,8 +1,12 @@
 # Platform
-PLATFORM = 2 # 0: Windows NVidia, 1: Windows Intel, 2: OSX-CPU, 3: OSX-GPU, 4: AMD-CPU, 5: AMD-GPU
+PLATFORM = 0 # 0: Windows NVidia, 1: Windows Intel, 2: OSX-CPU, 3: OSX-GPU, 4: AMD-CPU, 5: AMD-GPU
 
 # Collimator defines
-NUMBER_OF_LEAVES = 10
+NUMBER_OF_LEAVES = 40
+NUMBER_OF_COLLIMATORS = 4
+PIECES = 10
+if NUMBER_OF_LEAVES%PIECES != 0:
+    print "Warning: NUMBER_OF_COLLIMATORS not divisable by PIECES"
 
 # Global defines
 FLX = 128
@@ -15,8 +19,7 @@ LSAMPLES = 20
 LSAMPLESSQR = LSAMPLES*LSAMPLES
 #LSTEP = 0.0
 
-MODE = 0
-NUMBER_OF_COLLIMATORS = 10
+MODE = 2
 
 # Optimization parameters
 LINE_TRIANGLE_INTERSECTION_ALGORITHM = 2 # SS, MT, MT2, MT3
@@ -38,11 +41,11 @@ WG_LIGHT_SAMPLING_SIZE = WG_LIGHT_SAMPLING_X * WG_LIGHT_SAMPLING_Y * WG_LIGHT_SA
 
 # Adress spaces. 0: private, 1: local, 2: constant, 3: global
 RAY_AS = 0 # Valid: 0, 1.
-LEAF_AS = 3 # Valid: 1, 3.
+LEAF_AS = 1 # Valid: 1, 3.
 SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu
 
 # Structure
-STRUCTURE = 0 # Valid 0: Detpth first, 1: Breadth first.
+STRUCTURE = 1 # Valid 0: Detpth first, 1: Breadth first.
 
 # Run settings
 OPENCL = 1
