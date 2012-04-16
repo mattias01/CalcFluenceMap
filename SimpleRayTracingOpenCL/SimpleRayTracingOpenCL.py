@@ -59,7 +59,7 @@ def test():
 def init_scene():
     setDefaultSettings()
     # Build scene objects
-    rs = Disc(float4(0,0,0,0), float4(0,0,1,0), 1)
+    rs = Disc(float4(0,0,0,0), float4(0,0,1,0), 0.1)
 
     Collimator = collimatorFactory()
 
@@ -120,8 +120,7 @@ def init_scene():
         
     Settings.NUMBER_OF_LEAVES = Settings.NUMBER_OF_LEAVES/Settings.PIECES
     Settings.NUMBER_OF_COLLIMATORS = 2 + (Settings.NUMBER_OF_COLLIMATORS-2) * Settings.PIECES
-    #col1Sp = splitBoxCollimator(collimators[2], Settings.PIECES, leaf_array)
-    #col2Sp = splitBoxCollimator(collimators[3], Settings.PIECES, leaf_array)
+
     Collimator = collimatorFactory()
     colSp = splitCollimator(collimators[2], Settings.PIECES, leaf_array, Collimator)
     colSp.extend(splitCollimator(collimators[3], Settings.PIECES, leaf_array, Collimator))
@@ -252,11 +251,11 @@ def show_3D_scene(scene, leaf_array, collimators):
             #f = vs.faces(frame = fr, pos = collimators.flatCollimator[i].getVertices())
         #elif MODE == 1:
             #f = vs.faces(frame = fr, pos = collimators.bboxCollimator[i].getVertices())
-        if Settings.MODE == 2:
+        #if Settings.MODE == 2:
             #f = vs.faces(frame = fr, pos = collimators.boxCollimator[i].getVertices())
-            bb = vs.faces(frame = fr, pos = bboxToBox(collimators.boxCollimator.boundingBox[i]).getVertices())
-            bb.make_normals()
-            bb.color = vs.color.blue
+            #bb = vs.faces(frame = fr, pos = bboxToBox(collimators.boxCollimator.boundingBox[i]).getVertices())
+            #bb.make_normals()
+            #bb.color = vs.color.blue
         #f.color = vs.color.orange
         #f.make_normals()
     fr = vs.frame()
