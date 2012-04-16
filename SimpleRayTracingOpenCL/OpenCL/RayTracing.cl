@@ -1,4 +1,4 @@
-
+#pragma OPENCL EXTENSION cl_khr_fp64: enable
 #include "RayTracing.h"
 
 // Ray tracing
@@ -172,23 +172,23 @@ void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, __global float4 *leaf_data, L
 }
 
 // Gives vectors from the ray origin to left, right, bottom, top of the ray source.
-void lightSourceAreaVectors(SCENE_ASQ Scene *scene, const float4 *rayOrigin, float4 *vi0, float4 *vi1, float4 *vj0, float4 *vj1, __global Debug *debug) {
-	*vi0 = (float4) (scene->raySource.origin.x - scene->raySource.radius, 
+void lightSourceAreaVectors(SCENE_ASQ Scene *scene, const double4 *rayOrigin, double4 *vi0, double4 *vi1, double4 *vj0, double4 *vj1, __global Debug *debug) {
+	*vi0 = (double4) (scene->raySource.origin.x - scene->raySource.radius, 
 					 scene->raySource.origin.y, 
 					 scene->raySource.origin.z,
 					 scene->raySource.origin.w) - *rayOrigin;
 
-	*vi1 = (float4) (scene->raySource.origin.x + scene->raySource.radius, 
+	*vi1 = (double4) (scene->raySource.origin.x + scene->raySource.radius, 
 					 scene->raySource.origin.y, 
 					 scene->raySource.origin.z,
 					 scene->raySource.origin.w) - *rayOrigin;
 
-	*vj0 = (float4) (scene->raySource.origin.x, 
+	*vj0 = (double4) (scene->raySource.origin.x, 
 					 scene->raySource.origin.y - scene->raySource.radius, 
 					 scene->raySource.origin.z,
 					 scene->raySource.origin.w) - *rayOrigin;
 
-	*vj1 = (float4) (scene->raySource.origin.x, 
+	*vj1 = (double4) (scene->raySource.origin.x, 
 					 scene->raySource.origin.y + scene->raySource.radius, 
 					 scene->raySource.origin.z,
 					 scene->raySource.origin.w) - *rayOrigin;
@@ -306,7 +306,7 @@ __kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, __global float4 *l
 	#elif MODE == 1
 		__local float4 col_leaf_data[NUMBER_OF_LEAVES * 2]; // Make sure it's >= than the leaf data.
 	#elif MODE == 2
-		__local float4 col_leaf_data[NUMBER_OF_LEAVES * 10/*12*/ * 3]; // Make sure it's >= than the leaf data.
+		__local float4 col_leaf_data[NUMBER_OF_LEAVES * 10 * 3]; // Make sure it's >= than the leaf data.
 	#endif
 #elif LEAF_AS == 3
 	__global float4 *col_leaf_data;
@@ -322,18 +322,18 @@ __kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, __global float4 *l
 } 
 
 __kernel void calculateIntensityDecreaseWithDistance(SCENE_ASQ Scene *scene, __global float *distanceFactors, __global Debug *debug) {
-	float4 vi0, vi1, vj0, vj1;
+	double4 vi0, vi1, vj0, vj1;
 
 	int i = get_global_id(0);
 	int j = get_global_id(1);
     
-    float4 rayOrigin = (float4) (scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, 
+    double4 rayOrigin = (double4) (scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, 
                                  scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, 
                                  scene->fluenceMap.rectangle.p0.z, 0.0f);
 
 	lightSourceAreaVectors(scene, &rayOrigin, &vi0, &vi1, &vj0, &vj1, debug);
-	float anglei = acos(dot(normalize(vi0), normalize(vi1)));
-    float anglej = acos(dot(normalize(vj0), normalize(vj1)));
+	double anglei = acos(dot(normalize(vi0), normalize(vi1)));
+    double anglej = acos(dot(normalize(vj0), normalize(vj1)));
 
     distanceFactors[j+i*FLY] = anglei*anglej/M_PI_F*M_PI_F; // The ratio of a unit half sphere that are covering the light source. => Things that are further away recieves less photons.
 }
@@ -342,11 +342,11 @@ __kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensi
 	int i = get_global_id(0);
     int j = get_global_id(1);
 
-	float fluenceSum = 0.0f;
+	double fluenceSum = 0.0f;
     for (int k = 0; k < LSAMPLESSQR; k++) {
         fluenceSum += intensity_map[j + i*FLY + k*FLX*FLY];
 	}
     fluence_data[j+i*FLY] *= fluenceSum; // Assumes fluence element already contains distance factor.
 }
 
-#define force_recomp 48
+#define force_recomp 50
