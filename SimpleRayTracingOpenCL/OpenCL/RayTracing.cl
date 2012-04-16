@@ -31,7 +31,6 @@ void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ float4 *le
 			if (intersectTmp && (distanceTmp < minDistance)) {
 				leafIndex = i;
 				minDistance = distanceTmp;
-				//*intersect = true;
 				*ip = ipTmp;
 				*thickness = thicknessTmp;
 			}
@@ -90,11 +89,11 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, __
 		#if MODE == 0
 			// One leaf hit. Continue ray after collimator because leaves don't have thickness.
 			intersectTmp = false;
-			*ip = ipTmpLeaf;
+			//*ip = ipTmpLeaf;
 		#elif MODE == 1 || MODE == 2
 			// One ray can hit several leaves.
-			//*ip = ipTmpLeaf;
-			//r->origin = ipTmpLeaf;
+			*ip = ipTmpLeaf;
+			r->origin = ipTmpLeaf;
 			firstHitLeaf(s, r, col_leaf_data, collimatorIndex, leafHit, &intersectTmp, &ipTmpLeaf, &thickness, debug);
 		#endif
 	}
@@ -125,7 +124,7 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, bool *collimatorHit
 				minDistance = distanceTmpIn;
 				//*intersect = true;
 				//*ip = ipTmpCollimatorBBOut;
-				//*ip = ipTmpCollimatorBBIn;
+				*ip = ipTmpCollimatorBBIn;
 				#if STRUCTURE == 0
 					hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, ip, intensityCoeff, debug);
 				#endif
