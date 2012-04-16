@@ -102,6 +102,3 @@
 	#define SCENE_ASQ __global const
 #endif
 
-#ifndef STRUCTURE
-#define STRUCTURE 0
-#endif

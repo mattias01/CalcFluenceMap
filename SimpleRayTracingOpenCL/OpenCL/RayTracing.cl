@@ -54,18 +54,16 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, __
 			for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]; j++) {
 				col_leaf_data[j] = leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + j];
 			}
-			barrier(CLK_LOCAL_MEM_FENCE);
 		#elif MODE == 1
 			for (int j = 0; j < s->collimators.bboxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]; j++) {
 				col_leaf_data[j] = leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex] + j];
 			}
-			barrier(CLK_LOCAL_MEM_FENCE);
 		#elif MODE == 2
 			for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]; j++) {
 				col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + j];
 			}
-			barrier(CLK_LOCAL_MEM_FENCE);
 		#endif
+		barrier(CLK_LOCAL_MEM_FENCE);
 	#elif LEAF_AS == 3
 		#if MODE == 0
             col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex]];
@@ -89,7 +87,7 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, __
 		#if MODE == 0
 			// One leaf hit. Continue ray after collimator because leaves don't have thickness.
 			intersectTmp = false;
-			//*ip = ipTmpLeaf;
+			*ip = ipTmpLeaf;
 		#elif MODE == 1 || MODE == 2
 			// One ray can hit several leaves.
 			*ip = ipTmpLeaf;
@@ -122,12 +120,8 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, bool *collimatorHit
 			if (intersectTmp && (distanceTmpIn < minDistance)) {
 				collimatorIndex = i;
 				minDistance = distanceTmpIn;
-				//*intersect = true;
 				//*ip = ipTmpCollimatorBBOut;
 				*ip = ipTmpCollimatorBBIn;
-				#if STRUCTURE == 0
-					hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, ip, intensityCoeff, debug);
-				#endif
 			}
 		}
 	}
@@ -135,9 +129,7 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, bool *collimatorHit
 	if (collimatorIndex != -1) {
 		*intersect = true;
 		collimatorHit[collimatorIndex] = true;
-		#if STRUCTURE == 1
-			hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, ip, intensityCoeff, debug);
-		#endif
+		hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, ip, intensityCoeff, debug);
 	}
 }
 

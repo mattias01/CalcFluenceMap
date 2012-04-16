@@ -326,9 +326,6 @@ def setDefaultSettings():
     Settings.LEAF_AS = 1 # Valid: 1, 3.
     Settings.SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu
 
-    # Structure
-    Settings.STRUCTURE = 1 # Valid 0: Detpth first, 1: Breadth first.
-
     # Run settings
     Settings.OPENCL = 1
     Settings.PYTHON = 0
@@ -355,11 +352,10 @@ def main():
         list.append(Parameter("WG_LIGHT_SAMPLING_X", [1,2,4,8,16,32,64,128], False))
         list.append(Parameter("WG_LIGHT_SAMPLING_Y", [1,2,4,8,16,32,64,128], False))
         list.append(Parameter("WG_LIGHT_SAMPLING_Z", [1,2,4,8,16,32], False))
-        list.append(Parameter("PIECES", [1,2,4,10,20], False))
+        list.append(Parameter("PIECES", [2,4,10,20], False))
         list.append(Parameter("RAY_AS", [0], True))
         list.append(Parameter("LEAF_AS", [1], True))
         list.append(Parameter("SCENE_AS", [2], True))
-        list.append(Parameter("STRUCTURE", [0], True))
 
         fluence_data = numpy.zeros(shape=(Settings.FLX,Settings.FLY), dtype=numpy.float32)
         intensities = numpy.zeros(shape=(Settings.FLX,Settings.FLY,Settings.LSAMPLESSQR), dtype=numpy.float32)
