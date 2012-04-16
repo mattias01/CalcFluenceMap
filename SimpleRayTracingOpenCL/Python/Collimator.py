@@ -62,28 +62,30 @@ class BoxCollimator(Structure):
             list.extend(self.leaves[i].getVertices())
         return list
 
-class Collimator(Structure):
-    def selectMode(mode):
-        if mode == 0:
-            return ("flatCollimator", FlatCollimator)
-        elif mode == 1:
-            return ("bboxCollimator", BBoxCollimator)
-        elif mode ==2:
-            return ("boxCollimator", BoxCollimator)
+def collimatorFactory():
+    class Collimator(Structure):
+        def selectMode(mode):
+            if mode == 0:
+                return ("flatCollimator", FlatCollimator)
+            elif mode == 1:
+                return ("bboxCollimator", BBoxCollimator)
+            elif mode ==2:
+                return ("boxCollimator", BoxCollimator)
 
-    _fields_ = [("boundingBox", BBox),
-                ("position", float4),
-                ("xdir", float4),
-                ("ydir", float4),
-                ("absorptionCoeff", c_float),
-                ("height", c_float),
-                ("width", c_float),
-                ("numberOfLeaves", c_int),
-                ("leafPositions", c_float * Settings.NUMBER_OF_LEAVES),
-                #("flatCollimator", FlatCollimator),
-                #("bboxCollimator", BBoxCollimator),
-                #("boxCollimator", BoxCollimator))]
-                selectMode(Settings.MODE)]
+        _fields_ = [("boundingBox", BBox),
+                    ("position", float4),
+                    ("xdir", float4),
+                    ("ydir", float4),
+                    ("absorptionCoeff", c_float),
+                    ("height", c_float),
+                    ("width", c_float),
+                    ("numberOfLeaves", c_int),
+                    ("leafPositions", c_float * Settings.NUMBER_OF_LEAVES),
+                    #("flatCollimator", FlatCollimator),
+                    #("bboxCollimator", BBoxCollimator),
+                    #("boxCollimator", BoxCollimator))]
+                    selectMode(Settings.MODE)]
+    return Collimator
 
 def flatCollimatorSoAFactory():
     class FlatCollimatorSoA(Structure):
@@ -172,10 +174,8 @@ def collimatorSoAFactory():
 ###################### Other stuff ################################
 
 def CollimatorAoStoSoA(collimator_array):
-    #CollimatorSoA.NOC = Settings.NUMBER_OF_COLLIMATORS
-    CollimatorSoA = collimatorSoAFactory()#CollimatorSoA()
+    CollimatorSoA = collimatorSoAFactory()
     csoa = CollimatorSoA()
-    #resize(csoa.boundingBox, BBox * Settings.NUMBER_OF_COLLIMATORS)
     for i in range(Settings.NUMBER_OF_COLLIMATORS):
         csoa.boundingBox[i] = collimator_array[i].boundingBox
         csoa.position[i] = collimator_array[i].position
@@ -401,10 +401,11 @@ def createBoxCollimator(collimator, leaf_array):
     #bc.leaves = boxes
     return [bc, createfloat4List(boxes)]
 
-def splitBoxCollimator(collimator, pieces, leaf_array):
+def splitCollimator(collimator, pieces, leaf_array, col_type):
     col_list = []
     for i in range(pieces):
-        col = Collimator()
+        #Collimator = collimatorFactory()
+        col = col_type()
         col.xdir = collimator.xdir
         col.ydir = collimator.ydir
         col.width = collimator.width/pieces
@@ -442,7 +443,10 @@ def splitBoxCollimator(collimator, pieces, leaf_array):
         elif Settings.MODE == 2:
             col.boxCollimator = cr
         col_list.append(col)
-    return col_list
+    if len(col_list) == 1:
+        return col_list[0]
+    else:
+        return col_list
 
 
 ###################### Intersection calculations ######################

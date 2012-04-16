@@ -1,61 +1,27 @@
-# Platform
-PLATFORM = 0 # 0: Windows NVidia, 1: Windows Intel, 2: OSX-CPU, 3: OSX-GPU, 4: AMD-CPU, 5: AMD-GPU
-
-# Collimator defines
-NUMBER_OF_LEAVES = 40
-NUMBER_OF_COLLIMATORS = 4
-PIECES = 10
-if NUMBER_OF_LEAVES%PIECES != 0:
-    print "Warning: NUMBER_OF_COLLIMATORS not divisable by PIECES"
-
-# Global defines
-FLX = 128
-FLY = 128
-#XSTEP = 0.0
-#YSTEP = 0.0
-#XOFFSET = 0.0
-#YOFFSET = 0.0
-LSAMPLES = 20
-LSAMPLESSQR = LSAMPLES*LSAMPLES
-#LSTEP = 0.0
-
-MODE = 2
-
-# Optimization parameters
-LINE_TRIANGLE_INTERSECTION_ALGORITHM = 2 # SS, MT, MT2, MT3
-
-# Work group sizes
-if PLATFORM in [1, 2, 4]: # Best CPU
-    WG_LIGHT_SAMPLING_X = 1
-    WG_LIGHT_SAMPLING_Y = 1
-    WG_LIGHT_SAMPLING_Z = 1
-elif PLATFORM in [0]: # Best NVIDIA GTX 470
-    WG_LIGHT_SAMPLING_X = 1
-    WG_LIGHT_SAMPLING_Y = 4
-    WG_LIGHT_SAMPLING_Z = 16
-else:
-    WG_LIGHT_SAMPLING_X = 2
-    WG_LIGHT_SAMPLING_Y = 2
-    WG_LIGHT_SAMPLING_Z = 4
-WG_LIGHT_SAMPLING_SIZE = WG_LIGHT_SAMPLING_X * WG_LIGHT_SAMPLING_Y * WG_LIGHT_SAMPLING_Z
-
-# Adress spaces. 0: private, 1: local, 2: constant, 3: global
-RAY_AS = 0 # Valid: 0, 1.
-LEAF_AS = 1 # Valid: 1, 3.
-SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu
-
-# Structure
-STRUCTURE = 1 # Valid 0: Detpth first, 1: Breadth first.
-
-# Run settings
-OPENCL = 1
+# Init all variables
+PLATFORM = 0
+NUMBER_OF_LEAVES = 0
+NUMBER_OF_COLLIMATORS = 0
+PIECES = 0
+FLX = 0
+FLY = 0
+LSAMPLES = 0
+LSAMPLESSQR = 0
+MODE = 0
+LINE_TRIANGLE_INTERSECTION_ALGORITHM = 0
+WG_LIGHT_SAMPLING_X = 0
+WG_LIGHT_SAMPLING_Y = 0
+WG_LIGHT_SAMPLING_Z = 0
+WG_LIGHT_SAMPLING_SIZE = 0
+RAY_AS = 0
+LEAF_AS = 0
+SCENE_AS = 0
+STRUCTURE = 0
+OPENCL = 0
 PYTHON = 0
-SHOW_PLOT = 1
+SHOW_PLOT = 0
 SHOW_3D_SCENE = 0
-if PLATFORM in [0, 1, 4, 5]:
-    PATH_OPENCL = "OpenCL/"
-elif PLATFORM in [2, 3]:
-    PATH_OPENCL = "/Users/mattias/Skola/exjobb/CalcFluenceMap/SimpleRayTracingOpenCL/OpenCL/"
+PATH_OPENCL = ""
 
 def getDefaultSettingsList():
     list = []

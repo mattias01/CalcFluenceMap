@@ -57,8 +57,11 @@ def test():
         testOpenCL(ctx, queue)
 
 def init_scene():
+    setDefaultSettings()
     # Build scene objects
     rs = Disc(float4(0,0,0,0), float4(0,0,1,0), 1)
+
+    Collimator = collimatorFactory()
 
     col1 = Collimator()
     #float4(-5.9,-5.9,-29.5,0)
@@ -107,7 +110,6 @@ def init_scene():
 
     collimator_array = Collimator * Settings.NUMBER_OF_COLLIMATORS
     collimators = collimator_array(jaw1, jaw2, col1, col2)
-    #collimators = collimator_array(jaw1, jaw2, col1a1, col1a2, col1b1, col1b2, col2a1, col2a2, col2b1, col2b2)
     leaves = []
     collimators = initCollimators(collimators, leaves) # Init Collimator
 
@@ -120,12 +122,13 @@ def init_scene():
     Settings.NUMBER_OF_COLLIMATORS = 2 + (Settings.NUMBER_OF_COLLIMATORS-2) * Settings.PIECES
     #col1Sp = splitBoxCollimator(collimators[2], Settings.PIECES, leaf_array)
     #col2Sp = splitBoxCollimator(collimators[3], Settings.PIECES, leaf_array)
-    colSp = splitBoxCollimator(collimators[2], Settings.PIECES, leaf_array)
-    colSp.extend(splitBoxCollimator(collimators[3], Settings.PIECES, leaf_array))
+    Collimator = collimatorFactory()
+    colSp = splitCollimator(collimators[2], Settings.PIECES, leaf_array, Collimator)
+    colSp.extend(splitCollimator(collimators[3], Settings.PIECES, leaf_array, Collimator))
 
-    jaw1 = collimators[0]
-    jaw2 = collimators[1]
-    
+    jaw1 = splitCollimator(collimators[0], 1, leaf_array, Collimator)
+    jaw2 = splitCollimator(collimators[1], 1, leaf_array, Collimator)
+
     collimator_array = Collimator * Settings.NUMBER_OF_COLLIMATORS
     collimators = collimator_array(jaw1, jaw2, *colSp)#col1Sp[0], col1Sp[1], col1Sp[2], col1Sp[3], col2Sp[0], col2Sp[1], col2Sp[2], col2Sp[3])
 
@@ -184,7 +187,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString)
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString + " " + optParametersString)
-    program = oclu.loadCachedProgram(ctx, Settings.PATH_OPENCL + "RayTracing.cl", " " + settingsString + " " + optParametersString)
+    program = oclu.loadCachedProgram(ctx, Settings.PATH_OPENCL + "RayTracing.cl", "-cl-nv-verbose " + settingsString + " " + optParametersString)
 
     mf = cl.mem_flags
     time0 = time()
@@ -273,7 +276,68 @@ def show_3D_scene(scene, leaf_array, collimators):
 
     #fr.rotate (angle = -pi/2, axis = (1.0, 1.0, 0.0))
 
+def setDefaultSettings():
+    # Platform
+    Settings.PLATFORM = 0 # 0: Windows NVidia, 1: Windows Intel, 2: OSX-CPU, 3: OSX-GPU, 4: AMD-CPU, 5: AMD-GPU
+
+    # Collimator defines
+    Settings.NUMBER_OF_LEAVES = 40
+    Settings.NUMBER_OF_COLLIMATORS = 4
+    Settings.PIECES = 10
+    if Settings.NUMBER_OF_LEAVES%Settings.PIECES != 0:
+        print "Warning: NUMBER_OF_COLLIMATORS not divisable by PIECES"
+
+    # Global defines
+    Settings.FLX = 128
+    Settings.FLY = 128
+    #XSTEP = 0.0
+    #YSTEP = 0.0
+    #XOFFSET = 0.0
+    #YOFFSET = 0.0
+    Settings.LSAMPLES = 20
+    Settings.LSAMPLESSQR = Settings.LSAMPLES*Settings.LSAMPLES
+    #LSTEP = 0.0
+
+    Settings.MODE = 0
+
+    # Optimization parameters
+    Settings.LINE_TRIANGLE_INTERSECTION_ALGORITHM = 2 # SS, MT, MT2, MT3
+
+    # Work group sizes
+    if Settings.PLATFORM in [1, 2, 4]: # Best CPU
+        Settings.WG_LIGHT_SAMPLING_X = 1
+        Settings.WG_LIGHT_SAMPLING_Y = 1
+        Settings.WG_LIGHT_SAMPLING_Z = 1
+    elif Settings.PLATFORM in [0]: # Best NVIDIA GTX 470
+        Settings.WG_LIGHT_SAMPLING_X = 1
+        Settings.WG_LIGHT_SAMPLING_Y = 4
+        Settings.WG_LIGHT_SAMPLING_Z = 16
+    else:
+        Settings.WG_LIGHT_SAMPLING_X = 2
+        Settings.WG_LIGHT_SAMPLING_Y = 2
+        Settings.WG_LIGHT_SAMPLING_Z = 4
+    Settings.WG_LIGHT_SAMPLING_SIZE = Settings.WG_LIGHT_SAMPLING_X * Settings.WG_LIGHT_SAMPLING_Y * Settings.WG_LIGHT_SAMPLING_Z
+
+    # Adress spaces. 0: private, 1: local, 2: constant, 3: global
+    Settings.RAY_AS = 0 # Valid: 0, 1.
+    Settings.LEAF_AS = 1 # Valid: 1, 3.
+    Settings.SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu
+
+    # Structure
+    Settings.STRUCTURE = 1 # Valid 0: Detpth first, 1: Breadth first.
+
+    # Run settings
+    Settings.OPENCL = 1
+    Settings.PYTHON = 0
+    Settings.SHOW_PLOT = 1
+    Settings.SHOW_3D_SCENE = 0
+    if Settings.PLATFORM in [0, 1, 4, 5]:
+        Settings.PATH_OPENCL = "OpenCL/"
+    elif Settings.PLATFORM in [2, 3]:
+        Settings.PATH_OPENCL = "/Users/mattias/Skola/exjobb/CalcFluenceMap/SimpleRayTracingOpenCL/OpenCL/"
+
 def main():
+    setDefaultSettings()
     #select_excecution_environment()
     if Settings.OPENCL == 1:
         [ctx, queue] = init_OpenCL()
