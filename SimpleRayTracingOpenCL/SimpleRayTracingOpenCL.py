@@ -187,7 +187,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString)
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString + " " + optParametersString)
-    program = oclu.loadCachedProgram(ctx, Settings.PATH_OPENCL + "RayTracing.cl", "-cl-nv-verbose " + settingsString + " " + optParametersString)
+    program = oclu.loadCachedProgram(ctx, Settings.PATH_OPENCL + "RayTracing.cl", " " + settingsString + " " + optParametersString)
 
     mf = cl.mem_flags
     time0 = time()
@@ -213,7 +213,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     timeOpenCL = time()-time0
 
     #print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
-    samplesPerSecondOpenCL = Settings.FLX*Settings.FLY*Settings.LSAMPLES*Settings.LSAMPLES/timeOpenCL
+    samplesPerSecondOpenCL = Settings.FLX*Settings.FLY*Settings.LSAMPLESSQR/timeOpenCL
     #print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
     #print fluence_data
 
@@ -298,7 +298,7 @@ def setDefaultSettings():
     Settings.LSAMPLESSQR = Settings.LSAMPLES*Settings.LSAMPLES
     #LSTEP = 0.0
 
-    Settings.MODE = 0
+    Settings.MODE = 2
 
     # Optimization parameters
     Settings.LINE_TRIANGLE_INTERSECTION_ALGORITHM = 2 # SS, MT, MT2, MT3
@@ -357,7 +357,7 @@ def main():
     list.append(Parameter("STRUCTURE", [0], True))
 
     fluence_data = numpy.zeros(shape=(Settings.FLX,Settings.FLY), dtype=numpy.float32)
-    intensities = numpy.zeros(shape=(Settings.FLX,Settings.FLY,Settings.LSAMPLES*Settings.LSAMPLES), dtype=numpy.float32)
+    intensities = numpy.zeros(shape=(Settings.FLX,Settings.FLY,Settings.LSAMPLESSQR), dtype=numpy.float32)
 
     oclu = OpenCLUtility.OpenCLUtility()
 
@@ -370,7 +370,7 @@ def main():
 
     # Reset output data
     fluence_data = numpy.zeros(shape=(Settings.FLX,Settings.FLY), dtype=numpy.float32)
-    intensities = numpy.zeros(shape=(Settings.FLX,Settings.FLY,Settings.LSAMPLES*Settings.LSAMPLES), dtype=numpy.float32)
+    intensities = numpy.zeros(shape=(Settings.FLX,Settings.FLY,Settings.LSAMPLESSQR), dtype=numpy.float32)
 
     #[fluence_data_Python, time_Python, samples_Python] = run_Python(scene, render, collimators, fluence_data_Python)
     #[fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, at.best_parameters)
