@@ -419,7 +419,7 @@ void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect
 
 void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp)
 {
-#if PLATFORM == 1 || PLATFORM == 2 // Hack to make it work on WIN-INTEL-CPU and OSX-CPU.
+#if PLATFORM == 1 || PLATFORM == 2 || PLATFORM == 4 // Hack to make it work on WIN-INTEL-CPU, WIN-AMD-CPU and OSX-CPU.
     BBox bboxA = *bb;
     BBox* b = &bboxA;
 #else
