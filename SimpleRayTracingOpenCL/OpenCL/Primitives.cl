@@ -473,7 +473,7 @@ void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *int
     if (tzmax < tmax) {
         tmax = tzmax;
 	}
-	if (tmax <= 0.0f) { // Only in the positive direction.
+	if (tmax < 0.0f) { // Only in the positive direction.
 		*intersect = false;
         return;
 	}
