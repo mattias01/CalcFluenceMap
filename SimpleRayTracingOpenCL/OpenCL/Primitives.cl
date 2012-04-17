@@ -339,14 +339,14 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 	}
 }*/
 
-void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect, float *distance, float4 *ip)
+void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect)
 {
 	float a = dot(l->direction, d->normal);
 	if (a != 0.0f) { // Not parallel -> intersect.
-		*distance = dot(d->normal, (d->origin - l->origin)) / a;
+		float distance = dot(d->normal, (d->origin - l->origin)) / a;
 		//if (*distance > 0.0f) { // Assumes it can not come from the top side.
-			*ip = l->origin + l->direction*(*distance);
-			float4 D = d->origin - *ip;
+			float4 ip = l->origin + l->direction * distance;
+			float4 D = d->origin - ip;
 			if (length(D) <= d->radius*d->radius) {
 				*intersect = true;
 				return;
@@ -354,6 +354,62 @@ void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect
 		//}
 	}
 	*intersect = false;
+}
+
+// Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
+void intersectLineBBoxAtDistance(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *distance)
+{
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	float divx = 1.0f / l->direction.x;
+	if (divx >= 0.0f) {
+        tmin = (b->min.x - l->origin.x) * divx;
+        tmax = (b->max.x - l->origin.x) * divx;
+	}
+    else {
+        tmin = (b->max.x - l->origin.x) * divx;
+        tmax = (b->min.x - l->origin.x) * divx;
+	}
+	float divy = 1.0f / l->direction.y;
+    if (divy >= 0.0f) {
+        tymin = (b->min.y - l->origin.y) * divy;
+        tymax = (b->max.y - l->origin.y) * divy;
+	}
+    else {
+        tymin = (b->max.y - l->origin.y) * divy;
+        tymax = (b->min.y - l->origin.y) * divy;
+	}
+    if ((tmin > tymax) || (tymin > tmax)) {
+		*intersect = false;
+        return;
+	}
+    if (tymin > tmin) {
+        tmin = tymin;
+	}
+    if (tymax < tmax) {
+       tmax = tymax;
+	}
+	float divz = 1.0f / l->direction.z;
+    if (divz >= 0.0f) {
+        tzmin = (b->min.z - l->origin.z) * divz;
+        tzmax = (b->max.z - l->origin.z) * divz;
+	}
+    else {
+        tzmin = (b->max.z - l->origin.z) * divz;
+        tzmax = (b->min.z - l->origin.z) * divz;
+	}
+    if ((tmin > tzmax) || (tzmin > tmax)) {
+        *intersect = false;
+        return;
+	}
+    if (tzmin > tmin) {
+        tmin = tzmin;
+	}
+    if (tzmax < tmax) {
+        tmax = tzmax;
+	}
+	*intersect = true;
+	*distance = tmin;
+	// Could give the outgoing distance (tmax) and point here as well.
 }
 
 // Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
@@ -473,10 +529,10 @@ void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *int
     if (tzmax < tmax) {
         tmax = tzmax;
 	}
-	if (tmax < 0.0f) { // Only in the positive direction.
+	/*if (tmax < 0.0f) { // Only in the positive direction.
 		*intersect = false;
         return;
-	}
+	}*/
 	*intersect = true;
 	*inDistance = tmin;
 	*outDistance = tmax;
@@ -641,7 +697,7 @@ void intersectLineBox(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *inters
 }
 
 // Registers 7 + 33.
-void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, /*float4 *inIp,*/ float4 *outIp) {
+void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp) {
 	int counter = 0;
 	*intersect = false;
 	bool intersectTmp;
@@ -652,7 +708,7 @@ void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *i
 		if (intersectTmp) {
 			if (counter == 0) { // First intersection initializes in and out.
 				*inDistance = distanceTmp;
-				//*inIp = ipTmp;
+				*inIp = ipTmp;
 				*outDistance = distanceTmp;
 				*outIp = ipTmp;
 				counter = counter + 1;
@@ -660,7 +716,7 @@ void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *i
 			else {
 				if (distanceTmp < *inDistance - EPSILON) {
 					*inDistance = distanceTmp;
-					//*inIp = ipTmp;
+					*inIp = ipTmp;
 					counter = counter + 1;
 				}
 				else if (distanceTmp > *outDistance + EPSILON) {

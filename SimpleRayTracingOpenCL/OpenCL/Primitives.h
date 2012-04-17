@@ -48,13 +48,14 @@ void createBoxFromPoints(float4 p0, float4 p1, float4 p2, float4 p3, float4 p4, 
 void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint);
 void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip);
 void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip);
-void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect, float *distance, float4 *ip);
+void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect);
+void intersectLineBBoxAtDistance(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *distance);
 void intersectLineBBox(RAY_ASQ const Line *l, SCENE_ASQ BBox *bb, bool *intersect, float *distance, float4 *ip);
 void intersectLineBBoxInOut(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
 void intersectLineBBoxColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *bb, bool *intersect, float *distance, float4 *ip);
 void intersectLineBBoxInOutColLeaf(RAY_ASQ const Line *l, LEAF_ASQ const BBox *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
 void intersectLineBox(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *distance, float4 *ip);
-void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, /*float4 *inIp,*/ float4 *outIp);
+void intersectLineBoxInOut(RAY_ASQ const Line *l, LEAF_ASQ const Box *b, bool *intersect, float *inDistance, float *outDistance, float4 *inIp, float4 *outIp);
 
 #include "Primitives.cl" //Hack to go around the inability for OpenCL 1.1 to compile several source files and link to one.
 

@@ -40,7 +40,6 @@
     <Compile Include="Test.py" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Activity1.nvact" />
     <Content Include="OpenCL\Collimator.cl" />
     <Content Include="OpenCL\Collimator.h" />
     <Content Include="OpenCL\CollimatorTest.cl" />

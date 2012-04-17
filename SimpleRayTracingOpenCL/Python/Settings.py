@@ -16,6 +16,7 @@ WG_LIGHT_SAMPLING_Z = 0
 WG_LIGHT_SAMPLING_SIZE = 0
 RAY_AS = 0
 LEAF_AS = 0
+LEAF_DATA_AS = 0
 SCENE_AS = 0
 OPENCL = 0
 PYTHON = 0
@@ -45,6 +46,7 @@ def getDefaultOptimizationParameterList():
     #list.append(("WG_LIGHT_SAMPLING_SIZE", str(WG_LIGHT_SAMPLING_SIZE), True))
     list.append(("RAY_AS", str(RAY_AS), True))
     list.append(("LEAF_AS", str(LEAF_AS), True))
+    list.append(("LEAF_DATA_AS", str(LEAF_DATA_AS), True))
     list.append(("SCENE_AS", str(SCENE_AS), True))
     
     return list

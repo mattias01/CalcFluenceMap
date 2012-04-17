@@ -10,7 +10,7 @@ import pyopencl as cl
 import struct
 from sys import getsizeof
 from time import time, sleep
-#import visual as vs
+import visual as vs
 
 #from OpenCLUtility import OpenCLUtility as oclu
 import OpenCLUtility
@@ -40,10 +40,10 @@ def select_excecution_environment():
 
 # Init OpenCL
 def init_OpenCL():
-    ctx = cl.create_some_context()
+    #ctx = cl.create_some_context()
     os.environ["PYOPENCL_COMPILER_OUTPUT"] = "1"
     os.environ["CL_LOG_ERRORS"] = "stdout"
-    #ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
+    ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
     queue = cl.CommandQueue(ctx)
 
     return [ctx, queue]
@@ -59,53 +59,53 @@ def test():
 def init_scene():
     setDefaultSettings()
     # Build scene objects
-    rs = Disc(float4(0,0,0,0), float4(0,0,1,0), 0.1)
+    rs = Disc(float4(0,0,0,0), float4(0,0,1,0), 1)
 
     Collimator = collimatorFactory()
 
     col1 = Collimator()
     #float4(-5.9,-5.9,-29.5,0)
-    col1.position = float4(-5.9, -10, -29.5,0)
+    col1.position = float4(-59, -100, -295, 0)
     col1.xdir = float4(0,1,0,0)
     col1.ydir = float4(1,0,0,0)
-    col1.absorptionCoeff = 1.0
-    col1.height = 8.2
+    col1.absorptionCoeff = 0.1
+    col1.height = 82
     col1.numberOfLeaves = 40
-    col1.width = 11.8
-    col1.leafPositions = (5,5.1,5.2,5.3,5.2,5.1,5.0,4.9,4.8,4.7,4.6,4.5,4.4,4.2,4,3.8,3.6,3.4,3.2,3.3,3.4,3.5,6,6,6.3,6.4,6,6,7,6,7,6,7,6,7,6,7,6,7,6)
+    col1.width = 118
+    col1.leafPositions = (50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60)
     col1.boundingBox = calculateCollimatorBoundingBox(col1)
 
     col2 = Collimator()
-    col2.position = float4(5.9, 10, -29.5,0)
+    col2.position = float4(59, 100, -295, 0)
     col2.xdir = float4(0,-1,0,0)
     col2.ydir = float4(-1,0,0,0)
-    col2.absorptionCoeff = 1.0
-    col2.height = 8.2
+    col2.absorptionCoeff = 0.1
+    col2.height = 82
     col2.numberOfLeaves = 40
-    col2.width = 11.8
-    col2.leafPositions = (8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9,8,9)
+    col2.width = 118
+    col2.leafPositions = (80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90)
     col2.boundingBox = calculateCollimatorBoundingBox(col2)
 
     jaw1 = Collimator()
-    jaw1.position = float4(14,-14,-45.1,0)
+    jaw1.position = float4(140,-140,-451,0)
     jaw1.xdir = float4(-1,0,0,0)
     jaw1.ydir = float4(0,1,0,0)
-    jaw1.absorptionCoeff = 1.0
-    jaw1.height = 7.2
-    jaw1.width = 14*2
+    jaw1.absorptionCoeff = 0.1
+    jaw1.height = 72
+    jaw1.width = 140*2
     jaw1.numberOfLeaves = 1
-    jaw1.leafPositions = (10,)
+    jaw1.leafPositions = (100,)
     jaw1.boundingBox = calculateCollimatorBoundingBox(jaw1)
 
     jaw2 = Collimator()
-    jaw2.position = float4(-14,14,-45.1,0)
+    jaw2.position = float4(-140,140,-451,0)
     jaw2.xdir = float4(1,0,0,0)
     jaw2.ydir = float4(0,-1,0,0)
-    jaw2.absorptionCoeff = 1.0
-    jaw2.height = 7.2
-    jaw2.width = 14*2
+    jaw2.absorptionCoeff = 0.1
+    jaw2.height = 72
+    jaw2.width = 140*2
     jaw2.numberOfLeaves = 1
-    jaw2.leafPositions = (10,)
+    jaw2.leafPositions = (100,)
     jaw2.boundingBox = calculateCollimatorBoundingBox(jaw2)
 
     collimator_array = Collimator * Settings.NUMBER_OF_COLLIMATORS
@@ -133,7 +133,7 @@ def init_scene():
 
     collimators = CollimatorAoStoSoA(collimators) # Should be removed and collimator init should be done as SOA.
 
-    fm = FluenceMap(Rectangle(float4(-30.0, -30.0, -100.0, 0.0), float4(30.0, -30.0, -100.0, 0.0), float4(30.0, 30.0, -100.0, 0.0), float4(-30.0, 30.0, -100.0, 0.0)))
+    fm = FluenceMap(Rectangle(float4(-300, -300, -1000, 0), float4(300, -300, -1000, 0), float4(300, 300, -1000, 0), float4(-300, 300, -1000, 0)))
     Scene = sceneFactory(type(collimators))
     scene = Scene(fm, rs, Settings.NUMBER_OF_COLLIMATORS, collimators)
     
@@ -187,7 +187,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString)
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString + " " + optParametersString)
-    program = oclu.loadCachedProgram(ctx, Settings.PATH_OPENCL + "RayTracing.cl", " " + settingsString + " " + optParametersString)
+    program = oclu.loadCachedProgram(ctx, Settings.PATH_OPENCL + "RayTracing.cl", "-cl-nv-verbose " + settingsString + " " + optParametersString)
 
     mf = cl.mem_flags
     time0 = time()
@@ -212,7 +212,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
     timeOpenCL = time()-time0
 
-    #print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
+    print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
     samplesPerSecondOpenCL = Settings.FLX*Settings.FLY*Settings.LSAMPLESSQR/timeOpenCL
     #print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
     #print fluence_data
@@ -241,8 +241,8 @@ def show_3D_scene(scene, leaf_array, collimators):
     disp.userspin = True
     disp.ambient = 0.5
     disp.forward = (0, 0, -1)
-    disp.center = (0, 0, -50)
-    disp.range = (30, 30, -100)
+    disp.center = (0, 0, -500)
+    disp.range = (300, 300, -1000)
 
     # Collimators
     for i in range(Settings.NUMBER_OF_COLLIMATORS):
@@ -311,6 +311,9 @@ def setDefaultSettings():
         Settings.WG_LIGHT_SAMPLING_Y = 1
         Settings.WG_LIGHT_SAMPLING_Z = 1
     elif Settings.PLATFORM in [0]: # Best NVIDIA GTX 470
+        #Settings.WG_LIGHT_SAMPLING_X = 1
+        #Settings.WG_LIGHT_SAMPLING_Y = 32
+        #Settings.WG_LIGHT_SAMPLING_Z = 4
         Settings.WG_LIGHT_SAMPLING_X = 1
         Settings.WG_LIGHT_SAMPLING_Y = 4
         Settings.WG_LIGHT_SAMPLING_Z = 16
@@ -323,6 +326,7 @@ def setDefaultSettings():
     # Adress spaces. 0: private, 1: local, 2: constant, 3: global
     Settings.RAY_AS = 0 # Valid: 0, 1.
     Settings.LEAF_AS = 1 # Valid: 1, 3.
+    Settings.LEAF_DATA_AS = 3 # Valid: 1, 3.
     Settings.SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu
 
     # Run settings
@@ -351,7 +355,7 @@ def main():
         list.append(Parameter("WG_LIGHT_SAMPLING_X", [1,2,4,8,16,32,64,128], False))
         list.append(Parameter("WG_LIGHT_SAMPLING_Y", [1,2,4,8,16,32,64,128], False))
         list.append(Parameter("WG_LIGHT_SAMPLING_Z", [1,2,4,8,16,32], False))
-        list.append(Parameter("PIECES", [2,4,10,20], False))
+        list.append(Parameter("PIECES", [10], False))
         list.append(Parameter("RAY_AS", [0], True))
         list.append(Parameter("LEAF_AS", [1], True))
         list.append(Parameter("SCENE_AS", [2], True))

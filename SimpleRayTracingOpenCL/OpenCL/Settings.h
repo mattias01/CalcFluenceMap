@@ -88,6 +88,20 @@
 	#define LEAF_ASQ __global
 #endif
 
+#ifndef LEAF_DATA_AS
+#define LEAF_DATA_AS 1
+#endif
+
+#if LEAF_DATA_AS == 0
+	#define LEAF_DATA_ASQ __private
+#elif LEAF_DATA_AS == 1
+	#define LEAF_DATA_ASQ __local
+#elif LEAF_DATA_AS == 2 // No support
+	#define LEAF_DATA_ASQ __constant
+#elif LEAF_DATA_AS == 3
+	#define LEAF_DATA_ASQ __global
+#endif
+
 #ifndef SCENE_AS
 #define SCENE_AS 2
 #endif
