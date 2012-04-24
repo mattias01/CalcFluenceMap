@@ -14,7 +14,6 @@ void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ float4 *le
 			float4 ipTmp;
 			#if MODE == 0
 				intersectLineFlatCollimatorLeaf(r, (LEAF_ASQ Triangle const *) &(leaf_data[i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]]), (LEAF_ASQ Triangle const *) &(leaf_data[i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex] + 3]), &intersectTmp, &distanceTmp, &ipTmp);
-				thicknessTmp = s->collimators.height[*collimatorIndex];
 			#elif MODE == 1
 				float4 ipInTmp;
 				float distanceOutTmp;
@@ -34,7 +33,6 @@ void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ float4 *le
 				#elif MODE == 1 || MODE == 2
 					*thickness = distanceOutTmp - distanceTmp;
 				#endif
-				//*thickness = thicknessTmp;
 			}
 		}
 	}
@@ -236,30 +234,6 @@ void lightSourceAreaVectors(SCENE_ASQ Scene *scene, const double4 *rayOrigin, do
 	}
 }*/
 
-/*void initCollimators(__constant const Scene *scene, __constant const Render *render, __constant const Collimator collimators[NUMBER_OF_COLLIMATORS], Collimator *collimators_new) {
-	// First copy all properties
-	for (int i = 0; i < scene->collimators; i++) {
-		collimators_new[i].boundingBox = collimators[i].boundingBox;
-		collimators_new[i].position = collimators[i].position;
-		collimators_new[i].xdir = collimators[i].xdir;
-		collimators_new[i].ydir = collimators[i].ydir;
-		collimators_new[i].absorptionCoeff = collimators[i].absorptionCoeff;
-		collimators_new[i].numberOfLeaves = collimators[i].numberOfLeaves;
-		for (int l = 0; l < collimators[i].numberOfLeaves; l++) {
-			collimators_new[i].leafPositions[l] = collimators[i].leafPositions[l];
-		}
-	}
-	// Copy simplified model according to mode.
-	#if MODE == 0
-		for (int i = 0; i < scene->collimators; i++) {
-			FlatCollimator flatCollimator;
-			Collimator col = collimators[i]; // Copy from constant to private memory.
-			createFlatCollimator(&col, &flatCollimator);
-			collimators_new[i].flatCollimator = flatCollimator;
-		}
-	#endif
-}*/
-
 // Integration over the light source is done as if the rays where cast from a pixel straight under the origin of the light source. The sampling is uniform only from that point.
 __kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, LEAF_DATA_ASQ float4 *leaf_data, __global float *intensity_map, __global Debug *debug) {
 	int i = get_global_id(0);
@@ -286,12 +260,9 @@ __kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, LEAF_DATA_ASQ floa
 	int x = get_local_id(0);
 	int y = get_local_id(1);
 	int z = get_local_id(2);
-	//int x_size = get_local_size(0);
-	//int y_size = get_local_size(1);
 
 	__local Line ray[WG_LIGHT_SAMPLING_SIZE];
-	//ray[x + y*get_local_size(0) + z*get_local_size(0)*get_local_size(1)].origin = (float4) (scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0.0f);
-	//ray[x + y*get_local_size(0) + z*get_local_size(0)*get_local_size(1)].direction = normalize(((float4)(scene->raySource.origin.x - scene->raySource.radius + li*LSTEP, scene->raySource.origin.y - scene->raySource.radius + lj*LSTEP, scene->raySource.origin.z, 0.0f)) - ((float4)(scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0.0f)));
+
 	ray[x + y*get_local_size(0) + z*get_local_size(0)*get_local_size(1)].origin = (float4) (scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, 
 																							scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, 
 																							scene->fluenceMap.rectangle.p0.z, 0.0f);
@@ -349,7 +320,7 @@ __kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensi
         fluenceSum += intensity_map[j + i*FLY + k*FLX*FLY];
 	}
 
-    fluence_data[j+i*FLY] *= fluenceSum; // Assumes fluence element already contains distance factor.
+    fluence_data[j+i*FLY] *= (float) fluenceSum; // Assumes fluence element already contains distance factor.
 }
 
 #define force_recomp 50

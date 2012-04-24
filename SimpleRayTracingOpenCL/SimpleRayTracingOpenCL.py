@@ -40,10 +40,10 @@ def select_excecution_environment():
 
 # Init OpenCL
 def init_OpenCL():
-    #ctx = cl.create_some_context()
+    ctx = cl.create_some_context()
+    #ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
     os.environ["PYOPENCL_COMPILER_OUTPUT"] = "1"
     os.environ["CL_LOG_ERRORS"] = "stdout"
-    ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
     queue = cl.CommandQueue(ctx)
 
     return [ctx, queue]
