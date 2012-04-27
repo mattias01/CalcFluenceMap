@@ -293,6 +293,13 @@ void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect
 // Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.
 void intersectLineBBoxAtDistance(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *distance)
 {
+#if PLATFORM == 1 || PLATFORM == 2 || PLATFORM == 4 // Hack to make it work on WIN-INTEL-CPU, WIN-AMD-CPU and OSX-CPU.
+    BBox bboxA = *bb;
+    BBox* b = &bboxA;
+#else
+    SCENE_ASQ BBox* b = bb;
+#endif
+
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	float divx = 1.0f / l->direction.x;
 	if (divx >= 0.0f) {
