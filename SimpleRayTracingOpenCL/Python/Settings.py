@@ -6,6 +6,8 @@ NUMBER_OF_COLLIMATORS = 0
 PIECES = 0
 FLX = 0
 FLY = 0
+WINX = 0
+WINY = 0
 LSAMPLES = 0
 LSAMPLESSQR = 0
 MODE = 0
@@ -30,6 +32,8 @@ def getDefaultSettingsList():
     list.append(("NUMBER_OF_LEAVES", str(NUMBER_OF_LEAVES), True))
     list.append(("FLX", str(FLX), True))
     list.append(("FLY", str(FLY), True))
+    list.append(("WINX", str(WINX), True))
+    list.append(("WINY", str(WINY), True))
     list.append(("LSAMPLES", str(LSAMPLES), True))
     list.append(("LSAMPLESSQR", str(LSAMPLESSQR), True))
     list.append(("MODE", str(MODE), True))

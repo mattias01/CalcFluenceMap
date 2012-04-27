@@ -68,7 +68,7 @@ def init_scene():
     col1.position = float4(-59, -100, -295, 0)
     col1.xdir = float4(0,1,0,0)
     col1.ydir = float4(1,0,0,0)
-    col1.absorptionCoeff = 0.1
+    col1.absorptionCoeff = 0.06
     col1.height = 82
     col1.numberOfLeaves = 40
     col1.width = 118
@@ -79,7 +79,7 @@ def init_scene():
     col2.position = float4(59, 100, -295, 0)
     col2.xdir = float4(0,-1,0,0)
     col2.ydir = float4(-1,0,0,0)
-    col2.absorptionCoeff = 0.1
+    col2.absorptionCoeff = 0.06
     col2.height = 82
     col2.numberOfLeaves = 40
     col2.width = 118
@@ -90,7 +90,7 @@ def init_scene():
     jaw1.position = float4(140,-140,-451,0)
     jaw1.xdir = float4(-1,0,0,0)
     jaw1.ydir = float4(0,1,0,0)
-    jaw1.absorptionCoeff = 0.1
+    jaw1.absorptionCoeff = 0.06#0.1
     jaw1.height = 72
     jaw1.width = 140*2
     jaw1.numberOfLeaves = 1
@@ -101,7 +101,7 @@ def init_scene():
     jaw2.position = float4(-140,140,-451,0)
     jaw2.xdir = float4(1,0,0,0)
     jaw2.ydir = float4(0,-1,0,0)
-    jaw2.absorptionCoeff = 0.1
+    jaw2.absorptionCoeff = 0.06#0.1
     jaw2.height = 72
     jaw2.width = 140*2
     jaw2.numberOfLeaves = 1
@@ -189,7 +189,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString)
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString + " " + optParametersString)
-    program = oclu.loadCachedProgram(ctx, Settings.PATH_OPENCL + "RayTracing.cl", " " + settingsString + " " + optParametersString)
+    program = oclu.loadCachedProgram(ctx, Settings.PATH_OPENCL + "RayTracing.cl", "-cl-nv-verbose " + settingsString + " " + optParametersString)
 
     mf = cl.mem_flags
     time0 = time()
@@ -294,6 +294,8 @@ def setDefaultSettings():
     # Global defines
     Settings.FLX = 128
     Settings.FLY = 128
+    Settings.WINX = 0
+    Settings.WINY = 0
     #XSTEP = 0.0
     #YSTEP = 0.0
     #XOFFSET = 0.0
@@ -302,7 +304,7 @@ def setDefaultSettings():
     Settings.LSAMPLESSQR = Settings.LSAMPLES*Settings.LSAMPLES
     #LSTEP = 0.0
 
-    Settings.MODE = 0
+    Settings.MODE = 2
 
     # Optimization parameters
     Settings.LINE_TRIANGLE_INTERSECTION_ALGORITHM = 2 # SS, MT, MT2, MT3
