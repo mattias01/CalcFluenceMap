@@ -46,7 +46,8 @@ typedef struct Box {
 void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, float4 *p5, float4 *p6, float4 *p7, BBox *bbox);
 void createBoxFromPoints(float4 p0, float4 p1, float4 p2, float4 p3, float4 p4, float4 p5, float4 p6, float4 p7, Box *box);
 void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint);
-void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip);
+void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect);
+void intersectLinePlaneAtDistanceWithIP(RAY_ASQ const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip);
 void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bool *intersect, float *distance, float4 *ip);
 void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect);
 void intersectLineBBoxAtDistance(RAY_ASQ const Line *l, SCENE_ASQ BBox *b, bool *intersect, float *distance);

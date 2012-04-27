@@ -94,12 +94,16 @@
 
 #if LEAF_DATA_AS == 0
 	#define LEAF_DATA_ASQ __private
+	#define LEAF_DATA_IN_ASQ __private
 #elif LEAF_DATA_AS == 1
 	#define LEAF_DATA_ASQ __local
-#elif LEAF_DATA_AS == 2 // No support
+	#define LEAF_DATA_IN_ASQ __global
+#elif LEAF_DATA_AS == 2
 	#define LEAF_DATA_ASQ __constant
+	#define LEAF_DATA_IN_ASQ __constant
 #elif LEAF_DATA_AS == 3
 	#define LEAF_DATA_ASQ __global
+	#define LEAF_DATA_IN_ASQ __global
 #endif
 
 #ifndef SCENE_AS

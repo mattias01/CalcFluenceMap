@@ -49,7 +49,7 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, LE
 	float thickness;
 
 	#if LEAF_AS == 0
-	#elif LEAF_AS == 1
+	#elif LEAF_AS == 1 && (LEAF_DATA_AS == 2 || LEAF_DATA_AS == 3)
 		#if MODE == 0
 			for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]; j++) {
 				col_leaf_data[j] = leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + j];
@@ -64,7 +64,7 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, LE
 			}
 		#endif
 		barrier(CLK_LOCAL_MEM_FENCE);
-	#elif LEAF_AS == 2 || LEAF_AS == 3 
+	#elif (LEAF_AS == 1 && LEAF_DATA_AS == 1) || LEAF_AS == 2 || LEAF_AS == 3
 		#if MODE == 0
             col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex]];
 		#elif MODE == 1
@@ -129,7 +129,6 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, bool *collimatorHit
 void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, LEAF_DATA_ASQ float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug) {
 	float intensity;
 	bool intersect;
-	float distance;
 
 	intersectLineDisc(r, &(s->raySource), &intersect);
 	if (intersect) {
@@ -235,7 +234,7 @@ void lightSourceAreaVectors(SCENE_ASQ Scene *scene, const double4 *rayOrigin, do
 }*/
 
 // Integration over the light source is done as if the rays where cast from a pixel straight under the origin of the light source. The sampling is uniform only from that point.
-__kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, LEAF_DATA_ASQ float4 *leaf_data, __global float *intensity_map, __global Debug *debug) {
+__kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, LEAF_DATA_IN_ASQ float4 *leaf_data_host, __global float *intensity_map, __global Debug *debug) {
 	int i = get_global_id(0);
 	int j = get_global_id(1);
 	int k = get_global_id(2);
@@ -269,7 +268,7 @@ __kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, LEAF_DATA_ASQ floa
 	ray[x + y*get_local_size(0) + z*get_local_size(0)*get_local_size(1)].direction = normalize(((float4)(scene->raySource.origin.x - scene->raySource.radius + li*LSTEP, scene->raySource.origin.y - scene->raySource.radius + lj*LSTEP, scene->raySource.origin.z, 0.0f)) - ((float4)(scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0.0f)));
 #endif //LOCAL_RAYS
 
-#if LEAF_AS == 1 // Allocate __local memory here in the __kernel because some compilers don't allow for __local memory allocation in ordinary functions.
+#if LEAF_AS == 1 && (LEAF_DATA_AS == 2 || LEAF_DATA_AS == 3) // Allocate __local memory here in the __kernel because some compilers don't allow for __local memory allocation in ordinary functions.
 	#if MODE == 0
 		__local float4 col_leaf_data[NUMBER_OF_LEAVES * 2 * 3]; // Make sure it's >= than the leaf data.
 	#elif MODE == 1
@@ -277,17 +276,39 @@ __kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, LEAF_DATA_ASQ floa
 	#elif MODE == 2
 		__local float4 col_leaf_data[NUMBER_OF_LEAVES * 10 * 3]; // Make sure it's >= than the leaf data.
 	#endif
+	#if LEAF_DATA_AS == 2
+		__constant float4 *leaf_data = leaf_data_host;
+	#elif LEAF_DATA_AS == 3
+		__global float4 *leaf_data = leaf_data_host;
+	#endif
+#elif LEAF_AS == 1 && LEAF_DATA_AS == 1
+	__local float4 *col_leaf_data;
+	__local float4 leaf_data_local[LEAF_DATA_SIZE];
+	for (int n = 0; n < LEAF_DATA_SIZE; n++) { // Copy from __global to __local
+		leaf_data_local[n] = leaf_data_host[n];
+	}
+	barrier(CLK_LOCAL_MEM_FENCE);
+	__local float4 *leaf_data = leaf_data_local;
 #elif LEAF_AS == 2
 	__constant float4 *col_leaf_data;
 #elif LEAF_AS == 3
 	__global float4 *col_leaf_data;
+	__global float4 *leaf_data = leaf_data_host;
 #endif
 
 	float intensity;
 #if RAY_AS == 0
-	traceRay(scene, &ray, leaf_data, col_leaf_data, &intensity, debug);
+	#if LEAF_DATA_AS == 1 || LEAF_DATA_AS == 3
+		traceRay(scene, &ray, leaf_data, col_leaf_data, &intensity, debug);
+	#elif LEAF_DATA_AS == 2
+		traceRay(scene, &ray, leaf_data_host, col_leaf_data, &intensity, debug);
+	#endif
 #elif RAY_AS == 1
-	traceRay(scene, &(ray[x + y*get_local_size(0) + z*get_local_size(0)*get_local_size(1)]), leaf_data, col_leaf_data, &intensity, debug);
+	#if LEAF_DATA_AS == 1 || LEAF_DATA_AS == 3
+		traceRay(scene, &(ray[x + y*get_local_size(0) + z*get_local_size(0)*get_local_size(1)]), leaf_data, col_leaf_data, &intensity, debug);
+	#elif LEAF_DATA_AS == 2
+		traceRay(scene, &(ray[x + y*get_local_size(0) + z*get_local_size(0)*get_local_size(1)]), leaf_data_host, col_leaf_data, &intensity, debug);
+	#endif
 #endif //RAY_AS
 
 	intensity_map[j + i*FLY + k*FLX*FLY] = intensity; // Add intensity from ray. Use get_global_id() to let the compiler spare some registers.
@@ -323,4 +344,4 @@ __kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensi
     fluence_data[j+i*FLY] *= (float) fluenceSum; // Assumes fluence element already contains distance factor.
 }
 
-#define force_recomp 50
+#define force_recomp 55

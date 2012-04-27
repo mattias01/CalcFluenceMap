@@ -1,70 +1,18 @@
 
 #include "Primitives.h"
 
-/*void boundingBox(float4 *p0, float4 *p1, float4 *p2, float4 *p3, float4 *p4, float4 *p5, float4 *p6, float4 *p7, BBox *bbox) {
-	float4 pointArray[8] = {*p0, *p1, *p2, *p3, *p4, *p5, *p6, *p7};
-
-    float xmin = INFINITY;
-    float ymin = INFINITY;
-    float zmin = INFINITY;
-	float xmax = -INFINITY;
-    float ymax = -INFINITY;
-    float zmax = -INFINITY;
-
-	for (int i = 0; i < 8; i++) {
-		xmin = fmin(xmin, pointArray[i].x);
-		ymin = fmin(ymin, pointArray[i].y);
-		zmin = fmin(zmin, pointArray[i].z);
-
-		xmax = fmax(xmin, pointArray[i].x);
-		ymax = fmax(ymin, pointArray[i].y);
-		zmax = fmax(zmin, pointArray[i].z);
-	}
-
-	BBox box = {
-		.min = (float4) (xmin,ymin,zmin,0.0f),
-		.max = (float4) (xmax,ymax,zmax,0.0f)};
-
-	*bbox = box;
-}*/
-
-/*void createBoxFromPoints(float4 p0, float4 p1, float4 p2, float4 p3, float4 p4, float4 p5, float4 p6, float4 p7, Box *box) {
-    // Bottom
-	Triangle t0 = {.p0=p0, .p1=p1, .p2=p3};
-	Triangle t1 = {.p0=p1, .p1=p2, .p2=p3};
-    // Top
-	Triangle t2 = {.p0=p5, .p1=p6, .p2=p4};
-	Triangle t3 = {.p0=p6, .p1=p7, .p2=p4};
-    // Left side
-	Triangle t4 = {.p0=p1, .p1=p7, .p2=p2};
-	Triangle t5 = {.p0=p7, .p1=p6, .p2=p2};
-    // Right side
-    Triangle t6 = {.p0=p4, .p1=p0, .p2=p5};
-    Triangle t7 = {.p0=p0, .p1=p3, .p2=p5};
-    // Front side
-    Triangle t8 = {.p0=p3, .p1=p2, .p2=p5};
-    Triangle t9 = {.p0=p2, .p1=p6, .p2=p5};
-    // Back side (Not needed?)
-    Triangle t10 = {.p0=p4, .p1=p7, .p2=p0};
-    Triangle t11 = {.p0=p7, .p1=p1, .p2=p0};
-	
-	Triangle new_triangles[12] = {t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11};
-	for (int i = 0; i < 12; i++) {
-		box->triangles[i] = new_triangles[i];
-	}
-}*/
-
-// Projection calculations
-
-/*void projectPointOntoPlane(float4 *p0, Plane *plane, float4 *resultPoint) {
-    float sn = -dot(plane->normal, (*p0 - plane->origin));
-    float sd = dot(plane->normal, plane->normal);
-    float sb = sn / sd;
-    *resultPoint = *p0 + plane->normal * sb;
-}*/
-
 // Intersection calculations. Registers: 1.
-void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip)
+void intersectLinePlane(RAY_ASQ const Line *l, const Plane *p, bool *intersect)
+{
+	if (dot(l->direction, p->normal) != 0.0f) { // Not parallel -> intersect.
+		*intersect = true;
+	}
+	else {
+		*intersect = false;
+	}
+}
+
+void intersectLinePlaneAtDistanceWithIP(RAY_ASQ const Line *l, const Plane *p, bool *intersect, float *distance, float4 *ip)
 {
 	// Init to not intersect
 	*intersect = false;
@@ -87,7 +35,7 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 	Plane p = {
 		.origin = t->p0,
 		.normal = triangleNorm};
-	intersectLinePlane(l, &p, intersect, distance, ip);
+	intersectLinePlaneAtDistanceWithIP(l, &p, intersect, distance, ip);
 	
 	if (*intersect) {
 		// Point in triangle plan. Check if in triangle
@@ -323,37 +271,23 @@ void intersectLineTriangle(RAY_ASQ const Line *l, LEAF_ASQ const Triangle *t, bo
 #endif // LINE_TRIANGLE_INTERSECTION_ALGORITHM
 
 // Registers: 8 + 33 + 4.
-/*void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect, float *distance, float4 *ip)
+void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect)
+//void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect)
 {
 	Plane p = {
 		.origin = d->origin,
 		.normal = d->normal};
+	float distance;
+	float4 ip;
 
-	intersectLinePlane(l, &p, intersect, distance, ip);
+	intersectLinePlaneAtDistanceWithIP(l, &p, intersect, &distance, &ip);
 
 	if (*intersect){
-		float4 D = d->origin - *ip;
+		float4 D = d->origin - ip;
 		if (length(D) > d->radius*d->radius) {
 			*intersect = false;
 		}
 	}
-}*/
-
-void intersectLineDisc(RAY_ASQ const Line *l, SCENE_ASQ Disc *d, bool *intersect)
-{
-	float a = dot(l->direction, d->normal);
-	if (a != 0.0f) { // Not parallel -> intersect.
-		float distance = dot(d->normal, (d->origin - l->origin)) / a;
-		//if (*distance > 0.0f) { // Assumes it can not come from the top side.
-			float4 ip = l->origin + l->direction * distance;
-			float4 D = d->origin - ip;
-			if (length(D) <= d->radius*d->radius) {
-				*intersect = true;
-				return;
-			}
-		//}
-	}
-	*intersect = false;
 }
 
 // Relies on IEEE 754 floating point arithmetic (div by 0 -> inf). Registers: 6.

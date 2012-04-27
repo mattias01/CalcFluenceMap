@@ -10,7 +10,7 @@ import pyopencl as cl
 import struct
 from sys import getsizeof
 from time import time, sleep
-import visual as vs
+#import visual as vs
 
 #from OpenCLUtility import OpenCLUtility as oclu
 import OpenCLUtility
@@ -139,19 +139,21 @@ def init_scene():
     
     return [scene, collimators, leaf_array]
 
-def define_settings(scene):
+def define_settings(scene, leaf_array):
     # Settings
     Settings.XSTEP = float(length(scene.fluenceMap.rectangle.p1 - scene.fluenceMap.rectangle.p0)/Settings.FLX) # Length in x / x resolution
     Settings.YSTEP = float(length(scene.fluenceMap.rectangle.p3 - scene.fluenceMap.rectangle.p0)/Settings.FLY) # Length in y / y resolution
     Settings.XOFFSET = float(Settings.XSTEP/2.0)
     Settings.YOFFSET = float(Settings.YSTEP/2.0)
     Settings.LSTEP = float(scene.raySource.radius*2/(Settings.LSAMPLES-1))
+    Settings.LEAF_DATA_SIZE = len(leaf_array)
     settingsList = Settings.getDefaultSettingsList()
     settingsList.append(("XSTEP", str(Settings.XSTEP)+'f', True))
     settingsList.append(("YSTEP", str(Settings.YSTEP)+'f', True))
     settingsList.append(("XOFFSET", str(Settings.XOFFSET)+'f', True))
     settingsList.append(("YOFFSET", str(Settings.YOFFSET)+'f', True))
     settingsList.append(("LSTEP", str(Settings.LSTEP)+'f', True))
+    settingsList.append(("LEAF_DATA_SIZE", str(Settings.LEAF_DATA_SIZE), True))
 
     return settingsList
 
@@ -178,7 +180,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     if Settings.AUTOTUNE == 1:
         Settings.PIECES = int(optimizationParameters[4][1])
         [scene, collimators, leaf_array] = init_scene()
-        settingsList = define_settings(scene)
+        settingsList = define_settings(scene, leaf_array)
     
     settingsString = Settings.macroString(settingsList)
     optParametersString = Settings.macroString(optimizationParameters)
@@ -187,7 +189,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString)
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString + " " + optParametersString)
-    program = oclu.loadCachedProgram(ctx, Settings.PATH_OPENCL + "RayTracing.cl", "-cl-nv-verbose " + settingsString + " " + optParametersString)
+    program = oclu.loadCachedProgram(ctx, Settings.PATH_OPENCL + "RayTracing.cl", " " + settingsString + " " + optParametersString)
 
     mf = cl.mem_flags
     time0 = time()
@@ -200,7 +202,6 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     
     time1 = time()
     program.flatLightSourceSampling(queue, intensities.shape, (X_size, Y_size, Z_size), scene_buf, leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
-    #program.flatLightSourceSampling(queue, intensities.shape, (optimizationParameters[1][1], optimizationParameters[2][1], optimizationParameters[3][1]), scene_buf, leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
     #program.flatLightSourceSampling(queue, intensities.shape, None, scene_buf, leaf_array_buf, intensities_buf, debugOpenCL_buf).wait()
 
     time2 = time()
@@ -212,7 +213,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
     timeOpenCL = time()-time0
 
-    print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
+    #print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
     samplesPerSecondOpenCL = Settings.FLX*Settings.FLY*Settings.LSAMPLESSQR/timeOpenCL
     #print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
     #print fluence_data
@@ -326,7 +327,7 @@ def setDefaultSettings():
     # Adress spaces. 0: private, 1: local, 2: constant, 3: global
     Settings.RAY_AS = 0 # Valid: 0, 1.
     Settings.LEAF_AS = 1 # Valid: 1, 3.
-    Settings.LEAF_DATA_AS = 3 # Valid: 1, 3.
+    Settings.LEAF_DATA_AS = 2 # Valid: 1, 3.
     Settings.SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu
 
     # Run settings
@@ -346,7 +347,7 @@ def main():
         [ctx, queue] = init_OpenCL()
     #test()
     [scene, collimators, leaf_array] = init_scene()
-    settingsList = define_settings(scene)
+    settingsList = define_settings(scene, leaf_array)
     oclu = OpenCLUtility.OpenCLUtility()
 
     if Settings.AUTOTUNE == 1:
@@ -355,9 +356,10 @@ def main():
         list.append(Parameter("WG_LIGHT_SAMPLING_X", [1,2,4,8,16,32,64,128], False))
         list.append(Parameter("WG_LIGHT_SAMPLING_Y", [1,2,4,8,16,32,64,128], False))
         list.append(Parameter("WG_LIGHT_SAMPLING_Z", [1,2,4,8,16,32], False))
-        list.append(Parameter("PIECES", [10], False))
+        list.append(Parameter("PIECES", [1,2,4,10], False))
         list.append(Parameter("RAY_AS", [0], True))
         list.append(Parameter("LEAF_AS", [1], True))
+        list.append(Parameter("LEAF_DATA_AS", [1], True))
         list.append(Parameter("SCENE_AS", [2], True))
 
         fluence_data = numpy.zeros(shape=(Settings.FLX,Settings.FLY), dtype=numpy.float32)
