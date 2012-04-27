@@ -211,14 +211,15 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     time4 = time()
     cl.enqueue_read_buffer(queue, fluence_data_buf, fluence_data)
     cl.enqueue_read_buffer(queue, debugOpenCL_buf, debugOpenCL).wait()
-    timeOpenCL = time()-time0
+    totalTime = time()-time0
+    calculationTime = time4-time1
 
     #print "flatLightSourceSampling(): ", time2 - time1, ", calculateIntensityDecreaseWithDistance():", time3 - time2, ", calcFluenceElement():", time4 - time3
-    samplesPerSecondOpenCL = Settings.FLX*Settings.FLY*Settings.LSAMPLESSQR/timeOpenCL
+    samplesPerSecondOpenCL = Settings.FLX*Settings.FLY*Settings.LSAMPLESSQR/totalTime
     #print "Time OpenCL: ", timeOpenCL, " Samples per second: ", samplesPerSecondOpenCL
     #print fluence_data
 
-    return [fluence_data, timeOpenCL, samplesPerSecondOpenCL]
+    return [fluence_data, totalTime, calculationTime, samplesPerSecondOpenCL]
 
 # Show plots
 def show_plot(scene, fluence_data, elapsed_time, samplesPerSecond):
@@ -301,7 +302,7 @@ def setDefaultSettings():
     Settings.LSAMPLESSQR = Settings.LSAMPLES*Settings.LSAMPLES
     #LSTEP = 0.0
 
-    Settings.MODE = 2
+    Settings.MODE = 0
 
     # Optimization parameters
     Settings.LINE_TRIANGLE_INTERSECTION_ALGORITHM = 2 # SS, MT, MT2, MT3
@@ -316,8 +317,8 @@ def setDefaultSettings():
         #Settings.WG_LIGHT_SAMPLING_Y = 32
         #Settings.WG_LIGHT_SAMPLING_Z = 4
         Settings.WG_LIGHT_SAMPLING_X = 1
-        Settings.WG_LIGHT_SAMPLING_Y = 4
-        Settings.WG_LIGHT_SAMPLING_Z = 16
+        Settings.WG_LIGHT_SAMPLING_Y = 16
+        Settings.WG_LIGHT_SAMPLING_Z = 8
     else:
         Settings.WG_LIGHT_SAMPLING_X = 2
         Settings.WG_LIGHT_SAMPLING_Y = 2
@@ -359,7 +360,7 @@ def main():
         list.append(Parameter("PIECES", [1,2,4,10], False))
         list.append(Parameter("RAY_AS", [0], True))
         list.append(Parameter("LEAF_AS", [1], True))
-        list.append(Parameter("LEAF_DATA_AS", [1], True))
+        list.append(Parameter("LEAF_DATA_AS", [2], True))
         list.append(Parameter("SCENE_AS", [2], True))
 
         fluence_data = numpy.zeros(shape=(Settings.FLX,Settings.FLY), dtype=numpy.float32)
@@ -372,17 +373,17 @@ def main():
         #print at.getTable()
         at.saveCSV()
 
-        [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, at.best_parameters)
+        [fluence_data_OpenCL, total_time_OpenCL, calculation_time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, at.best_parameters)
     else:
         fluence_data = numpy.zeros(shape=(Settings.FLX,Settings.FLY), dtype=numpy.float32)
         intensities = numpy.zeros(shape=(Settings.FLX,Settings.FLY,Settings.LSAMPLESSQR), dtype=numpy.float32)
-        [fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, Settings.getDefaultOptimizationParameterList())
+        [fluence_data_OpenCL, total_time_OpenCL, calculation_time_OpenCL, samplesPerSecond_OpenCL] = run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, settingsList, Settings.getDefaultOptimizationParameterList())
 
     if Settings.SHOW_PLOT == 1:
         if Settings.PYTHON == 1:
             show_plot(scene, fluence_data_Python, time_Python, samplesPerSecond_Python)
         if Settings.OPENCL == 1:
-            show_plot(scene, fluence_data_OpenCL, time_OpenCL, samplesPerSecond_OpenCL)
+            show_plot(scene, fluence_data_OpenCL, total_time_OpenCL, samplesPerSecond_OpenCL)
     if Settings.SHOW_3D_SCENE == 1:
         show_3D_scene(scene, leaf_array, collimators)
     

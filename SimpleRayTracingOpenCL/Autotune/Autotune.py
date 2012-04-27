@@ -24,7 +24,7 @@ class Autotune(object):
                 arguments.append(optParameters)
                 
                 try:
-                    _, test_time, _ = self.runFunc(*arguments)
+                    _, _, test_time, _ = self.runFunc(*arguments)
                 except:
                     test_time = float('inf')
 
