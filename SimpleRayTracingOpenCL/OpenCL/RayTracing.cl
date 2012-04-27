@@ -62,6 +62,7 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, LE
 			for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]; j++) {
 				col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + j];
 			}
+			barrier(CLK_LOCAL_MEM_FENCE);
 		#endif
 	#elif (LEAF_AS == 1 && LEAF_DATA_AS == 1) || LEAF_AS == 2 || LEAF_AS == 3
 		#if MODE == 0
@@ -289,8 +290,10 @@ __kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, LEAF_DATA_IN_ASQ f
 #elif LEAF_AS == 1 && LEAF_DATA_AS == 1
 	__local float4 *col_leaf_data;
 	__local float4 leaf_data_local[LEAF_DATA_SIZE];
-	for (int n = 0; n < LEAF_DATA_SIZE; n++) { // Copy from __global to __local
-		leaf_data_local[n] = leaf_data_host[n];
+	if (get_local_id(0) == 0 && get_local_id(1) == 0 && get_local_id(2) == 0) {
+		for (int n = 0; n < LEAF_DATA_SIZE; n++) { // Copy from __global to __local
+			leaf_data_local[n] = leaf_data_host[n];
+		}
 	}
 	barrier(CLK_LOCAL_MEM_FENCE);
 	__local float4 *leaf_data = leaf_data_local;
