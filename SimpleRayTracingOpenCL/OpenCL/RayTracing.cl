@@ -63,7 +63,6 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, LE
 				col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + j];
 			}
 		#endif
-		barrier(CLK_LOCAL_MEM_FENCE);
 	#elif (LEAF_AS == 1 && LEAF_DATA_AS == 1) || LEAF_AS == 2 || LEAF_AS == 3
 		#if MODE == 0
             col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex]];
@@ -78,7 +77,6 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, LE
 	for (int a = 0; a < s->collimators.numberOfLeaves[*collimatorIndex]; a++) { // Init leafHit to false.
 		leafHit[a] = false;
 	}
-
 	firstHitLeaf(s, r, col_leaf_data, collimatorIndex, leafHit, &intersectTmp, &ipTmpLeaf, &thickness, debug);
 	float absorptionCoeff = s->collimators.absorptionCoeff[*collimatorIndex];
 	while (intersectTmp) {
@@ -122,7 +120,15 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, bool *collimatorHit
 	if (collimatorIndex != -1) {
 		*intersect = true;
 		collimatorHit[collimatorIndex] = true;
-		hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, intensityCoeff, debug);
+		#if LEAF_AS == 1
+			for (int i = 0; i < NUMBER_OF_COLLIMATORS; i++) { // Barrier when using local memory to only cache one collimator at a time.
+				barrier(CLK_LOCAL_MEM_FENCE);
+				if (i == collimatorIndex)
+					hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, intensityCoeff, debug);
+			}
+		#else
+			hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, intensityCoeff, debug);
+		#endif
 	}
 }
 
@@ -145,7 +151,6 @@ void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, LEAF_DATA_ASQ float4 *leaf_da
 	for (int j = 0; j < NUMBER_OF_COLLIMATORS; j++) { // Init collimatorHit to false.
 		collimatorHit[j] = false;
 	}
-
 	firstHitCollimator(s, r, collimatorHit, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
 	while (intersect) {
 		intensity *= intensityCoeff;
