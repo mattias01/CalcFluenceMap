@@ -1,4 +1,3 @@
-#pragma OPENCL EXTENSION cl_khr_fp64: enable
 #include "RayTracing.h"
 
 // Ray tracing
@@ -49,6 +48,20 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, LE
 	float thickness;
 
 	#if LEAF_AS == 0
+		#if MODE == 0
+			for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]; j++) {
+				col_leaf_data[j] = leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + j];
+			}
+		#elif MODE == 1
+			for (int j = 0; j < s->collimators.bboxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]; j++) {
+				col_leaf_data[j] = leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex] + j];
+			}
+		#elif MODE == 2
+			for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]; j++) {
+				col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + j];
+			}
+			barrier(CLK_LOCAL_MEM_FENCE);
+		#endif
 	#elif LEAF_AS == 1 && (LEAF_DATA_AS == 2 || LEAF_DATA_AS == 3)
 		#if MODE == 0
 			for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]; j++) {
@@ -169,23 +182,23 @@ void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, LEAF_DATA_ASQ float4 *leaf_da
 }
 
 // Gives vectors from the ray origin to left, right, bottom, top of the ray source.
-void lightSourceAreaVectors(SCENE_ASQ Scene *scene, const double4 *rayOrigin, double4 *vi0, double4 *vi1, double4 *vj0, double4 *vj1, __global Debug *debug) {
-	*vi0 = (double4) (scene->raySource.origin.x - scene->raySource.radius, 
+void lightSourceAreaVectors(SCENE_ASQ Scene *scene, const float4 *rayOrigin, float4 *vi0, float4 *vi1, float4 *vj0, float4 *vj1, __global Debug *debug) {
+	*vi0 = (float4) (scene->raySource.origin.x - scene->raySource.radius, 
 					 scene->raySource.origin.y, 
 					 scene->raySource.origin.z,
 					 scene->raySource.origin.w) - *rayOrigin;
 
-	*vi1 = (double4) (scene->raySource.origin.x + scene->raySource.radius, 
+	*vi1 = (float4) (scene->raySource.origin.x + scene->raySource.radius, 
 					 scene->raySource.origin.y, 
 					 scene->raySource.origin.z,
 					 scene->raySource.origin.w) - *rayOrigin;
 
-	*vj0 = (double4) (scene->raySource.origin.x, 
+	*vj0 = (float4) (scene->raySource.origin.x, 
 					 scene->raySource.origin.y - scene->raySource.radius, 
 					 scene->raySource.origin.z,
 					 scene->raySource.origin.w) - *rayOrigin;
 
-	*vj1 = (double4) (scene->raySource.origin.x, 
+	*vj1 = (float4) (scene->raySource.origin.x, 
 					 scene->raySource.origin.y + scene->raySource.radius, 
 					 scene->raySource.origin.z,
 					 scene->raySource.origin.w) - *rayOrigin;
@@ -274,7 +287,15 @@ __kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, LEAF_DATA_IN_ASQ f
 	ray[x + y*get_local_size(0) + z*get_local_size(0)*get_local_size(1)].direction = normalize(((float4)(scene->raySource.origin.x - scene->raySource.radius + li*LSTEP, scene->raySource.origin.y - scene->raySource.radius + lj*LSTEP, scene->raySource.origin.z, 0.0f)) - ((float4)(scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0.0f)));
 #endif //LOCAL_RAYS
 
-#if LEAF_AS == 1 && (LEAF_DATA_AS == 2 || LEAF_DATA_AS == 3) // Allocate __local memory here in the __kernel because some compilers don't allow for __local memory allocation in ordinary functions.
+#if LEAF_AS == 0
+	#if MODE == 0
+		__private float4 col_leaf_data[NUMBER_OF_LEAVES * 2 * 3]; // Make sure it's >= than the leaf data.
+	#elif MODE == 1
+		__private float4 col_leaf_data[NUMBER_OF_LEAVES * 2]; // Make sure it's >= than the leaf data.
+	#elif MODE == 2
+		__private float4 col_leaf_data[NUMBER_OF_LEAVES * 10 * 3]; // Make sure it's >= than the leaf data.
+	#endif
+#elif LEAF_AS == 1 && (LEAF_DATA_AS == 2 || LEAF_DATA_AS == 3) // Allocate __local memory here in the __kernel because some compilers don't allow for __local memory allocation in ordinary functions.
 	#if MODE == 0
 		__local float4 col_leaf_data[NUMBER_OF_LEAVES * 2 * 3]; // Make sure it's >= than the leaf data.
 	#elif MODE == 1
@@ -324,18 +345,20 @@ __kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, LEAF_DATA_IN_ASQ f
 } 
 
 __kernel void calculateIntensityDecreaseWithDistance(SCENE_ASQ Scene *scene, __global float *distanceFactors, __global Debug *debug) {
-	double4 vi0, vi1, vj0, vj1;
+	float4 vi0, vi1, vj0, vj1;
 
 	int i = get_global_id(0);
 	int j = get_global_id(1);
     
-    double4 rayOrigin = (double4) (scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, 
+    float4 rayOrigin = (float4) (scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, 
                                  scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, 
                                  scene->fluenceMap.rectangle.p0.z, 0.0f);
 
 	lightSourceAreaVectors(scene, &rayOrigin, &vi0, &vi1, &vj0, &vj1, debug);
-	double anglei = acos(dot(normalize(vi0), normalize(vi1)));
-    double anglej = acos(dot(normalize(vj0), normalize(vj1)));
+	//float anglei = acos(dot(normalize(vi0), normalize(vi1))); Old version. Unstable for floats. Needs double.
+    //float anglej = acos(dot(normalize(vj0), normalize(vj1)));
+	float anglei = atan2(length(cross(vi0, vi1)), dot(vi0, vi1));
+    float anglej = atan2(length(cross(vj0, vj1)), dot(vj0, vj1));
 
     distanceFactors[j+i*FLY] = anglei*anglej/M_PI_F*M_PI_F; // The ratio of a unit half sphere that are covering the light source. => Things that are further away recieves less photons.
 }
@@ -344,7 +367,7 @@ __kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensi
 	int i = get_global_id(0);
     int j = get_global_id(1);
 
-	double fluenceSum = 0.0f;
+	float fluenceSum = 0.0f;
 	
     for (int k = 0; k < LSAMPLESSQR; k++) {
         fluenceSum += intensity_map[j + i*FLY + k*FLX*FLY];
@@ -353,4 +376,4 @@ __kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensi
     fluence_data[j+i*FLY] *= (float) fluenceSum; // Assumes fluence element already contains distance factor.
 }
 
-#define force_recomp 64
+#define force_recomp 65
