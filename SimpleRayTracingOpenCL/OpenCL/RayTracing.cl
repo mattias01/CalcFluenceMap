@@ -75,8 +75,8 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, LE
 			for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]; j++) {
 				col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + j];
 			}
-			barrier(CLK_LOCAL_MEM_FENCE);
 		#endif
+		barrier(CLK_LOCAL_MEM_FENCE);
 	#elif (LEAF_AS == 1 && LEAF_DATA_AS == 1) || LEAF_AS == 2 || LEAF_AS == 3
 		#if MODE == 0
             col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex]];
@@ -159,23 +159,16 @@ void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, LEAF_DATA_ASQ float4 *leaf_da
 		return;
 	}
 
-	float intensityCoeff;
-
 	bool collimatorHit[NUMBER_OF_COLLIMATORS];
 	for (int j = 0; j < NUMBER_OF_COLLIMATORS; j++) { // Init collimatorHit to false.
 		collimatorHit[j] = false;
 	}
+
+	float intensityCoeff;
 	firstHitCollimator(s, r, collimatorHit, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
 	while (intersect) {
 		intensity *= intensityCoeff;
-		if (intensity < INTENSITY_THRESHOLD) { // If intensity is below a threshold, don't bother to cast more rays. Return 0 intensity.
-			*i = 0.0f;
-			return;
-		}
-		else {
-			//r->origin = ip; // Create a new ray. Same direction but new origin.
-			firstHitCollimator(s, r, collimatorHit, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
-		}
+		firstHitCollimator(s, r, collimatorHit, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
 	}
 
 	*i = intensity;
@@ -376,4 +369,4 @@ __kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensi
     fluence_data[j+i*FLY] *= (float) fluenceSum; // Assumes fluence element already contains distance factor.
 }
 
-#define force_recomp 65
+#define force_recomp 68
