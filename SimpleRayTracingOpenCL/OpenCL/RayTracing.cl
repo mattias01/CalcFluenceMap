@@ -91,6 +91,7 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, LE
 	for (int a = 0; a < s->collimators.numberOfLeaves[*collimatorIndex]; a++) { // Init leafHit to false.
 		leafHit[a] = false;
 	}
+
 	firstHitLeaf(s, r, col_leaf_data, collimatorIndex, leafHit, &intersectTmp, &ipTmpLeaf, &thickness, debug);
 	float absorptionCoeff = s->collimators.absorptionCoeff[*collimatorIndex];
 	while (intersectTmp) {
@@ -109,9 +110,10 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, LE
 
 void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, bool *collimatorHit, LEAF_DATA_ASQ float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float *intensityCoeff, __global Debug *debug) {
 	*intersect = false;
+#if DEPTH_FIRST == 1
 	float minDistance = MAXFLOAT;
-	*intensityCoeff = 1.0f;
 	int collimatorIndex = -1;
+#endif
     for (int i = 0; i < NUMBER_OF_COLLIMATORS; i++) { // Find closest collimator
 		if (collimatorHit[i] != true) {
 			bool intersectTmp;
@@ -124,13 +126,20 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, bool *collimatorHit
 				intersectLineBBoxAtDistance(r, &(s->collimators.boxCollimator.boundingBox[i]), &intersectTmp, &distanceTmp);
 			#endif
         
-			if (intersectTmp && distanceTmp < minDistance) {
-				collimatorIndex = i;
-				minDistance = distanceTmp;
-			}
+			#if DEPTH_FIRST == 1
+				if (intersectTmp && distanceTmp < minDistance) {
+					collimatorIndex = i;
+					minDistance = distanceTmp;
+				}
+			#else
+				if (intersectTmp) {
+					collimatorHit[i] = true;
+				}
+			#endif
 		}
 	}
 
+#if DEPTH_FIRST == 1
 	if (collimatorIndex != -1) {
 		*intersect = true;
 		collimatorHit[collimatorIndex] = true;
@@ -144,6 +153,7 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, bool *collimatorHit
 			hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, intensityCoeff, debug);
 		#endif
 	}
+#endif
 }
 
 void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, LEAF_DATA_ASQ float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug) {
@@ -164,12 +174,30 @@ void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, LEAF_DATA_ASQ float4 *leaf_da
 		collimatorHit[j] = false;
 	}
 
-	float intensityCoeff;
+	float intensityCoeff = 1.0f;
 	firstHitCollimator(s, r, collimatorHit, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
 	while (intersect) {
-		intensity *= intensityCoeff;
+		#if DEPTH_FIRST == 1
+			intensity *= intensityCoeff;
+		#endif
 		firstHitCollimator(s, r, collimatorHit, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
 	}
+
+#if DEPTH_FIRST == 0
+	for (int j = 0; j < NUMBER_OF_COLLIMATORS; j++) { // Init collimatorHit to false.
+		barrier(CLK_LOCAL_MEM_FENCE);
+		if (collimatorHit[j] == true) {
+			#if LEAF_AS == 1
+				
+				hitCollimator(s, r, &j, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
+			#else
+				hitCollimator(s, r, &j, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
+			#endif
+			if (intersect)
+				intensity *= intensityCoeff;
+		}
+	}
+#endif
 
 	*i = intensity;
 }
@@ -369,4 +397,4 @@ __kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensi
     fluence_data[j+i*FLY] *= (float) fluenceSum; // Assumes fluence element already contains distance factor.
 }
 
-#define force_recomp 68
+#define force_recomp 71

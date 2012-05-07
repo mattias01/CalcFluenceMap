@@ -12,6 +12,7 @@ LSAMPLES = 0
 LSAMPLESSQR = 0
 MODE = 0
 LINE_TRIANGLE_INTERSECTION_ALGORITHM = 0
+DEPTH_FIRST = 0
 WG_LIGHT_SAMPLING_X = 0
 WG_LIGHT_SAMPLING_Y = 0
 WG_LIGHT_SAMPLING_Z = 0
@@ -32,8 +33,8 @@ def getDefaultSettingsList():
     list.append(("NUMBER_OF_LEAVES", str(NUMBER_OF_LEAVES), True))
     list.append(("FLX", str(FLX), True))
     list.append(("FLY", str(FLY), True))
-    list.append(("WINX", str(WINX), True))
-    list.append(("WINY", str(WINY), True))
+    #list.append(("WINX", str(WINX), True))
+    #list.append(("WINY", str(WINY), True))
     list.append(("LSAMPLES", str(LSAMPLES), True))
     list.append(("LSAMPLESSQR", str(LSAMPLESSQR), True))
     list.append(("MODE", str(MODE), True))
@@ -52,6 +53,7 @@ def getDefaultOptimizationParameterList():
     list.append(("LEAF_AS", str(LEAF_AS), True))
     list.append(("LEAF_DATA_AS", str(LEAF_DATA_AS), True))
     list.append(("SCENE_AS", str(SCENE_AS), True))
+    list.append(("DEPTH_FIRST", str(DEPTH_FIRST), True))
     
     return list
 

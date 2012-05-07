@@ -308,6 +308,7 @@ def setDefaultSettings():
 
     # Optimization parameters
     Settings.LINE_TRIANGLE_INTERSECTION_ALGORITHM = 2 # SS, MT, MT2, MT3
+    Settings.DEPTH_FIRST = 0
 
     # Work group sizes
     if Settings.PLATFORM in [1, 2, 4]: # Best CPU
