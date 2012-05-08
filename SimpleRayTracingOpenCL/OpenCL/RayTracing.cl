@@ -33,7 +33,7 @@ void loadCollimator(SCENE_ASQ Scene *s, int *collimatorIndex, LEAF_DATA_ASQ floa
 			}
 		#endif
 		barrier(CLK_LOCAL_MEM_FENCE);
-	#elif (LEAF_AS == 1 && LEAF_DATA_AS == 1) || LEAF_AS == 2 || LEAF_AS == 3
+	#elif LEAF_AS == 2 || LEAF_AS == 3 || (LEAF_AS == 1 && LEAF_DATA_AS == 1)
 		#if MODE == 0
             col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex]];
 		#elif MODE == 1
@@ -153,7 +153,7 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, bool *collimatorHit
 		collimatorHit[collimatorIndex] = true;
 		#if LEAF_AS == 1
 			for (int i = 0; i < NUMBER_OF_COLLIMATORS; i++) { // Barrier when using local memory to only cache one collimator at a time.
-				barrier(CLK_LOCAL_MEM_FENCE);
+				barrier(CLK_LOCAL_MEM_FENCE); // Make sure that all threads are working on the same collimator when using local memory.
 				if (i == collimatorIndex)
 					hitCollimator(s, r, &collimatorIndex, leaf_data, col_leaf_data, intersect, intensityCoeff, debug);
 			}
@@ -182,7 +182,7 @@ void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, LEAF_DATA_ASQ float4 *leaf_da
 		collimatorHit[j] = false;
 	}
 
-	float intensityCoeff;// = 1.0f;
+	float intensityCoeff;
 	firstHitCollimator(s, r, collimatorHit, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
 	while (intersect) {
 		#if DEPTH_FIRST == 1
@@ -193,13 +193,11 @@ void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, LEAF_DATA_ASQ float4 *leaf_da
 
 #if DEPTH_FIRST == 0
 	for (int j = 0; j < NUMBER_OF_COLLIMATORS; j++) { // Init collimatorHit to false.
+		#if LEAF_AS == 1
+			barrier(CLK_LOCAL_MEM_FENCE); // Make sure that all threads are working on the same collimator when using local memory.
+		#endif
 		if (collimatorHit[j] == true) {
-			#if LEAF_AS == 1
-				barrier(CLK_LOCAL_MEM_FENCE);
-				hitCollimator(s, r, &j, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
-			#else
-				hitCollimator(s, r, &j, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
-			#endif
+			hitCollimator(s, r, &j, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
 			intensity *= intensityCoeff;
 		}
 	}
