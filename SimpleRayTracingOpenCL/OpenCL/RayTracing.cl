@@ -1,5 +1,49 @@
 #include "RayTracing.h"
 
+// Utility functions
+
+// Loads Collimator of index collimatorIndex from leaf_data to col_leaf_data.
+void loadCollimator(SCENE_ASQ Scene *s, int *collimatorIndex, LEAF_DATA_ASQ float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data) {
+	#if LEAF_AS == 0
+		#if MODE == 0
+			for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]; j++) {
+				col_leaf_data[j] = leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + j];
+			}
+		#elif MODE == 1
+			for (int j = 0; j < s->collimators.bboxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]; j++) {
+				col_leaf_data[j] = leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex] + j];
+			}
+		#elif MODE == 2
+			for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]; j++) {
+				col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + j];
+			}
+		#endif
+	#elif LEAF_AS == 1 && (LEAF_DATA_AS == 2 || LEAF_DATA_AS == 3)
+		#if MODE == 0
+			for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]; j++) {
+				col_leaf_data[j] = leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + j];
+			}
+		#elif MODE == 1
+			for (int j = 0; j < s->collimators.bboxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]; j++) {
+				col_leaf_data[j] = leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex] + j];
+			}
+		#elif MODE == 2
+			for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]; j++) {
+				col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + j];
+			}
+		#endif
+		barrier(CLK_LOCAL_MEM_FENCE);
+	#elif (LEAF_AS == 1 && LEAF_DATA_AS == 1) || LEAF_AS == 2 || LEAF_AS == 3
+		#if MODE == 0
+            col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex]];
+		#elif MODE == 1
+            col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex]];
+		#elif MODE == 2
+            col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex]];
+		#endif
+	#endif
+}
+
 // Ray tracing
 void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ float4 *leaf_data, int *collimatorIndex, bool *leafHit, bool *intersect, float4 *ip, float *thickness, __global Debug *debug) {
 	*intersect = false;
@@ -46,48 +90,11 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, LE
 	bool intersectTmp;
 	float4 ipTmpLeaf;
 	float thickness;
+	*intensityCoeff = 1.0f;
 
-	#if LEAF_AS == 0
-		#if MODE == 0
-			for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]; j++) {
-				col_leaf_data[j] = leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + j];
-			}
-		#elif MODE == 1
-			for (int j = 0; j < s->collimators.bboxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]; j++) {
-				col_leaf_data[j] = leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex] + j];
-			}
-		#elif MODE == 2
-			for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]; j++) {
-				col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + j];
-			}
-			barrier(CLK_LOCAL_MEM_FENCE);
-		#endif
-	#elif LEAF_AS == 1 && (LEAF_DATA_AS == 2 || LEAF_DATA_AS == 3)
-		#if MODE == 0
-			for (int j = 0; j < s->collimators.flatCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]; j++) {
-				col_leaf_data[j] = leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex] + j];
-			}
-		#elif MODE == 1
-			for (int j = 0; j < s->collimators.bboxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]; j++) {
-				col_leaf_data[j] = leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex] + j];
-			}
-		#elif MODE == 2
-			for (int j = 0; j < s->collimators.boxCollimator.numberOfLeaves[*collimatorIndex] * s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]; j++) {
-				col_leaf_data[j] = leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex] + j];
-			}
-		#endif
-		barrier(CLK_LOCAL_MEM_FENCE);
-	#elif (LEAF_AS == 1 && LEAF_DATA_AS == 1) || LEAF_AS == 2 || LEAF_AS == 3
-		#if MODE == 0
-            col_leaf_data = &leaf_data[s->collimators.flatCollimator.leafArrayOffset[*collimatorIndex]];
-		#elif MODE == 1
-            col_leaf_data = &leaf_data[s->collimators.bboxCollimator.leafArrayOffset[*collimatorIndex]];
-		#elif MODE == 2
-            col_leaf_data = &leaf_data[s->collimators.boxCollimator.leafArrayOffset[*collimatorIndex]];
-		#endif
-	#endif
+	loadCollimator(s, collimatorIndex, leaf_data, col_leaf_data);
             
-	bool leafHit[NUMBER_OF_LEAVES];
+	bool leafHit[NUMBER_OF_LEAVES]; // Store which leaves has been hit.
 	for (int a = 0; a < s->collimators.numberOfLeaves[*collimatorIndex]; a++) { // Init leafHit to false.
 		leafHit[a] = false;
 	}
@@ -111,6 +118,7 @@ void hitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, int *collimatorIndex, LE
 void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, bool *collimatorHit, LEAF_DATA_ASQ float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, bool *intersect, float *intensityCoeff, __global Debug *debug) {
 	*intersect = false;
 #if DEPTH_FIRST == 1
+	*intensityCoeff = 1.0f;
 	float minDistance = MAXFLOAT;
 	int collimatorIndex = -1;
 #endif
@@ -169,12 +177,12 @@ void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, LEAF_DATA_ASQ float4 *leaf_da
 		return;
 	}
 
-	bool collimatorHit[NUMBER_OF_COLLIMATORS];
+	bool collimatorHit[NUMBER_OF_COLLIMATORS]; // Store which collimators has been hit.
 	for (int j = 0; j < NUMBER_OF_COLLIMATORS; j++) { // Init collimatorHit to false.
 		collimatorHit[j] = false;
 	}
 
-	float intensityCoeff = 1.0f;
+	float intensityCoeff;// = 1.0f;
 	firstHitCollimator(s, r, collimatorHit, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
 	while (intersect) {
 		#if DEPTH_FIRST == 1
@@ -185,16 +193,14 @@ void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, LEAF_DATA_ASQ float4 *leaf_da
 
 #if DEPTH_FIRST == 0
 	for (int j = 0; j < NUMBER_OF_COLLIMATORS; j++) { // Init collimatorHit to false.
-		barrier(CLK_LOCAL_MEM_FENCE);
 		if (collimatorHit[j] == true) {
 			#if LEAF_AS == 1
-				
+				barrier(CLK_LOCAL_MEM_FENCE);
 				hitCollimator(s, r, &j, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
 			#else
 				hitCollimator(s, r, &j, leaf_data, col_leaf_data, &intersect, &intensityCoeff, debug);
 			#endif
-			if (intersect)
-				intensity *= intensityCoeff;
+			intensity *= intensityCoeff;
 		}
 	}
 #endif
