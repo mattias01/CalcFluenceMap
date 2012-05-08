@@ -331,7 +331,7 @@ def setDefaultSettings():
     # Adress spaces. 0: private, 1: local, 2: constant, 3: global
     Settings.RAY_AS = 0 # Valid: 0, 1.
     Settings.LEAF_AS = 1 # Valid: 1, 3.
-    Settings.LEAF_DATA_AS = 2 # Valid: 1, 3.
+    Settings.LEAF_DATA_AS = 2 # Valid: 1, 2, 3.
     Settings.SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu
 
     # Run settings
