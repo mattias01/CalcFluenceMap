@@ -1,27 +1,25 @@
 #include "RayTracing.h"
 
-// Utility functions
-
 // Ray tracing
 void firstHitLeaf(SCENE_ASQ Scene *s, RAY_ASQ const Line *r, LEAF_ASQ float4 *leaf_data, int *collimatorIndex, bool *leafHit, bool *intersect, float4 *ip, float *thickness, __global Debug *debug) {
 	*intersect = false;
 	float minDistance = MAXFLOAT;
 	int leafIndex = -1;
+	bool intersectTmp;
+	float distanceTmp;
+	float4 ipTmp;
+#if MODE == 1 || MODE == 2
+	float4 ipInTmp;
+	float distanceOutTmp;
+#endif
 
 	for (int i = 0; i < s->collimators.numberOfLeaves[*collimatorIndex]; i++) {
 		if (leafHit[i] != true) {
-			bool intersectTmp;
-			float distanceTmp;
-			float4 ipTmp;
 			#if MODE == 0
 				intersectLineFlatCollimatorLeaf(r, (LEAF_ASQ Triangle const *) &(leaf_data[i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex]]), (LEAF_ASQ Triangle const *) &(leaf_data[i*s->collimators.flatCollimator.leafArrayStride[*collimatorIndex] + 3]), &intersectTmp, &distanceTmp, &ipTmp);
 			#elif MODE == 1
-				float4 ipInTmp;
-				float distanceOutTmp;
 				intersectLineBBoxCollimatorLeaf(r, (LEAF_ASQ BBox const *) &(leaf_data[i*s->collimators.bboxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 			#elif MODE == 2
-				float4 ipInTmp;
-				float distanceOutTmp;
 				intersectLineBoxCollimatorLeaf(r, (LEAF_ASQ Box const *) &(leaf_data[i*s->collimators.boxCollimator.leafArrayStride[*collimatorIndex]]), &intersectTmp, &distanceTmp, &distanceOutTmp, &ipInTmp, &ipTmp);
 			#endif
 
@@ -117,10 +115,10 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, bool *collimatorHit
 	float minDistance = MAXFLOAT;
 	int collimatorIndex = -1;
 #endif
+	bool intersectTmp;
+	float distanceTmp;
     for (int i = 0; i < NUMBER_OF_COLLIMATORS; i++) { // Find closest collimator
 		if (collimatorHit[i] != true) {
-			bool intersectTmp;
-			float distanceTmp;
 			#if MODE == 0
 				intersectLineBBoxAtDistance(r, &(s->collimators.flatCollimator.boundingBox[i]), &intersectTmp, &distanceTmp);
 			#elif MODE == 1
