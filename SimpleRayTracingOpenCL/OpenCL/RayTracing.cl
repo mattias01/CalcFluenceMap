@@ -158,10 +158,9 @@ void firstHitCollimator(SCENE_ASQ Scene *s, RAY_ASQ Line *r, bool *collimatorHit
 }
 
 void traceRay(SCENE_ASQ Scene *s, RAY_ASQ Line *r, LEAF_DATA_ASQ float4 *leaf_data, LEAF_ASQ float4 *col_leaf_data, float *i, __global Debug *debug) {
-	float intensity;
 	bool intersect;
-
 	intersectLineDisc(r, &(s->raySource), &intersect);
+	float intensity;
 	if (intersect) {
 		intensity = 1.0f;
 	}
@@ -303,7 +302,7 @@ __kernel void flatLightSourceSampling(SCENE_ASQ Scene *scene, LEAF_DATA_IN_ASQ f
 																							scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, 
 																							scene->fluenceMap.rectangle.p0.z, 0.0f);
 	ray[x + y*get_local_size(0) + z*get_local_size(0)*get_local_size(1)].direction = normalize(((float4)(scene->raySource.origin.x - scene->raySource.radius + li*LSTEP, scene->raySource.origin.y - scene->raySource.radius + lj*LSTEP, scene->raySource.origin.z, 0.0f)) - ((float4)(scene->fluenceMap.rectangle.p0.x + i*XSTEP + XOFFSET, scene->fluenceMap.rectangle.p0.y + j*YSTEP + YOFFSET, scene->fluenceMap.rectangle.p0.z, 0.0f)));
-#endif //LOCAL_RAYS
+#endif
 
 #if LEAF_AS == 0
 	#if MODE == 0
@@ -383,7 +382,7 @@ __kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensi
     int j = get_global_id(1);
 
 	float fluenceSum = 0.0f;
-	
+
     for (int k = 0; k < LSAMPLESSQR; k++) {
         fluenceSum += intensity_map[j + i*FLY + k*FLX*FLY];
 	}
@@ -391,4 +390,4 @@ __kernel void calcFluenceElement(SCENE_ASQ Scene *scene, __global float *intensi
     fluence_data[j+i*FLY] *= (float) fluenceSum; // Assumes fluence element already contains distance factor.
 }
 
-#define force_recomp 71
+#define force_recomp 76
