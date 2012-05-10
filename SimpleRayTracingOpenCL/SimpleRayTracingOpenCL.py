@@ -189,7 +189,7 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-auto-vectorize-disable " + settingsString)
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", " " + settingsString + " " + optParametersString)
-    program = oclu.loadCachedProgram(ctx, Settings.PATH_OPENCL + "RayTracing.cl", "-cl-nv-verbose " + settingsString + " " + optParametersString)
+    program = oclu.loadCachedProgram(ctx, Settings.PATH_OPENCL + "RayTracing.cl", " " + settingsString + " " + optParametersString)
 
     mf = cl.mem_flags
     time0 = time()
@@ -287,7 +287,7 @@ def setDefaultSettings():
     # Collimator defines
     Settings.NUMBER_OF_LEAVES = 40
     Settings.NUMBER_OF_COLLIMATORS = 4
-    Settings.PIECES = 10
+    Settings.PIECES = 20
     if Settings.NUMBER_OF_LEAVES%Settings.PIECES != 0:
         print "Warning: NUMBER_OF_COLLIMATORS not divisable by PIECES"
 
@@ -320,8 +320,8 @@ def setDefaultSettings():
         #Settings.WG_LIGHT_SAMPLING_Y = 32
         #Settings.WG_LIGHT_SAMPLING_Z = 4
         Settings.WG_LIGHT_SAMPLING_X = 1
-        Settings.WG_LIGHT_SAMPLING_Y = 16
-        Settings.WG_LIGHT_SAMPLING_Z = 8
+        Settings.WG_LIGHT_SAMPLING_Y = 32
+        Settings.WG_LIGHT_SAMPLING_Z = 4
     else:
         Settings.WG_LIGHT_SAMPLING_X = 2
         Settings.WG_LIGHT_SAMPLING_Y = 2
@@ -330,9 +330,9 @@ def setDefaultSettings():
 
     # Adress spaces. 0: private, 1: local, 2: constant, 3: global
     Settings.RAY_AS = 0 # Valid: 0, 1.
-    Settings.LEAF_AS = 1 # Valid: 1, 3.
-    Settings.LEAF_DATA_AS = 2 # Valid: 1, 2, 3.
-    Settings.SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu
+    Settings.LEAF_AS = 1 # Valid: 1, 2, 3.
+    Settings.LEAF_DATA_AS = 2 # Valid: 1, 2, 3. 3 only for quadro.
+    Settings.SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu, nvidia-gpu
 
     # Run settings
     Settings.OPENCL = 1
@@ -356,15 +356,16 @@ def main():
 
     if Settings.AUTOTUNE == 1:
         list = []
-        list.append(Parameter("LINE_TRIANGLE_INTERSECTION_ALGORITHM", [2], True))
+        list.append(Parameter("LINE_TRIANGLE_INTERSECTION_ALGORITHM", [2,3], True))
         list.append(Parameter("WG_LIGHT_SAMPLING_X", [1,2,4,8,16,32,64,128], False))
         list.append(Parameter("WG_LIGHT_SAMPLING_Y", [1,2,4,8,16,32,64,128], False))
         list.append(Parameter("WG_LIGHT_SAMPLING_Z", [1,2,4,8,16,32], False))
-        list.append(Parameter("PIECES", [1,2,4,10], False))
+        list.append(Parameter("PIECES", [1,2,4,10,20], False))
         list.append(Parameter("RAY_AS", [0], True))
         list.append(Parameter("LEAF_AS", [1], True))
-        list.append(Parameter("LEAF_DATA_AS", [2], True))
+        list.append(Parameter("LEAF_DATA_AS", [3], True))
         list.append(Parameter("SCENE_AS", [2], True))
+        list.append(Parameter("DEPTH_FIRST", [0,1], True))
 
         fluence_data = numpy.zeros(shape=(Settings.FLX,Settings.FLY), dtype=numpy.float32)
         intensities = numpy.zeros(shape=(Settings.FLX,Settings.FLY,Settings.LSAMPLESSQR), dtype=numpy.float32)
