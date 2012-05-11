@@ -1,6 +1,7 @@
 #from Autotune import Parameter
 from time import time, sleep
 import csv
+from scipy.stats.stats import pearsonr
 
 class Autotune(object):
     """Module to auto-tune parameters for OpenCL kernels"""
@@ -50,20 +51,52 @@ class Autotune(object):
             self.total_test_time = time() - start_time
             print "Total time:" + str(self.total_test_time) + " Best time:" + str(self.best_time) + " Best parameters:" + str(self.best_parameters)
 
-    def getTable(self, description=False):
+    def getSavedStatesWithoutFailedRuns(self):
         list = []
-        if description == True:
-            description_string = ["Number of runs: " + str(self.parameters.getNumberOfStates()), "Total time:" + str(self.total_test_time)]
-            list.append(description_string)
+        for i in range(len(self.saved_states)):
+            if (self.saved_states[i][1] != -1):
+                list.append(self.saved_states[i])
+        return list
+
+    def findWithinRangeOfBest(self, range):
+        list = []
+        state_list  = self.getSavedStatesWithoutFailedRuns()
+        for x in state_list:
+            if x[1] >= self.best_time * (1-range) and x[1] <= self.best_time * (1+range):
+                list.append(x)
+        return list
+
+    def calcPersonCorrelation(self, list):
+        stat_list = list
+        pearsoncorr_list = []
+        for j in range(len(stat_list[0])):
+            if j >= 2:
+                pearsoncorr_list.append(pearsonr([x[1] for x in stat_list], [x[j] for x in stat_list]))
+        return pearsoncorr_list
+
+    def getTable(self, description=False, statistics=False, best_ten_percent=False):
+        list = []
         header = ["Iteration", "Time", "Work_Group_Size"]
         header.extend(self.parameters.getRunParametersListOnlyNames())
         list.append(header)
         for i in range(len(self.saved_states)):
             list.append(self.saved_states[i])
+        if description == True:
+            description_string = ["Number of runs: " + str(self.parameters.getNumberOfStates()), "Total time:" + str(self.total_test_time)]
+            list.append(description_string)
+        if statistics == True:
+            pearsoncorr_list = self.calcPersonCorrelation(self.getSavedStatesWithoutFailedRuns())
+            statistics_string = ["Pearson correlation:", ""]
+            statistics_string.extend(pearsoncorr_list)
+            list.append(statistics_string)
+        if best_ten_percent == True:
+            list.append(["Best twenty percent from best"])
+            for x in self.findWithinRangeOfBest(0.15):
+                list.append(x)
         return list
 
     def saveCSV(self):
-        table = self.getTable()
+        table = self.getTable(description=True, statistics=True, best_ten_percent=True)
         with open('table.csv', 'wb') as f:
             writer = csv.writer(f, dialect='excel')
             writer.writerows(table)
