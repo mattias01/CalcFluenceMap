@@ -72,7 +72,7 @@ def init_scene():
     col1.height = 82
     col1.numberOfLeaves = 40
     col1.width = 118
-    col1.leafPositions = (50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60)
+    col1.leafPositions = (50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60,50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60,50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60,50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60) #(50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60)
     col1.boundingBox = calculateCollimatorBoundingBox(col1)
 
     col2 = Collimator()
@@ -83,7 +83,7 @@ def init_scene():
     col2.height = 82
     col2.numberOfLeaves = 40
     col2.width = 118
-    col2.leafPositions = (80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90)
+    col2.leafPositions = (80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90) #(80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90)
     col2.boundingBox = calculateCollimatorBoundingBox(col2)
 
     jaw1 = Collimator()
@@ -285,9 +285,9 @@ def setDefaultSettings():
     Settings.PLATFORM = 0 # 0: Windows NVidia, 1: Windows Intel, 2: OSX-CPU, 3: OSX-GPU, 4: AMD-CPU, 5: AMD-GPU
 
     # Collimator defines
-    Settings.NUMBER_OF_LEAVES = 40
+    Settings.NUMBER_OF_LEAVES = 160
     Settings.NUMBER_OF_COLLIMATORS = 4
-    Settings.PIECES = 20
+    Settings.PIECES = 80
     if Settings.NUMBER_OF_LEAVES%Settings.PIECES != 0:
         print "Warning: NUMBER_OF_COLLIMATORS not divisable by PIECES"
 
@@ -331,7 +331,7 @@ def setDefaultSettings():
     # Adress spaces. 0: private, 1: local, 2: constant, 3: global
     Settings.RAY_AS = 0 # Valid: 0, 1.
     Settings.LEAF_AS = 1 # Valid: 1, 2, 3.
-    Settings.LEAF_DATA_AS = 2 # Valid: 1, 2, 3. 3 only for quadro.
+    Settings.LEAF_DATA_AS = 3 # Valid: 1, 2, 3. 3 only for quadro.
     Settings.SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu, nvidia-gpu
 
     # Run settings
@@ -356,16 +356,16 @@ def main():
 
     if Settings.AUTOTUNE == 1:
         list = []
-        list.append(Parameter("LINE_TRIANGLE_INTERSECTION_ALGORITHM", [2,3], True))
+        list.append(Parameter("LINE_TRIANGLE_INTERSECTION_ALGORITHM", [2], True))
         list.append(Parameter("WG_LIGHT_SAMPLING_X", [1,2,4,8,16,32,64,128], False))
         list.append(Parameter("WG_LIGHT_SAMPLING_Y", [1,2,4,8,16,32,64,128], False))
-        list.append(Parameter("WG_LIGHT_SAMPLING_Z", [1,2,4,8,16,32], False))
-        list.append(Parameter("PIECES", [1,2,4,10,20], False))
+        list.append(Parameter("WG_LIGHT_SAMPLING_Z", [1,2,4,8,16], False))
+        list.append(Parameter("PIECES", [10,20,40], False))
         list.append(Parameter("RAY_AS", [0], True))
         list.append(Parameter("LEAF_AS", [1], True))
         list.append(Parameter("LEAF_DATA_AS", [3], True))
         list.append(Parameter("SCENE_AS", [2], True))
-        list.append(Parameter("DEPTH_FIRST", [0,1], True))
+        list.append(Parameter("DEPTH_FIRST", [0], True))
 
         fluence_data = numpy.zeros(shape=(Settings.FLX,Settings.FLY), dtype=numpy.float32)
         intensities = numpy.zeros(shape=(Settings.FLX,Settings.FLY,Settings.LSAMPLESSQR), dtype=numpy.float32)
