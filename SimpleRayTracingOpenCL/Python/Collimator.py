@@ -443,10 +443,10 @@ def splitCollimator(collimator, pieces, leaf_array, col_type):
         elif Settings.MODE == 2:
             col.boxCollimator = cr
         col_list.append(col)
-    if len(col_list) == 1:
-        return col_list[0]
-    else:
-        return col_list
+    #if len(col_list) == 1:
+    #    return col_list[0]
+    #else:
+    return col_list
 
 
 ###################### Intersection calculations ######################

@@ -40,8 +40,8 @@ def select_excecution_environment():
 
 # Init OpenCL
 def init_OpenCL():
-    ctx = cl.create_some_context()
-    #ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
+    #ctx = cl.create_some_context()
+    ctx = cl.Context(devices=[cl.get_platforms()[0].get_devices()[0]]) # Choose the first device.
     os.environ["PYOPENCL_COMPILER_OUTPUT"] = "1"
     os.environ["CL_LOG_ERRORS"] = "stdout"
     queue = cl.CommandQueue(ctx)
@@ -56,7 +56,7 @@ def test():
     if Settings.OPENCL == 1:
         testOpenCL(ctx, queue)
 
-def init_scene():
+def init_scene(pieces):
     setDefaultSettings()
     # Build scene objects
     rs = Disc(float4(0,0,0,0), float4(0,0,1,0), 1)
@@ -72,7 +72,7 @@ def init_scene():
     col1.height = 82
     col1.numberOfLeaves = 40
     col1.width = 118
-    col1.leafPositions = (50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60,50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60,50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60,50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60) #(50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60)
+    col1.leafPositions = (50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60) #(50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60,50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60,50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60,50,51,52,53,52,51,50,49,48,47,46,45,44,42,40,38,36,34,32,33,34,35,60,60,63,64,60,60,70,60,70,60,70,60,70,60,70,60,70,60)
     col1.boundingBox = calculateCollimatorBoundingBox(col1)
 
     col2 = Collimator()
@@ -83,7 +83,7 @@ def init_scene():
     col2.height = 82
     col2.numberOfLeaves = 40
     col2.width = 118
-    col2.leafPositions = (80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90) #(80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90)
+    col2.leafPositions = (80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90) #(80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90,80,90)
     col2.boundingBox = calculateCollimatorBoundingBox(col2)
 
     jaw1 = Collimator()
@@ -118,15 +118,15 @@ def init_scene():
     for i in range(len(leaves)):
         leaf_array[i] = leaves[i]
         
-    Settings.NUMBER_OF_LEAVES = Settings.NUMBER_OF_LEAVES/Settings.PIECES
-    Settings.NUMBER_OF_COLLIMATORS = 2 + (Settings.NUMBER_OF_COLLIMATORS-2) * Settings.PIECES
+    Settings.NUMBER_OF_LEAVES = Settings.NUMBER_OF_LEAVES/pieces
+    Settings.NUMBER_OF_COLLIMATORS = 2 + (Settings.NUMBER_OF_COLLIMATORS-2) * pieces
 
     Collimator = collimatorFactory()
-    colSp = splitCollimator(collimators[2], Settings.PIECES, leaf_array, Collimator)
-    colSp.extend(splitCollimator(collimators[3], Settings.PIECES, leaf_array, Collimator))
+    colSp = splitCollimator(collimators[2], pieces, leaf_array, Collimator)
+    colSp += splitCollimator(collimators[3], pieces, leaf_array, Collimator)
 
-    jaw1 = splitCollimator(collimators[0], 1, leaf_array, Collimator)
-    jaw2 = splitCollimator(collimators[1], 1, leaf_array, Collimator)
+    jaw1 = splitCollimator(collimators[0], 1, leaf_array, Collimator)[0]
+    jaw2 = splitCollimator(collimators[1], 1, leaf_array, Collimator)[0]
 
     collimator_array = Collimator * Settings.NUMBER_OF_COLLIMATORS
     collimators = collimator_array(jaw1, jaw2, *colSp)#col1Sp[0], col1Sp[1], col1Sp[2], col1Sp[3], col2Sp[0], col2Sp[1], col2Sp[2], col2Sp[3])
@@ -179,11 +179,12 @@ def run_OpenCL(oclu, ctx, queue, scene, leaf_array, fluence_data, intensities, s
     Z_size = int(optimizationParameters[3][1])
     if Settings.AUTOTUNE == 1:
         Settings.PIECES = int(optimizationParameters[4][1])
-        [scene, collimators, leaf_array] = init_scene()
+        [scene, collimators, leaf_array] = init_scene(Settings.PIECES)
         settingsList = define_settings(scene, leaf_array)
     
     settingsString = Settings.macroString(settingsList)
     optParametersString = Settings.macroString(optimizationParameters)
+    Settings.WG_LIGHT_SAMPLING_SIZE = X_size*Y_size*Z_size
     optParametersString += " -D WG_LIGHT_SAMPLING_SIZE=" + str(X_size*Y_size*Z_size)
 
     #program = oclu.loadProgram(ctx, Settings.PATH_OPENCL + "RayTracingGPU.cl", "-cl-nv-verbose " + settingsString)
@@ -285,9 +286,9 @@ def setDefaultSettings():
     Settings.PLATFORM = 0 # 0: Windows NVidia, 1: Windows Intel, 2: OSX-CPU, 3: OSX-GPU, 4: AMD-CPU, 5: AMD-GPU
 
     # Collimator defines
-    Settings.NUMBER_OF_LEAVES = 160
+    Settings.NUMBER_OF_LEAVES = 40
     Settings.NUMBER_OF_COLLIMATORS = 4
-    Settings.PIECES = 80
+    Settings.PIECES = 20
     if Settings.NUMBER_OF_LEAVES%Settings.PIECES != 0:
         print "Warning: NUMBER_OF_COLLIMATORS not divisable by PIECES"
 
@@ -319,9 +320,9 @@ def setDefaultSettings():
         #Settings.WG_LIGHT_SAMPLING_X = 1
         #Settings.WG_LIGHT_SAMPLING_Y = 32
         #Settings.WG_LIGHT_SAMPLING_Z = 4
-        Settings.WG_LIGHT_SAMPLING_X = 1
+        Settings.WG_LIGHT_SAMPLING_X = 2
         Settings.WG_LIGHT_SAMPLING_Y = 32
-        Settings.WG_LIGHT_SAMPLING_Z = 4
+        Settings.WG_LIGHT_SAMPLING_Z = 2
     else:
         Settings.WG_LIGHT_SAMPLING_X = 2
         Settings.WG_LIGHT_SAMPLING_Y = 2
@@ -331,7 +332,7 @@ def setDefaultSettings():
     # Adress spaces. 0: private, 1: local, 2: constant, 3: global
     Settings.RAY_AS = 0 # Valid: 0, 1.
     Settings.LEAF_AS = 1 # Valid: 1, 2, 3.
-    Settings.LEAF_DATA_AS = 3 # Valid: 1, 2, 3. 3 only for quadro.
+    Settings.LEAF_DATA_AS = 2 # Valid: 1, 2, 3. 3 only for quadro.
     Settings.SCENE_AS = 2 # Valid: 2, 3. 2 only for osx-gpu, nvidia-gpu
 
     # Run settings
@@ -350,7 +351,7 @@ def main():
     if Settings.OPENCL == 1:
         [ctx, queue] = init_OpenCL()
     #test()
-    [scene, collimators, leaf_array] = init_scene()
+    [scene, collimators, leaf_array] = init_scene(Settings.PIECES)
     settingsList = define_settings(scene, leaf_array)
     oclu = OpenCLUtility.OpenCLUtility()
 
@@ -360,10 +361,10 @@ def main():
         list.append(Parameter("WG_LIGHT_SAMPLING_X", [1,2,4,8,16,32,64,128], False))
         list.append(Parameter("WG_LIGHT_SAMPLING_Y", [1,2,4,8,16,32,64,128], False))
         list.append(Parameter("WG_LIGHT_SAMPLING_Z", [1,2,4,8,16], False))
-        list.append(Parameter("PIECES", [10,20,40], False))
+        list.append(Parameter("PIECES", [1,2,4,10,20], False))
         list.append(Parameter("RAY_AS", [0], True))
         list.append(Parameter("LEAF_AS", [1], True))
-        list.append(Parameter("LEAF_DATA_AS", [3], True))
+        list.append(Parameter("LEAF_DATA_AS", [2], True))
         list.append(Parameter("SCENE_AS", [2], True))
         list.append(Parameter("DEPTH_FIRST", [0], True))
 
