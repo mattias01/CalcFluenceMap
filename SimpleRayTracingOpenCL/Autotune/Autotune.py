@@ -1,7 +1,8 @@
 #from Autotune import Parameter
 from time import time, sleep
+import datetime
 import csv
-from scipy.stats.stats import pearsonr, spearmanr, kendalltau
+import scipy.stats as stats
 from sklearn import mixture
 import numpy as np
 
@@ -67,30 +68,62 @@ class Autotune(object):
             if x[1] >= self.best_time * (1-range) and x[1] <= self.best_time * (1+range):
                 list.append(x)
         return list
+    
+    def ownCorrelationMeasure(self, X, Y):
+        # Group X-values into categories with their respective set of Y-values
+        groups = {}
+        for i in range(len(X)):
+            key = X[i]
+            value = Y[i]
+            if key in groups:
+                groups[key] += [value]
+            else:
+                groups[key] = [value]
 
-    def calcCorrelation(self, list, corr_func):
+        # Calculate normal distribution for every X-value
+        normal_distributions = {}
+        #normal_distributions_old = {}
+        for x in groups.keys():
+            #normal_distributions_old[x] = stats.norm.fit(groups[x])
+            if len(groups[x]) > 1:
+                normal_distributions[x] = (stats.tmean(groups[x]), stats.tvar(groups[x]))
+            else:
+                normal_distributions[x] = (groups[x][0], 0)
+
+        # Calculate correlation measure
+        max_dist = max(normal_distributions.values())
+        min_dist = min(normal_distributions.values())
+        correlation = max_dist[0]/min_dist[0] # Ratio between mean for max and min
+
+        return correlation
+
+    def calcCorrelations(self, list, corr_func):
         stat_list = list
         corr_list = []
         for j in range(len(stat_list[0])):
             if j >= 2: # Skip header
-                corr_list.append(corr_func([x[1] for x in stat_list], [x[j] for x in stat_list]))
+                corr_list.append(corr_func([x[j] for x in stat_list], [x[1] for x in stat_list]))
         return corr_list
 
     def getStatistics(self, data):
         list = []
         #pearsoncorr_list = self.calcPearsonCorrelation(data)
-        pearsoncorr_list = self.calcCorrelation(data, pearsonr)
+        pearsoncorr_list = self.calcCorrelations(data, stats.pearsonr)
         statistics_string = ["Pearson correlation:", ""]
         statistics_string.extend(pearsoncorr_list)
         list.append(statistics_string)
         #spearmancorr_list = self.calcSpearmanCorrelation(data)
-        spearmancorr_list = self.calcCorrelation(data, spearmanr)
+        spearmancorr_list = self.calcCorrelations(data, stats.spearmanr)
         statistics_string = ["Spearman correlation:", ""]
         statistics_string.extend(spearmancorr_list)
         list.append(statistics_string)
-        kendallcorr_list = self.calcCorrelation(data, kendalltau)
+        kendallcorr_list = self.calcCorrelations(data, stats.kendalltau)
         statistics_string = ["Kendalls tau correlation:", ""]
         statistics_string.extend(kendallcorr_list)
+        list.append(statistics_string)
+        owncorr_list = self.calcCorrelations(data, self.ownCorrelationMeasure)
+        statistics_string = ["Own correlation:", ""]
+        statistics_string.extend(owncorr_list)
         list.append(statistics_string)
         return list
 
@@ -102,13 +135,13 @@ class Autotune(object):
         for i in range(len(self.saved_states)):
             list.append(self.saved_states[i])
         if description == True:
-            description_string = ["Number of runs: " + str(self.parameters.getNumberOfStates()), "Total time:" + str(self.total_test_time)]
+            description_string = ["Number of runs: " + str(self.parameters.getNumberOfStates()), "Total time:" + str(self.total_test_time), "Remaining search-space: ", str(self.parameters.getNumberOfStates()) + "/" + str(len(self.getSavedStatesWithoutFailedRuns()))]
             list.append(description_string)
         if statistics == True:
             list.extend(self.getStatistics(self.getSavedStatesWithoutFailedRuns()))
         if best_ten_percent == True:
-            list.append(["Best fifteen percent from best"])
-            best = self.findWithinRangeOfBest(0.15)
+            best = self.findWithinRangeOfBest(0.1)
+            list.append(["Best ten percent from best", "Remaining search-space: ", str(self.parameters.getNumberOfStates()) + "/" + str(len(best))])
             list.extend(best)
             list.extend(self.getStatistics(best))
         if em == True:
@@ -120,6 +153,7 @@ class Autotune(object):
 
     def saveCSV(self):
         table = self.getTable(description=True, statistics=True, best_ten_percent=True, em=True)
-        with open('table.csv', 'wb') as f:
+        formated_time_string = datetime.datetime.now().strftime("%Y-%m-%d-%H%M")
+        with open('table ' + formated_time_string + '.csv', 'wb') as f:
             writer = csv.writer(f, dialect='excel')
             writer.writerows(table)
