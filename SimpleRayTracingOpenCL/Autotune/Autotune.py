@@ -95,7 +95,7 @@ class Autotune(object):
         min_dist = min(normal_distributions.values())
         correlation = max_dist[0]/min_dist[0] # Ratio between mean for max and min
 
-        return correlation
+        return [correlation, normal_distributions]
 
     def calcCorrelations(self, list, corr_func):
         stat_list = list
